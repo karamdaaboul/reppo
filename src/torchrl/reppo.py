@@ -375,7 +375,7 @@ def make_evaluate_fn(cfg: DictConfig, eval_envs):
         )
 
         if cfg.env.type == "isaaclab" or cfg.env.asymmetric_observation:
-            obs, _ = eval_envs.reset(random_start_init=False)
+            obs = eval_envs.reset(random_start_init=False)
         else:
             obs = eval_envs.reset()
 
