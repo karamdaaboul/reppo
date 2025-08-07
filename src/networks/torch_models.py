@@ -4,7 +4,7 @@ from torch.distributions import constraints
 from torch.distributions.transforms import Transform
 from torch.distributions.normal import Normal
 
-from src.torchrl.reppo import hl_gauss
+from src.torchrl.reppo_util import hl_gauss
 
 
 class TanhTransform(Transform):
@@ -56,9 +56,7 @@ class TanhTransform(Transform):
 
 
 def get_activation(name):
-    if name == "swish":
-        return nn.swish()
-    elif name == "relu":
+    if name == "relu":
         return nn.ReLU()
     elif name == "swish":
         return nn.SiLU()
