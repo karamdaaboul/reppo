@@ -335,6 +335,13 @@ class SACActorNetworks(nnx.Module):
         layers: int = 2,
         min_std: float = 0.1,
         use_skip: bool = False,
+        with_eta: bool = False,
+        eta_init: float = 0.1,
+        eta_min: float = 1e-4,
+        eta_max: float = 10.0,
+        with_betas: bool = False,
+        beta_init: float = 1.0,
+        beta_max: float = 1000.0,
         *,
         rngs: nnx.Rngs,
     ):
@@ -357,6 +364,28 @@ class SACActorNetworks(nnx.Module):
         self.lagrangian_log_param = nnx.Param(jnp.ones(1) * kl_start_value)
         self.min_std = min_std
 
+        # E-step temperature. Created ONLY for the weighted_mle arm: adding a leaf to
+        # the param tree would otherwise change the pathwise arm's tree and break both
+        # bit-identity and the loading of checkpoints exported before eta existed.
+        self.with_eta = with_eta
+        self.eta_min = eta_min
+        self.eta_max = eta_max
+        if with_eta:
+            # softplus parameterisation, so eta stays positive without a clamp on the
+            # raw parameter; the [eta_min, eta_max] clip is applied on the output.
+            inv_softplus = math.log(math.expm1(eta_init))
+            self.eta_param = nnx.Param(jnp.ones(1) * inv_softplus)
+
+        # Decoupled M-step multipliers (MPO / V-MPO). Created only for that arm, for
+        # the same reason as eta: an unconditional leaf would change every other arm's
+        # param tree.
+        self.with_betas = with_betas
+        self.beta_max = beta_max
+        if with_betas:
+            inv_b = math.log(math.expm1(beta_init))
+            self.beta_mu_param = nnx.Param(jnp.ones(1) * inv_b)
+            self.beta_sigma_param = nnx.Param(jnp.ones(1) * inv_b)
+
     def actor(
         self, obs: jax.Array, scale: float | jax.Array = 1.0
     ) -> distrax.Distribution:
@@ -376,6 +405,26 @@ class SACActorNetworks(nnx.Module):
 
     def lagrangian(self) -> jax.Array:
         return jnp.exp(self.lagrangian_log_param.value)
+
+    def eta(self) -> jax.Array:
+        """E-step temperature, softplus-parameterised and clipped."""
+        return jnp.clip(
+            jax.nn.softplus(self.eta_param.value), self.eta_min, self.eta_max
+        )
+
+    def beta_mu(self) -> jax.Array:
+        return jnp.clip(jax.nn.softplus(self.beta_mu_param.value), 0.0, self.beta_max)
+
+    def beta_sigma(self) -> jax.Array:
+        return jnp.clip(
+            jax.nn.softplus(self.beta_sigma_param.value), 0.0, self.beta_max
+        )
+
+    def gaussian(self, obs: jax.Array):
+        """Pre-squash Normal parameters (loc, scale) -- what MPO's KLs are defined on."""
+        loc = self.actor_module(obs)
+        loc, log_std = jnp.split(loc, 2, axis=-1)
+        return loc, jnp.exp(log_std) + self.min_std
 
     def __call__(self, obs: jax.Array) -> jax.Array:
         loc = self.actor_module(obs)
@@ -416,6 +465,13 @@ class SACDiscreteActorNetworks(nnx.Module):
         layers: int = 2,
         min_std: float = 0.1,
         use_skip: bool = False,
+        with_eta: bool = False,
+        eta_init: float = 0.1,
+        eta_min: float = 1e-4,
+        eta_max: float = 10.0,
+        with_betas: bool = False,
+        beta_init: float = 1.0,
+        beta_max: float = 1000.0,
         *,
         rngs: nnx.Rngs,
     ):
@@ -438,6 +494,28 @@ class SACDiscreteActorNetworks(nnx.Module):
         self.lagrangian_log_param = nnx.Param(jnp.ones(1) * kl_start_value)
         self.min_std = min_std
 
+        # E-step temperature. Created ONLY for the weighted_mle arm: adding a leaf to
+        # the param tree would otherwise change the pathwise arm's tree and break both
+        # bit-identity and the loading of checkpoints exported before eta existed.
+        self.with_eta = with_eta
+        self.eta_min = eta_min
+        self.eta_max = eta_max
+        if with_eta:
+            # softplus parameterisation, so eta stays positive without a clamp on the
+            # raw parameter; the [eta_min, eta_max] clip is applied on the output.
+            inv_softplus = math.log(math.expm1(eta_init))
+            self.eta_param = nnx.Param(jnp.ones(1) * inv_softplus)
+
+        # Decoupled M-step multipliers (MPO / V-MPO). Created only for that arm, for
+        # the same reason as eta: an unconditional leaf would change every other arm's
+        # param tree.
+        self.with_betas = with_betas
+        self.beta_max = beta_max
+        if with_betas:
+            inv_b = math.log(math.expm1(beta_init))
+            self.beta_mu_param = nnx.Param(jnp.ones(1) * inv_b)
+            self.beta_sigma_param = nnx.Param(jnp.ones(1) * inv_b)
+
     def actor(
         self, obs: jax.Array, scale: float | jax.Array = 1.0
     ) -> distrax.Distribution:
@@ -457,6 +535,26 @@ class SACDiscreteActorNetworks(nnx.Module):
 
     def lagrangian(self) -> jax.Array:
         return jnp.exp(self.lagrangian_log_param.value)
+
+    def eta(self) -> jax.Array:
+        """E-step temperature, softplus-parameterised and clipped."""
+        return jnp.clip(
+            jax.nn.softplus(self.eta_param.value), self.eta_min, self.eta_max
+        )
+
+    def beta_mu(self) -> jax.Array:
+        return jnp.clip(jax.nn.softplus(self.beta_mu_param.value), 0.0, self.beta_max)
+
+    def beta_sigma(self) -> jax.Array:
+        return jnp.clip(
+            jax.nn.softplus(self.beta_sigma_param.value), 0.0, self.beta_max
+        )
+
+    def gaussian(self, obs: jax.Array):
+        """Pre-squash Normal parameters (loc, scale) -- what MPO's KLs are defined on."""
+        loc = self.actor_module(obs)
+        loc, log_std = jnp.split(loc, 2, axis=-1)
+        return loc, jnp.exp(log_std) + self.min_std
 
     def __call__(self, obs: jax.Array) -> jax.Array:
         loc = self.actor_module(obs)

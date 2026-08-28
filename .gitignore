@@ -190,3 +190,10 @@ models/
 plots/
 data.zip
 .github/*
+
+# --- run artifacts (added for the E-step study) ---
+exports/
+checkpoints/
+figures/
+*.ckpt
+*.msgpack

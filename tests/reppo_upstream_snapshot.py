@@ -1,3 +1,11 @@
+"""Pristine upstream copy of src/jaxrl/reppo.py -- DO NOT EDIT.
+
+Taken verbatim from cvoelcker/reppo at commit 69d04eb93dd9415e8f54cbe995b6fb3b5ae883d4 (the base this
+fork builds on). Kept ONLY so scripts/verify_estep.py check (a) can assert that the
+pathwise arm in the modified trainer is bit-identical to the published code: a
+short training run under both modules must yield identical parameters and eval
+return. Never import this from training code.
+"""
 import logging
 import time
 import typing
@@ -103,101 +111,6 @@ class ReppoConfig(struct.PyTreeNode):
     reverse_kl: bool = False
     anneal_lr: bool = False
     actor_kl_clip_mode: str = "clipped"
-    # "pathwise" = original SAC-style loss (grad flows through the critic).
-    # "weighted_mle" = MPO E-step: softmax-weighted MLE on pi_old samples, no
-    # gradient through the critic. eta is tied to alpha by construction.
-    actor_update_mode: str = "pathwise"
-    estep_num_samples: int = 32
-    # Diagnostic only. In the pathwise arm computing q_spread needs an extra critic
-    # forward, and merely adding that op changes XLA fusion and hence float32
-    # rounding -- which breaks bit-identity with the pre-E-step implementation.
-    # Default off so the pathwise arm stays reproducible; the same quantity can be
-    # measured offline from an exported checkpoint (scripts/q_spread_from_ckpt.py).
-    log_q_spread: bool = False
-    # E-step KL budget. eta is solved against this by its own dual, rather than
-    # being tied to the entropy dual alpha.
-    eps_e: float = 0.5
-    # MPO decoupled M-step: replaces (does not stack with) REPPO's single KL clip.
-    mstep_decoupled: bool = False
-    eps_mu: float = 0.1
-    eps_sigma: float = 5e-5      # four orders below eps_mu -- that is the point
-    # Hold beta_sigma at a CONSTANT instead of learning it (same move as freezing
-    # alpha). None = learn it via the dual. eps_sigma is then irrelevant to the
-    # sigma constraint, and beta_sigma becomes a clean, unconfounded width knob.
-    beta_sigma_fixed: float | None = None
-    # The SAC entropy error is a SUM over action dims, so the same per-dim mismatch
-    # drives alpha d times harder. At d=21 that is 3.5x the d=6 pressure. Setting this
-    # divides the error by d, making it a MEAN over dims.
-    ent_loss_per_dim: bool = False
-
-
-def estep_weights(q_i, eta):
-    """MPO E-step weights over the sample axis (axis 0).
-
-        w_i propto exp(Q(s, a_i) / eta)
-
-    The E-step target is q*(a|s) propto pi_old(a|s) * exp(Q(s,a)/eta). Because
-    pi_old sits INSIDE the target it cancels against the pi_old proposal the
-    samples are drawn from, so the self-normalised weight is just exp(Q/eta) --
-    there is no 1/pi_old importance factor.
-
-    (An earlier version targeted the un-anchored exp(Q/eta) and therefore carried
-    a 1/pi_old factor. Its spread, ~0.5*sqrt(2d) = 1.73 at d=6, swamped the Q
-    signal: with Q zeroed that term alone predicts ESS 4.4 and the run measured
-    4.2, i.e. the critic was contributing nothing to the weights.)
-
-    eta is a learned dual solved against the E-step KL budget eps_e (see
-    `eta_dual_loss`). Softmax subtracts the per-state max internally, so this is
-    numerically safe.
-    """
-    return jax.nn.softmax(q_i / eta, axis=0)
-
-
-def eta_dual_loss(q_i, eta, eps_e):
-    """Standard MPO dual for the E-step temperature, per state then averaged.
-
-        g(eta) = eta * eps_e + eta * mean_j log mean_i exp(q_ji / eta)
-
-    The log-mean-exp is evaluated with the per-state max pulled out:
-
-        log mean_i exp(q_ji/eta) = log mean_i exp((q_ji - qmax_j)/eta) + qmax_j/eta
-
-    so the exponent is <= 0 everywhere. q is detached: only eta takes gradient.
-    """
-    q_d = jax.lax.stop_gradient(q_i)
-    qmax = jnp.max(q_d, axis=0)
-    lse = jnp.log(jnp.mean(jnp.exp((q_d - qmax) / eta), axis=0))
-    return eta * eps_e + jnp.mean(eta * lse + qmax)
-
-
-def decoupled_kls(mu_new, sg_new, mu_old, sg_old):
-    """MPO's two decoupled Gaussian KLs, on the PRE-SQUASH Gaussian.
-
-        kl_mu    = 0.5 * sum_d (mu_new - mu_old)^2 / sg_old^2
-        kl_sigma = 0.5 * sum_d [ sg_old^2/sg_new^2 - 1 + 2 log(sg_new/sg_old) ]
-
-    Each term is the full Gaussian KL with the other factor held at its old value, so
-    the mean and the scale get separate trust regions and separate multipliers.
-    """
-    kl_mu = 0.5 * jnp.sum(((mu_new - mu_old) ** 2) / (sg_old**2), axis=-1)
-    kl_sigma = 0.5 * jnp.sum(
-        (sg_old**2) / (sg_new**2) - 1.0 + 2.0 * (jnp.log(sg_new) - jnp.log(sg_old)),
-        axis=-1,
-    )
-    return kl_mu, kl_sigma
-
-
-def gaussian_logp(x, loc, scale):
-    """Diagonal-Gaussian log density, summed over action dims."""
-    return jnp.sum(
-        -0.5 * (((x - loc) / scale) ** 2) - jnp.log(scale) - 0.5 * jnp.log(2 * jnp.pi),
-        axis=-1,
-    )
-
-
-def effective_sample_size(w, axis=0):
-    """1 / sum_i w_i^2 for weights summing to 1 along `axis`. Range [1, M]."""
-    return 1.0 / jnp.sum(w**2, axis=axis)
 
 
 class SACTrainState(struct.PyTreeNode):
@@ -287,8 +200,6 @@ def make_init(
             use_norm=cfg.use_actor_norm,
             layers=cfg.num_actor_layers,
             use_skip=cfg.use_actor_skip,
-            with_eta=cfg.actor_update_mode == "weighted_mle",
-            with_betas=cfg.mstep_decoupled,
             rngs=nnx.Rngs(model_key),
         )
         actor_target_networks = SACActorNetworks(
@@ -300,8 +211,6 @@ def make_init(
             use_norm=cfg.use_actor_norm,
             layers=cfg.num_actor_layers,
             use_skip=cfg.use_actor_skip,
-            with_eta=cfg.actor_update_mode == "weighted_mle",
-            with_betas=cfg.mstep_decoupled,
             rngs=nnx.Rngs(model_key),
         )
 
@@ -407,7 +316,6 @@ def make_train_fn(
     log_callback: Callable[[SACTrainState, dict[str, jax.Array]], None] | None = None,
     num_seeds: int = 1,
     reward_scale: float = 1.0,
-    return_snapshots: bool = False,
 ):
     env_params = env_params  # or env.default_params
     env = LogWrapper(env, cfg.num_envs)
@@ -418,9 +326,6 @@ def make_train_fn(
     eval_fn = make_eval_fn(env, cfg.max_episode_steps, reward_scale=reward_scale)
     action_size_target = (
         jnp.prod(jnp.array(env.action_space(env_params).shape)) * cfg.ent_target_mult
-    )
-    action_dim_f = jnp.prod(jnp.array(env.action_space(env_params).shape)).astype(
-        jnp.float32
     )
 
     def collect_rollout(
@@ -635,9 +540,6 @@ def make_train_fn(
 
                     # SAC actor loss
                     pi = actor_model.actor(minibatch.obs)
-                    # pre-squash Gaussian std: the policy's own scale parameter,
-                    # which is what locates a run on the sigma axis
-                    pi_sigma = pi.distribution.scale
                     pred_action, log_prob = pi.sample_and_log_prob(seed=key)
                     value = critic_target_model.critic(
                         minibatch.critic_obs, pred_action
@@ -658,160 +560,36 @@ def make_train_fn(
                         pi_act_log_prob = pi_act_log_prob.sum(-1).mean(0)
                         kl = pi_act_log_prob - old_pi_act_log_prob
                     else:
-                        n_estep = (
-                            cfg.estep_num_samples
-                            if cfg.actor_update_mode == "weighted_mle"
-                            else 16
-                        )
                         old_pi_action, old_pi_act_log_prob = actor_target_model.actor(
                             minibatch.obs
-                        ).sample_and_log_prob(sample_shape=(n_estep,), seed=key)
+                        ).sample_and_log_prob(sample_shape=(16,), seed=key)
                         old_pi_action = jnp.clip(old_pi_action, -1 + 1e-4, 1 - 1e-4)
 
-                        # keep the per-sample arrays: the E-step needs them un-averaged.
-                        # The .mean(0) below is the uniform-weight special case.
-                        logp_old_i = old_pi_act_log_prob.sum(-1)            # (M, B)
-                        logp_theta_i = pi.log_prob(old_pi_action).sum(-1)   # (M, B)
-
-                        old_pi_act_log_prob = logp_old_i.mean(0)
-                        pi_act_log_prob = logp_theta_i.mean(0)
+                        old_pi_act_log_prob = old_pi_act_log_prob.sum(-1).mean(0)
+                        pi_act_log_prob = pi.log_prob(old_pi_action).sum(-1).mean(0)
 
                         kl = old_pi_act_log_prob - pi_act_log_prob
 
                     lagrangian = actor_model.lagrangian()
-                    if not (cfg.actor_update_mode == "weighted_mle"
-                            and cfg.mstep_decoupled):
-                        kl_mu = jnp.zeros_like(kl)
-                        kl_sigma = jnp.zeros_like(kl)
-                        beta_mu = jnp.zeros(())
-                        beta_sigma = jnp.zeros(())
-                        beta_loss = jnp.zeros(())
 
-                    # `objective` is what the KL clip modes wrap. For "pathwise" it is
-                    # the original SAC term verbatim, so that arm stays bit-identical.
-                    if cfg.actor_update_mode == "weighted_mle":
-                        if cfg.reverse_kl:
-                            raise ValueError(
-                                "actor_update_mode='weighted_mle' needs reverse_kl=False: "
-                                "the E-step reweights samples drawn from pi_old."
-                            )
-                        eta = jnp.squeeze(actor_model.eta())
-                        # critic obs broadcast to the sample axis; actions are reused,
-                        # never re-sampled
-                        critic_obs_i = jnp.broadcast_to(
-                            minibatch.critic_obs,
-                            (n_estep, *minibatch.critic_obs.shape),
-                        )
-                        q_i = critic_target_model.critic(critic_obs_i, old_pi_action)
-                        # eta is detached in the weights; it takes gradient only
-                        # through its own dual below
-                        w_i = jax.lax.stop_gradient(
-                            estep_weights(q_i, jax.lax.stop_gradient(eta))
-                        )
-                        objective = -jnp.sum(w_i * logp_theta_i, axis=0)
-                        ess = effective_sample_size(w_i, axis=0)
-                        w_max = w_i.max(axis=0)
-                        # the actual E-step signal: spread of the softmax exponent
-                        q_spread = (q_i / jax.lax.stop_gradient(eta)).std(axis=0)
-                        eta_loss = eta_dual_loss(q_i, eta, cfg.eps_e)
-
-                        if cfg.mstep_decoupled:
-                            # MPO's decoupled M-step. Everything below is on the
-                            # PRE-SQUASH Gaussian, as MPO and V-MPO define it.
-                            mu_old, sg_old = actor_target_model.gaussian(minibatch.obs)
-                            mu_old = jax.lax.stop_gradient(mu_old)
-                            sg_old = jax.lax.stop_gradient(sg_old)
-                            mu_new, sg_new = actor_model.gaussian(minibatch.obs)
-
-                            # E-step samples drawn from the old pre-squash Gaussian; the
-                            # critic still sees the squashed action
-                            u_i = mu_old + sg_old * jax.random.normal(
-                                key, (n_estep, *mu_old.shape)
-                            )
-                            a_i = jnp.clip(jnp.tanh(u_i), -1 + 1e-4, 1 - 1e-4)
-                            q_i = critic_target_model.critic(critic_obs_i, a_i)
-                            w_i = jax.lax.stop_gradient(
-                                estep_weights(q_i, jax.lax.stop_gradient(eta))
-                            )
-                            ess = effective_sample_size(w_i, axis=0)
-                            w_max = w_i.max(axis=0)
-                            q_spread = (q_i / jax.lax.stop_gradient(eta)).std(axis=0)
-                            eta_loss = eta_dual_loss(q_i, eta, cfg.eps_e)
-
-                            # mean moves against the OLD scale; scale moves about the
-                            # OLD mean -- the two halves of the decoupled objective
-                            logp_mu = gaussian_logp(u_i, mu_new[None], sg_old[None])
-                            logp_sigma = gaussian_logp(u_i, mu_old[None], sg_new[None])
-                            objective = -jnp.sum(w_i * (logp_mu + logp_sigma), axis=0)
-
-                            kl_mu, kl_sigma = decoupled_kls(
-                                mu_new, sg_new, mu_old, sg_old
-                            )
-                            beta_mu = jnp.squeeze(actor_model.beta_mu())
-                            beta_loss = -beta_mu * jax.lax.stop_gradient(
-                                jnp.mean(kl_mu) - cfg.eps_mu
-                            )
-                            if cfg.beta_sigma_fixed is None:
-                                beta_sigma = jnp.squeeze(actor_model.beta_sigma())
-                                beta_loss = beta_loss - beta_sigma * jax.lax.stop_gradient(
-                                    jnp.mean(kl_sigma) - cfg.eps_sigma
-                                )
-                            else:
-                                # constant: no dual term, so beta_sigma_param gets no
-                                # gradient and the logged value is exactly the config
-                                beta_sigma = jnp.asarray(
-                                    cfg.beta_sigma_fixed, dtype=jnp.float32
-                                )
-                    else:
-                        objective = (
+                    if cfg.actor_kl_clip_mode == "full":
+                        actor_loss = (
                             log_prob * jax.lax.stop_gradient(actor_model.temperature())
                             - value
-                        )
-                        # 0 is out of range for a real ESS (min is 1), so it reads
-                        # unambiguously as "not applicable to this arm"
-                        ess = jnp.zeros_like(kl)
-                        w_max = jnp.zeros_like(kl)
-                        eta = jnp.zeros(())
-                        eta_loss = jnp.zeros(())
-                        # measured in this arm too, purely as a diagnostic: it is what
-                        # the E-step weights WOULD see. Under stop_gradient and reusing
-                        # already-drawn samples, so it perturbs neither loss nor RNG.
-                        if cfg.reverse_kl or not cfg.log_q_spread:
-                            q_spread = jnp.zeros_like(kl)
-                        else:
-                            _alpha_d = jnp.squeeze(
-                                jax.lax.stop_gradient(actor_model.temperature())
-                            )
-                            _cobs = jnp.broadcast_to(
-                                minibatch.critic_obs,
-                                (n_estep, *minibatch.critic_obs.shape),
-                            )
-                            _q = jax.lax.stop_gradient(
-                                critic_target_model.critic(_cobs, old_pi_action)
-                            )
-                            q_spread = (_q / _alpha_d).std(axis=0)
-
-                    if cfg.actor_update_mode == "weighted_mle" and cfg.mstep_decoupled:
-                        # replaces the single KL clip entirely -- three simultaneous
-                        # constraints would not be the experiment
-                        actor_loss = (
-                            objective
-                            + jax.lax.stop_gradient(beta_mu) * kl_mu
-                            + jax.lax.stop_gradient(beta_sigma) * kl_sigma
-                        )
-                    elif cfg.actor_kl_clip_mode == "full":
-                        actor_loss = (
-                            objective
                             + kl * jax.lax.stop_gradient(lagrangian) * cfg.reduce_kl
                         )
                     elif cfg.actor_kl_clip_mode == "clipped":
                         actor_loss = jnp.where(
                             kl < cfg.kl_bound,
-                            objective,
+                            log_prob * jax.lax.stop_gradient(actor_model.temperature())
+                            - value,
                             kl * jax.lax.stop_gradient(lagrangian) * cfg.reduce_kl,
                         )
                     elif cfg.actor_kl_clip_mode == "value":
-                        actor_loss = objective
+                        actor_loss = (
+                            log_prob * jax.lax.stop_gradient(actor_model.temperature())
+                            - value
+                        )
                     else:
                         raise ValueError(
                             f"Unknown actor loss mode: {cfg.actor_kl_clip_mode}"
@@ -819,8 +597,6 @@ def make_train_fn(
 
                     # SAC target entropy loss
                     target_entropy = action_size_target + entropy
-                    if cfg.ent_loss_per_dim:
-                        target_entropy = target_entropy / action_dim_f
                     target_entropy_loss = (
                         actor_model.temperature()
                         * jax.lax.stop_gradient(target_entropy)
@@ -835,19 +611,8 @@ def make_train_fn(
                     loss = jnp.mean(actor_loss)
                     if cfg.update_entropy_lagrangian:
                         loss += jnp.mean(target_entropy_loss)
-                    decoupled = (
-                        cfg.actor_update_mode == "weighted_mle" and cfg.mstep_decoupled
-                    )
-                    # With the decoupled M-step the old KL lagrangian no longer appears
-                    # in the loss, so updating it would leave a second dual chasing a
-                    # target it cannot actuate -- the exact failure mode that made the
-                    # entropy dual destabilise this arm.
-                    if cfg.update_kl_lagrangian and not decoupled:
+                    if cfg.update_kl_lagrangian:
                         loss += jnp.mean(lagrangian_loss)
-                    if cfg.actor_update_mode == "weighted_mle":
-                        loss += eta_loss
-                    if decoupled:
-                        loss += beta_loss
 
                     return loss, dict(
                         actor_loss=actor_loss,
@@ -862,33 +627,6 @@ def make_train_fn(
                         entropy=entropy,
                         entropy_loss=target_entropy_loss,
                         target_values=target_values.mean(),
-                        pi_sigma_mean=pi_sigma.mean(),
-                        pi_sigma_min=pi_sigma.min(),
-                        pi_sigma_max=pi_sigma.max(),
-                        ess=ess.mean(),
-                        # ESS DISTRIBUTION: the mean hides a population of states
-                        # running at ESS ~2, which by the shrinkage law lose ~50% of
-                        # their covariance per update. Percentiles are taken per
-                        # minibatch and then averaged across minibatches.
-                        ess_p5=jnp.percentile(ess, 5),
-                        ess_p25=jnp.percentile(ess, 25),
-                        ess_median=jnp.percentile(ess, 50),
-                        ess_p75=jnp.percentile(ess, 75),
-                        ess_frac_lt4=jnp.mean((ess < 4.0).astype(jnp.float32)),
-                        w_max=w_max.mean(),
-                        q_spread=q_spread.mean(),
-                        eta=eta,
-                        eta_loss=eta_loss,
-                        kl_mu=kl_mu.mean(),
-                        kl_sigma=kl_sigma.mean(),
-                        beta_mu=beta_mu,
-                        beta_sigma=beta_sigma,
-                        beta_mu_pinned=(beta_mu >= 1000.0 * (1 - 1e-6)).astype(
-                            jnp.float32
-                        ),
-                        beta_sigma_pinned=(beta_sigma >= 1000.0 * (1 - 1e-6)).astype(
-                            jnp.float32
-                        ),
                     )
 
                 critic_grad_fn = jax.value_and_grad(critic_loss_fn, has_aux=True)
@@ -996,20 +734,6 @@ def make_train_fn(
                 jax.random.split(subkey, num_seeds), train_state
             )
             jax.debug.callback(log_callback, train_state, metrics)
-            if return_snapshots:
-                # Everything needed to export a standalone checkpoint at this
-                # iteration: params plus the frozen obs-normalizer statistics.
-                snap = dict(
-                    actor=train_state.actor.params,
-                    critic=train_state.critic.params,
-                    mean=train_state.last_env_state.mean,
-                    var=train_state.last_env_state.var,
-                    critic_mean=train_state.last_env_state.critic_mean,
-                    critic_var=train_state.last_env_state.critic_var,
-                    count=train_state.last_env_state.count,
-                    time_steps=train_state.time_steps,
-                )
-                return train_state, (metrics, snap)
             return train_state, metrics
 
         eval_interval = int(
@@ -1024,11 +748,6 @@ def make_train_fn(
             jax.random.split(init_key, num_seeds)
         )
         keys = jax.random.split(key, num_iterations)
-        if return_snapshots:
-            state, (metrics, snaps) = jax.lax.scan(
-                f=loop_body, init=train_state, xs=keys
-            )
-            return state, metrics, snaps
         state, metrics = jax.lax.scan(f=loop_body, init=train_state, xs=keys)
         return state, metrics
 

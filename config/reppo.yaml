@@ -62,6 +62,17 @@ hyperparameters:
   reverse_kl: false # previous default "false"
   update_kl_lagrangian: true
   actor_kl_clip_mode: "clipped" # "full", "clipped", "kl_relu_clipped", "kl_bound_clipped", "value"
+  ## actor update operator
+  actor_update_mode: "pathwise"  # "pathwise" (original) | "weighted_mle" (MPO E-step)
+  estep_num_samples: 32          # M samples per state, weighted_mle only
+  eps_e: 0.5                     # E-step KL budget that the eta dual solves against
+  ## decoupled M-step (MPO / V-MPO). REPLACES the single KL clip in the weighted_mle arm
+  mstep_decoupled: false
+  eps_mu: 0.1
+  eps_sigma: 5.0e-5              # four orders below eps_mu -- deliberate
+  ent_loss_per_dim: false        # divide the SAC entropy error by d (mean, not sum)
+  beta_sigma_fixed: null         # hold beta_sigma constant (null = learn via dual)
+  log_q_spread: false            # pathwise-arm diagnostic; breaks bit-identity if on
   ## entropy settings
   ent_start: 0.01
   ent_target_mult: 0.5
