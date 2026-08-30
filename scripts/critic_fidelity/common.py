@@ -43,6 +43,7 @@ import jax.numpy as jnp  # noqa: E402
 import numpy as np  # noqa: E402
 
 from scripts.load_ckpt import load  # noqa: E402
+from src.env_utils.action_pad import ActionPad  # noqa: E402
 from src.env_utils.jax_wrappers import ClipAction, LogWrapper, MjxGymnaxWrapper  # noqa: E402
 
 ACTION_CLIP = 0.999  # ClipAction bounds (src/env_utils/jax_wrappers.py:255)
@@ -74,6 +75,9 @@ class Harness:
             push_distractions=False,
             asymmetric_observation=False,
         )
+        k = int(self.meta.get("action_pad", 0))
+        if k > 0:
+            env = ActionPad(env, k)
         env = LogWrapper(env, batch_size)
         self.env = ClipAction(env)
 

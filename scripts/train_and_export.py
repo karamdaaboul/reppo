@@ -41,6 +41,7 @@ from scripts.export_ckpt import (  # noqa: E402
     export_train_state,
     summarize,
 )
+from src.env_utils.action_pad import ActionPad  # noqa: E402
 from src.env_utils.jax_wrappers import BraxGymnaxWrapper, MjxGymnaxWrapper  # noqa: E402
 from src.jaxrl.reppo import ReppoConfig, make_train_fn  # noqa: E402
 
@@ -55,13 +56,17 @@ def build_env(cfg: DictConfig):
             terminate=cfg.env.terminate,
         )
     if cfg.env.type == "mjx":
-        return MjxGymnaxWrapper(
+        env = MjxGymnaxWrapper(
             cfg.env.name,
             episode_length=cfg.env.max_episode_steps,
             reward_scale=cfg.env.reward_scaling,
             push_distractions=cfg.env.get("push_distractions", False),
             asymmetric_observation=cfg.env.get("asymmetric_obs", False),
         )
+        k = int(cfg.env.get("action_pad", 0))
+        if k > 0:
+            env = ActionPad(env, k)  # policy/critic/E-step see d+k, sim sees d
+        return env
     raise ValueError(f"Unknown environment type: {cfg.env.type}")
 
 
@@ -185,6 +190,9 @@ def main(cfg: DictConfig) -> None:
         variant = "_fa"
     else:
         variant = ""
+    pad = int(cfg.env.get("action_pad", 0))
+    if pad > 0:
+        variant += f"_pad{pad}"
     tag = f"{cfg.env.name}_{mode}{variant}_s{cfg.seed}"
     duals = summarize(state)
 
@@ -209,6 +217,7 @@ def main(cfg: DictConfig) -> None:
         actor_update_mode=mode,
         estep_num_samples=int(cfg.hyperparameters.estep_num_samples),
         reward_scaling=float(cfg.env.reward_scaling),
+        action_pad=int(cfg.env.get("action_pad", 0)),
         hydra_run_dir=os.getcwd(),
     )
 
