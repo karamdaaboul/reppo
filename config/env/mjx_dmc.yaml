@@ -7,4 +7,4 @@ asymmetric_obs: false
 
 vmin: 0
 vmax: 150
-action_pad: 0
+action_pad: null

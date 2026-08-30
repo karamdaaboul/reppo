@@ -63,7 +63,7 @@ def build_env(cfg: DictConfig):
             push_distractions=cfg.env.get("push_distractions", False),
             asymmetric_observation=cfg.env.get("asymmetric_obs", False),
         )
-        k = int(cfg.env.get("action_pad", 0))
+        k = int(cfg.env.get("action_pad", None) or 0)
         if k > 0:
             env = ActionPad(env, k)  # policy/critic/E-step see d+k, sim sees d
         return env
@@ -190,9 +190,9 @@ def main(cfg: DictConfig) -> None:
         variant = "_fa"
     else:
         variant = ""
-    pad = int(cfg.env.get("action_pad", 0))
-    if pad > 0:
-        variant += f"_pad{pad}"
+    pad = cfg.env.get("action_pad", None)
+    if pad is not None:  # explicit (incl. 0) -> own namespace; never collide with unpadded runs
+        variant += f"_pad{int(pad)}"
     tag = f"{cfg.env.name}_{mode}{variant}_s{cfg.seed}"
     duals = summarize(state)
 
@@ -217,7 +217,7 @@ def main(cfg: DictConfig) -> None:
         actor_update_mode=mode,
         estep_num_samples=int(cfg.hyperparameters.estep_num_samples),
         reward_scaling=float(cfg.env.reward_scaling),
-        action_pad=int(cfg.env.get("action_pad", 0)),
+        action_pad=int(cfg.env.get("action_pad", None) or 0),
         hydra_run_dir=os.getcwd(),
     )
 
