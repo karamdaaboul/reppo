@@ -269,6 +269,30 @@ def main(cfg: DictConfig) -> None:
             kl_sigma_curve=cur("train/kl_sigma"),
             beta_mu_pinned_curve=cur("train/beta_mu_pinned"),
             beta_sigma_pinned_curve=cur("train/beta_sigma_pinned"),
+            # Persisted into meta.json so the export is self-sufficient. These used
+            # to live only in the hydra dir's metrics.npz, which two runs launched in
+            # the same second silently share and overwrite (see L.1.21).
+            eval_return_iqm_curve=cur("eval/episode_return_iqm"),
+            eval_return_q25_curve=cur("eval/episode_return_q25"),
+            eval_return_q75_curve=cur("eval/episode_return_q75"),
+            eval_num_episodes_iqm_curve=cur("eval/num_episodes_iqm"),
+            est_M_curve=cur("train/est_M"),
+            est_h_norm_curve=cur("train/est_h_norm"),
+            est_a_norm_curve=cur("train/est_a_norm"),
+            est_cos_curve=cur("train/est_cos"),
+            est_rel_l2_curve=cur("train/est_rel_l2"),
+            est_rel_l2_sq_curve=cur("train/est_rel_l2_sq"),
+            est_var_proxy_curve=cur("train/est_var_proxy"),
+            est_bias2_proxy_curve=cur("train/est_bias2_proxy"),
+            est_nonfinite_curve=cur("train/est_nonfinite"),
+            est_wdisp_norm_curve=cur("train/est_wdisp_norm"),
+            est_wdisp_cos_curve=cur("train/est_wdisp_cos"),
+            grad_norm_actor_curve=cur("train/grad_norm_actor"),
+            grad_norm_critic_curve=cur("train/grad_norm_critic"),
+            entropy_curve_full=cur("train/entropy"),
+            pi_sigma_mean_curve=cur("train/pi_sigma_mean"),
+            critic_value_loss_curve=cur("value_loss"),
+            actor_loss_curve=cur("actor_loss"),
             alpha_curve=np.asarray(
                 metrics.get("train/temp", np.zeros(1))
             ).mean(axis=-1).ravel().tolist(),

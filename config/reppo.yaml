@@ -73,6 +73,8 @@ hyperparameters:
   ent_loss_per_dim: false        # divide the SAC entropy error by d (mean, not sum)
   beta_sigma_fixed: null         # hold beta_sigma constant (null = learn via dual)
   log_q_spread: false            # pathwise-arm diagnostic; breaks bit-identity if on
+  log_estimator_diag: false      # Phase 3/4 estimator diagnostics; breaks bit-identity if on
+  log_eval_iqm: false            # per-checkpoint eval IQM (ladder U_t anchor); off by default
   ## entropy settings
   ent_start: 0.01
   ent_target_mult: 0.5
