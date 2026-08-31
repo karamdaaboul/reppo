@@ -1259,3 +1259,335 @@ improvement do not depend on `U_t`; only the cross-task Spearman summary does �
 the ladder may launch before the anchors are recorded. Walker enters the matrix
 only if L.1.16 is resolved in favour of running seeds 101–108 fresh, which changes
 the array size from 48 to 64 and nothing else.
+
+---
+
+## Amendment L.1 (part 4) — launch gates (2026-08-31)
+
+**Append-only.** sha256 of the leading 1261 lines is
+`28cd735e5ec27f4f96ca82110dc34dc03f2258128d45aa74737fc760804353a0`.
+Contains the two corrections that **withdraw** earlier claims of this amendment
+(L.1.23, L.1.24), the anchor-rerun results, and the frozen launch configuration.
+
+### L.1.21 Concurrent runs silently shared one Hydra directory
+
+Found while auditing export provenance. Hydra's default run directory is
+`outputs/<date>/<HH-MM-SS>` and `hydra.job.chdir: True`, so **two runs launched
+in the same second receive the same directory**, chdir into it, and both write
+`metrics.npz` there; the later finisher overwrites the earlier.
+
+This happened to the original seed-901 calibrations: G1 and LEAP both launched at
+`16:06:54` and produced a **single** directory `outputs/2026-08-31/16-07-00`,
+whose `.hydra/overrides.yaml` records the G1 command and whose `metrics.npz`
+carries G1's completion time. **LEAP's `metrics.npz` was overwritten.** Four run
+directories on disk are claimed by more than one export for this reason,
+including `outputs/2026-08-30/12-40-42`, shared by exports of two different
+environments (`LeapCubeReorient` and `LeapCubeRotateZAxis`).
+
+**Nothing previously reported is invalidated.** Every quantity used in this
+amendment — α₉₀₁, the α curves, the evaluation-return curves, the resolved
+architecture and value support — is read from each export's own `meta.json`,
+which `scripts/export_ckpt.py` writes into `exports/<tag>/` independently of the
+Hydra directory. The corroboration is direct: LEAP's registered
+α₉₀₁ = 0.000782382907345891 and G1's = 0.00020752247655764222 were re-read from
+preserved copies after the discovery and are unchanged. What was lost is the
+per-iteration `metrics.npz` of whichever concurrent run finished first, and the
+`hydra_run_dir` pointer of the affected exports.
+
+**Two fixes, applied before any confirmatory launch.**
+
+1. Every launch now passes an explicit unique `hydra.run.dir` —
+   `outputs/conf/<task>_<arm>_s<seed>` for confirmatory runs,
+   `outputs/manual/rerun901-<task>` for the anchor reruns. Collisions are
+   impossible by construction rather than by launch timing.
+2. `scripts/train_and_export.py` now persists into `meta.json` the curves that
+   previously existed only in `metrics.npz`: the evaluation IQM/q25/q75 and
+   episode counts, all eleven `est_*` estimator diagnostics, actor and critic
+   gradient norms, entropy, policy σ, and the actor and critic losses. Exports
+   are self-sufficient.
+
+The first anchor-rerun attempt was launched before this was found, collided the
+same way, and was **terminated at 26 minutes and discarded** rather than allowed
+to destroy LEAP's IQM curve. The results in L.1.22 come from the relaunched pair.
+
+**Export namespace for the fresh WalkerRun cohort.** `env.action_pad` is left
+**unset** rather than set to `0`. The two are behaviourally identical — `build_env`
+computes `k = int(cfg.env.get("action_pad", None) or 0)` and constructs the
+`ActionPad` wrapper only `if k > 0` (`scripts/train_and_export.py:66-69`), so no
+wrapper exists either way — but an explicit `0` appends a `_pad0` suffix to the
+export tag and would place the fresh confirmatory cohort inside the padding
+namespace that §7 excludes. Leaving it unset yields
+`WalkerRun_{pathwise_fa,weighted_mle}_s<seed>` and keeps the namespaces disjoint.
+
+### L.1.22 Anchor reruns — tolerance outcome and the resulting anchors
+
+Executed per L.1.19: identical configuration and seed, plus
+`hyperparameters.log_eval_iqm=true`, each in its own Hydra directory.
+
+| task | GPU | wall-clock (s) | GPU-hours |
+|---|---|---|---|
+| LeapCubeRotateZAxis | 1 — RTX 4000 Ada | 2984 | 0.829 |
+| G1JoystickFlatTerrain | 0 — RTX PRO 4500 Blackwell | 3109 | 0.864 |
+
+Applying the tiers exactly as committed, before which no rerun output was opened:
+
+| task | max `alpha_curve` discrepancy | final eval-mean discrepancy | α₉₀₁ discrepancy | **tier** |
+|---|---|---|---|---|
+| LeapCubeRotateZAxis | 4.729072e+01 | 4.157190e-02 | 2.758541e-02 | **2** |
+| G1JoystickFlatTerrain | 1.939171e-01 | 1.425717e-02 | 7.463896e-02 | **2** |
+
+Both are **Tier 2**, not Tier 1. The added evaluation instrumentation is compiled
+into the same `train_eval_step` as the training scan, so it perturbs XLA fusion
+and hence float32 rounding, and the trajectories diverge chaotically thereafter.
+The large maximum `alpha_curve` discrepancy for LEAP is a *relative* figure taken
+where α is near zero in the first checkpoints and is not a Tier-2 criterion; the
+Tier-2 criteria are the α₉₀₁ and final-eval-mean columns, both inside 10%.
+
+Per the committed interpretation these executions are **prospectively designated
+instrumentation executions used to recover the missing IQM anchor, and are NOT
+reproductions**. They are not described as replications anywhere.
+
+**Anchors, from the rerun IQM curves, with `L_t = 0` per L.1.20:**
+
+| task | best ckpt index | best-checkpoint IQM | final-checkpoint IQM | **U_t = 1.1 × best IQM** |
+|---|---|---|---|---|
+| LeapCubeRotateZAxis | 18 | 29.371067 | 28.794039 | **32.308174** |
+| G1JoystickFlatTerrain | 20 (= final) | 34.475914 | 34.475914 | **37.923505** |
+
+HopperHop needs no rerun: it is a DMC task whose anchors are the independent
+`L_t = 0`, `U_t = 1000`, and it never uses the IQM rule. WalkerRun is likewise
+DMC and keeps `0`/`1000` regardless of its pending calibration.
+
+**The registered α₉₀₁ values remain those of the original executions** —
+LEAP `0.000782382907345891`, G1 `0.00020752247655764222` — exactly as committed
+in L.1.10 and unchanged by these reruns, per the two-execution split of L.1.19.
+
+**Floor gate re-checked against the new anchors.** Thresholds
+`0.95·L + 0.05·U` are 1.615 (LEAP) and 1.896 (G1) against final IQMs of 28.794
+and 34.476. **Both qualification verdicts are unchanged**: neither task is
+floor-uninformative, and the ceiling gate remains unavailable for both.
+
+### L.1.23 SUPERSESSION — the KL-direction claim of L.1.17 is WITHDRAWN
+
+L.1.17 stated that the 16-versus-32 KL-resolution asymmetry "handicaps arm A" and
+that the measured gap is therefore "conservative". **That claim is withdrawn.**
+It is not retracted from the record — L.1.17 stands as written and is superseded
+here — but it must not be used.
+
+The correct statement:
+
+> The pathwise arm uses a noisier 16-sample Monte-Carlo estimate of KL than the
+> weighted-MLE arm's 32-sample estimate. Although the 32-sample estimate has
+> lower Monte-Carlo variance for the same KL quantity, KL enters nonlinear
+> clipping, trust-region and Lagrangian dynamics. Therefore the sign and
+> magnitude of the effect on learned policy return are **not** analytically
+> determined.
+
+The error in L.1.17 was to carry a Jensen argument about *expected constraint
+pressure* through to a directional conclusion about *learned return*, across the
+clipping and dual dynamics that separate them. Convexity of the constraint in the
+estimate does not transfer through `actor_kl_clip_mode="clipped"` and a learned
+Lagrangian to a signed effect on return.
+
+The historical coupling is therefore: **documented**, **identical in nature
+across the historical and registered comparisons**, and **to be assessed
+empirically** in the separate development ablation of L.1.30. No direction is
+claimed until that ablation completes.
+
+**Paper wording, binding.** The task-level A/B comparison is a comparison of the
+**registered pathwise and weighted-MLE implementations**, which differ primarily
+in actor operator but also carry the documented KL-resolution nuisance. The
+ladder alone is **not** described as a pure causal intervention on the operator.
+
+### L.1.24 CORRECTION — floor-threshold monotonicity wording in L.1.11
+
+L.1.11 contains the clause "the floor threshold `L + 0.05(U − L)` is increasing
+in `L`, so the most permissive admissible `L` is the largest one." The premise is
+right and the conclusion is **wrong**, and it is corrected here.
+
+    L + 0.05(U − L) = 0.95 L + 0.05 U
+
+is increasing in `L`, so a **larger** `L` gives a **higher** threshold and a
+**more stringent** floor check. Relative to a hypothetical negative lower anchor,
+choosing `L = 0` therefore makes the floor check **more stringent, not more
+permissive**.
+
+LEAP and G1 use `L = 0` as the already-amended zero-return **reference** anchor
+(L.1.20), not as a claim that the mathematical minimum return is zero — neither
+environment has one.
+
+**The qualification verdicts are unchanged**, and are in fact reached under the
+most stringent admissible anchor rather than the most permissive: final IQMs of
+28.794 (LEAP) and 34.476 (G1) exceed thresholds of 1.615 and 1.896 by more than
+an order of magnitude. No other qualification rule changes.
+
+### L.1.25 WalkerRun — fresh balanced cohort, and a fresh α calibration
+
+The §1 premise that a balanced non-padding Walker 3+3 frozen-α cohort already
+existed is false (L.1.16): the historical inventory is arm A seed 2, arm B seeds
+1, 2 and 99. Accordingly:
+
+- The historical Walker frozen-α runs are **not pooled** with new runs and remain
+  **retrospective supporting evidence**.
+- The `pad0` cohort is **not reused**, per §7.
+- **No unbalanced top-up is constructed.**
+- WalkerRun instead receives a **completely fresh outcome cohort**: arm A seeds
+  101--108 and arm B seeds 101--108, `action_pad` unset (L.1.21), historical
+  registered KL behaviour unchanged, otherwise identical Walker configuration.
+
+**Walker's frozen α is not 0.01528.** Given the provenance finding of L.1.26,
+`0.015279999934136868` is not carried into the fresh cohort. A fresh WalkerRun
+**learned-α calibration at seed 901** is run under the identical mechanical rule
+α = `median(alpha_curve[2:])`, with `log_eval_iqm=true`. Its value is frozen into
+this amendment **before any Walker A/B run launches**. Walker's DMC anchors
+remain `L_t = 0`, `U_t = 1000` regardless. Walker A/B is therefore scheduled last
+and does not gate the other three tasks.
+
+### L.1.26 α provenance audit (configuration and history only)
+
+Classification requested: A independent learned-α calibration; B mechanically
+fixed prior procedure; C manual selection before A/B outcomes; D selection
+informed by operator-comparison outcomes; E provenance cannot be established.
+
+**HumanoidRun, α = 0.00329 → class A.** It reproduces exactly:
+`median(alpha_curve[2:])` of `HumanoidRun_pathwise_s2` is `0.0032859752`, which is
+`0.00329` to three significant figures (ratio 0.9988). This is an independent
+learned-α calibration under the same mechanical rule the ladder registers.
+Caveat recorded for disclosure: **which** of the nine learned-α Humanoid seeds was
+designated as the calibration is not documented, and the nine medians span
+0.00255 to 0.00441, so the selection of seed 2 is not itself evidenced.
+HumanoidRun remains retrospective regardless; this audit is for paper disclosure.
+
+**WalkerRun, α = 0.01528 → class E (provenance cannot be established).**
+`d1ab422:docs/prereg_action_padding.md:11` documents it as "WalkerRun's own
+learned-alpha median", which would be class B. It does not reproduce: the only
+Walker learned-α export with a usable `alpha_curve`
+(`WalkerRun_pathwise_s0_final`) gives `median(alpha_curve[2:]) = 0.01574559`,
+**3.05% away** and rounding to 0.0157 rather than 0.0153. The three remaining
+Walker learned-α exports carry all-NaN `alpha_curve` and cannot be checked. No
+evidence indicates class D — the frozen-α Walker runs date 2026-08-28 and the
+documented rationale is a calibration median, not an outcome — but the value
+cannot be verified from any surviving artifact.
+
+Per the labelling rule, Walker's α provenance is recorded as **uncertain**, and
+no stronger prospective status is claimed for it. This is the ground on which
+L.1.25 replaces it with a fresh seed-901 calibration rather than reusing it.
+
+### L.1.27 Export-directory / resolved-override mismatch inventory
+
+Reported only; **nothing was modified**. This is a manuscript-verification item.
+In every case the export name and its own `meta.json` agree; the disagreement is
+with the `hydra_run_dir` the meta points at, which is the L.1.21 collision
+signature.
+
+| export directory (×3: `_final`, `_p25`, `_p50`) | name seed | meta seed | override seed | name mode | override mode |
+|---|---|---|---|---|---|
+| `HumanoidRun_pathwise_fa_s3_*` | 3 | 3 | **7** | pathwise | pathwise |
+| `HumanoidRun_weighted_mle_s0_*` | 0 | 0 | **1** | weighted_mle | weighted_mle |
+| `WalkerRun_pathwise_s99_*` | 99 | 99 | 99 | pathwise | **weighted_mle** |
+
+Nine directories, three distinct runs. Additionally, four Hydra run directories
+are each claimed by more than one export:
+`2026-08-28/08-27-54` (`HumanoidRun_pathwise_fa_s3`, `_s7`),
+`2026-08-27/23-51-55` (`HumanoidRun_weighted_mle_s0`, `_s1`),
+`2026-08-30/12-40-42` (`LeapCubeReorient_pathwise_s0`,
+`LeapCubeRotateZAxis_pathwise_s0` — two different environments), and
+`2026-08-31/16-07-00` (the two original seed-901 calibrations).
+
+No cohort used in this ladder depends on any of the mismatched exports. The LEAP
+seed-0 value support recorded in L.1.6 is independently corroborated by that
+export's own `critic_kwargs` (`vmin = −10.0`, `vmax = 60.0`) and does not rest on
+the shared Hydra directory.
+
+### L.1.28 GPU counterbalancing schedule — frozen before launch
+
+The two GPUs are different architectures (GPU 0 RTX PRO 4500 Blackwell, GPU 1
+RTX 4000 Ada Generation). The assignment below is fixed before launch and is
+**never changed on observed performance**:
+
+- odd seeds 101, 103, 105, 107: arm A → GPU 0, arm B → GPU 1
+- even seeds 102, 104, 106, 108: arm A → GPU 1, arm B → GPU 0
+
+Verified: within every task, arm A runs four seeds on each architecture and arm B
+runs four seeds on each architecture. Every run records task, arm, seed, GPU
+model, code SHA, full command, start time and wall-clock into
+`ledger/runs.jsonl`.
+
+### L.1.29 Parity / governance at the launch SHA
+
+Re-run after the instrumentation changes, with `log_eval_iqm = false` and
+`log_estimator_diag = false` — the confirmatory configuration.
+
+| item | value |
+|---|---|
+| launch SHA | recorded in L.1.30 |
+| reference SHA | `69d04eb93dd9415e8f54cbe995b6fb3b5ae883d4` |
+| files covered | `src/jaxrl/reppo.py` vs `tests/reppo_upstream_snapshot.py` |
+| check | `scripts/verify_estep.py` |
+
+- **(a) PASS.** `max |new − base| = 0.000e+00` over all actor parameters and over
+  all critic parameters; eval return `17.191229` under both modules, difference
+  `0.000e+00`. Bit-identical.
+- **(b) PASS.** Identity residual `9.537e-07` (rel `3.44e-08`); flat exponent
+  gives `max|w − 1/M| = 0.000e+00`, ESS `32.000` of 32; dual stationarity
+  `KL(w‖uniform) = 0.5064` against `eps_e = 0.5`.
+- **(c) did not execute** — `FileNotFoundError` on the absent
+  `exports/WalkerRun_weighted_mle_s0_final`, **identically before and after** the
+  instrumentation changes. A pre-existing missing artifact, not a regression, and
+  it exercises `mstep_decoupled = true`, which every ladder run sets false.
+
+The default-off gating therefore preserves the registered numerical parity.
+
+### L.1.30 Launch gate status and the confirmatory queue
+
+| # | gate | status |
+|---|---|---|
+| 1 | IQM reruns pass the committed tolerance rule | **PASS — Tier 2 both tasks** (L.1.22) |
+| 2 | LEAP/G1 anchors computable | **PASS** — U_t 32.308174 / 37.923505 (L.1.22) |
+| 3 | parity / governance | **PASS** (L.1.29) |
+| 4 | KL-direction supersession appended | **DONE** (L.1.23) |
+| 5 | floor-anchor wording correction appended | **DONE** (L.1.24) |
+| 6 | Walker fresh 8+8 plan appended | **DONE** (L.1.25) |
+| 7 | Walker/Humanoid α provenance recorded | **DONE** (L.1.26) |
+| 8 | GPU counterbalancing frozen | **DONE** (L.1.28) |
+| 9 | exact commands and launch SHA recorded | **DONE** — below |
+
+**Frozen α per task, for seeds 101--108:**
+G1 `0.00020752247655764222`; LEAP `0.000782382907345891`;
+Hopper `0.00037288447492755949`; Walker — pending its seed-901 calibration
+(L.1.25), frozen here before any Walker A/B run.
+
+**Exact command form** (`scripts/run_confirmatory_ladder.sh`, committed):
+
+    CUDA_DEVICE_ORDER=PCI_BUS_ID JAX_PLATFORMS=cuda,cpu \
+    CUDA_VISIBLE_DEVICES=<gpu> python scripts/train_and_export.py \
+      hydra.run.dir=outputs/conf/<task>_<arm>_s<seed> \
+      <env args> seed=<seed> num_trials=1 num_seeds=1 wandb.mode=disabled \
+      hyperparameters.actor_update_mode=<pathwise|weighted_mle> \
+      hyperparameters.update_entropy_lagrangian=false \
+      hyperparameters.ent_start=<frozen alpha> \
+      hyperparameters.log_estimator_diag=false hyperparameters.log_eval_iqm=false
+
+Fixed task priority, set before outcomes and not changed on results:
+**G1 → LEAP → Hopper → Walker**. During execution only completion status,
+crash/NaN/divergence, registered configuration validity, B-health flags
+(ESS/entropy) and hardware/logging integrity are inspected. Task-level A−B
+outcomes are analysed only after all registered seeds of that task complete.
+
+**Development ablation (L.1.30a), development namespace, does not alter the
+confirmatory protocol.** G1, weighted-MLE, M = 32, comparing KL Monte-Carlo
+resolution 32 against 16, development seeds 201, 202, 203 in both conditions, GPU
+architectures counterbalanced across the six runs. It quantifies the L.1.14
+nuisance empirically and is the only basis on which any direction may later be
+claimed (L.1.23). If its effect is negligible relative to the task-level A−B
+difference, that is reported as evidence the nuisance is unlikely to explain the
+main result; if material, it is flagged as a substantive limitation and the
+decision whether to add a clean cohort is reopened explicitly, as a **subsequent
+experiment**, and the registered comparison is not silently repaired.
+
+**Claim boundary, binding.** The native task ladder does not establish that
+action dimension causally drives the operator gap: task identity and dimension
+remain confounded by design. The dimension argument rests on convergence of the
+native ladder, the action-padding intervention, the direct estimator and
+error-field probes, and any later within-task effective-dimension experiment.
+The ladder supplies external-validity, associational evidence only.
