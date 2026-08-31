@@ -114,6 +114,18 @@ class ReppoConfig(struct.PyTreeNode):
     # Default off so the pathwise arm stays reproducible; the same quantity can be
     # measured offline from an exported checkpoint (scripts/q_spread_from_ckpt.py).
     log_q_spread: bool = False
+    # Estimator diagnostics for algorithm development (Phase 3/4). Same bit-identity
+    # caveat as log_q_spread: it adds critic ops and an extra autodiff pass, which
+    # perturbs XLA fusion and hence float32 rounding. Default OFF so every
+    # confirmatory run stays bit-identical to the pristine reference; development
+    # runs in the 201+ seed namespace turn it on.
+    log_estimator_diag: bool = False
+    # Per-checkpoint evaluation IQM. The trainer otherwise stores only the MEAN over
+    # ~num_envs episodes, and the ladder's normalization anchor is defined on the IQM
+    # (docs/prereg_dimension_ladder.md, Sec. 2). Adds ops inside the eval branch, so
+    # it is gated: default OFF keeps confirmatory runs bit-identical to the pristine
+    # reference; the seed-901 anchor reruns turn it on.
+    log_eval_iqm: bool = False
     # E-step KL budget. eta is solved against this by its own dual, rather than
     # being tied to the entropy dual alpha.
     eps_e: float = 0.5
@@ -223,7 +235,8 @@ def make_policy(
 
 
 def make_eval_fn(
-    env: Environment, max_episode_steps: int, reward_scale: float = 1.0
+    env: Environment, max_episode_steps: int, reward_scale: float = 1.0,
+    log_iqm: bool = False,
 ) -> Callable[[jax.random.PRNGKey, Policy, PyTreeNode | None], dict[str, float]]:
     def evaluation_fn(
         key: jax.random.PRNGKey, policy: Policy, norm_state: PyTreeNode | None
@@ -250,7 +263,34 @@ def make_eval_fn(
             length=max_episode_steps,
         )
 
+        if log_iqm:
+            # Interquartile mean over COMPLETED episodes: the middle 50% of the
+            # return distribution, which is what the ladder's U_t anchor is defined
+            # on. The mean sits below it whenever the tail of failed episodes is
+            # heavy, so the two are not interchangeable.
+            _r = infos["returned_episode_returns"]
+            _m = infos["returned_episode"]
+            _v = jnp.where(_m, _r, jnp.nan)
+            _q25 = jnp.nanquantile(_v, 0.25)
+            _q75 = jnp.nanquantile(_v, 0.75)
+            _in = _m & (_r >= _q25) & (_r <= _q75)
+            _iqm = jnp.sum(jnp.where(_in, _r, 0.0)) / jnp.maximum(jnp.sum(_in), 1)
+            _extra = {
+                "episode_return_iqm": _iqm * reward_scale,
+                "episode_return_q25": _q25 * reward_scale,
+                "episode_return_q75": _q75 * reward_scale,
+                "num_episodes_iqm": jnp.sum(_in),
+            }
+        else:
+            _extra = {
+                "episode_return_iqm": jnp.zeros(()),
+                "episode_return_q25": jnp.zeros(()),
+                "episode_return_q75": jnp.zeros(()),
+                "num_episodes_iqm": jnp.zeros(()),
+            }
+
         return {
+            **_extra,
             "episode_return": infos["returned_episode_returns"].mean(
                 where=infos["returned_episode"]
             )
@@ -415,7 +455,10 @@ def make_train_fn(
     # env = VecEnv(env, cfg.num_envs)
     if cfg.normalize_env:
         env = NormalizeVec(env)
-    eval_fn = make_eval_fn(env, cfg.max_episode_steps, reward_scale=reward_scale)
+    eval_fn = make_eval_fn(
+        env, cfg.max_episode_steps, reward_scale=reward_scale,
+        log_iqm=cfg.log_eval_iqm,
+    )
     action_size_target = (
         jnp.prod(jnp.array(env.action_space(env_params).shape)) * cfg.ent_target_mult
     )
@@ -849,6 +892,106 @@ def make_train_fn(
                     if decoupled:
                         loss += beta_loss
 
+                    # ---- estimator diagnostics (development only) -----------------
+                    # All under stop_gradient and reusing already-drawn samples, so
+                    # neither `loss` nor the RNG stream is touched. Quantities follow
+                    # docs/wasted_step_fraction_proposition.md: everything lives in the
+                    # WHITENED pre-tanh metric u, where Sigma is diagonal, so
+                    # Sigma^{1/2} is elementwise multiplication by sigma.
+                    if cfg.log_estimator_diag and not cfg.reverse_kl:
+                        _mu, _sg = actor_model.gaussian(minibatch.obs)
+                        _mu = jax.lax.stop_gradient(_mu)
+                        _sg = jax.lax.stop_gradient(_sg)
+
+                        # h = Sigma^{1/2} grad_y Q(s, tanh(y)) at y = mu.  eq (7)/(19).
+                        def _q_of_y(y):
+                            return critic_target_model.critic(
+                                minibatch.critic_obs, jnp.tanh(y)
+                            ).sum()
+
+                        _h = _sg * jax.lax.stop_gradient(jax.grad(_q_of_y)(_mu))
+                        _h_norm = jnp.linalg.norm(_h, axis=-1)
+
+                        # Recover the whitened draws behind the M reused samples.
+                        _u_i = (jnp.arctanh(jax.lax.stop_gradient(old_pi_action))
+                                - _mu[None]) / _sg[None]
+                        _cobs_i = jnp.broadcast_to(
+                            minibatch.critic_obs,
+                            (n_estep, *minibatch.critic_obs.shape),
+                        )
+                        _q_i = jax.lax.stop_gradient(
+                            critic_target_model.critic(
+                                _cobs_i, jax.lax.stop_gradient(old_pi_action)
+                            )
+                        )
+                        # canonical centred ZO estimator, eq (13)/(16):
+                        #   a_hat_M = (1/M) sum_i (Q_i - Qbar) u_i,  E[a_hat_M] = (1-1/M) h
+                        _qc = _q_i - _q_i.mean(axis=0, keepdims=True)
+                        _terms = _qc[..., None] * _u_i
+                        _a_hat = _terms.mean(axis=0)
+                        _a_norm = jnp.linalg.norm(_a_hat, axis=-1)
+
+                        _M = jnp.float32(n_estep)
+                        # de-attenuate the known (1 - 1/M) shrinkage before comparing
+                        _a_deatt = _a_hat * (_M / (_M - 1.0))
+                        _den = jnp.maximum(_h_norm, 1e-12)
+                        _cos = jnp.sum(_a_hat * _h, axis=-1) / jnp.maximum(
+                            _a_norm * _h_norm, 1e-12
+                        )
+                        _err2 = jnp.square(
+                            jnp.linalg.norm(_a_deatt - _h, axis=-1)
+                        )
+                        _rel_l2 = jnp.linalg.norm(_a_deatt - _h, axis=-1) / _den
+                        # sampling-noise energy of the mean over M: tr(Cov)/M
+                        _var = _terms.var(axis=0).sum(axis=-1) / _M
+                        # squared bias with the sampling-noise energy removed
+                        _bias2 = _err2 - _var * jnp.square(_M / (_M - 1.0))
+
+                        _est = dict(
+                            # M differs by arm: the pathwise branch draws 16
+                            # samples, weighted_mle draws estep_num_samples. Logged so
+                            # the decomposition stays checkable without inferring it.
+                            est_M=jnp.float32(n_estep),
+                            est_h_norm=_h_norm.mean(),
+                            est_a_norm=_a_norm.mean(),
+                            est_cos=_cos.mean(),
+                            est_rel_l2=_rel_l2.mean(),
+                            # Self-check: est_rel_l2_sq must equal
+                            #   est_bias2_proxy + est_var_proxy * (M/(M-1))^2
+                            # state by state. est_rel_l2 is a mean OF A RATIO and by
+                            # Jensen sits below sqrt(est_rel_l2_sq); do not mix them.
+                            est_rel_l2_sq=(_err2 / jnp.square(_den)).mean(),
+                            est_var_proxy=(_var / jnp.square(_den)).mean(),
+                            est_bias2_proxy=(_bias2 / jnp.square(_den)).mean(),
+                            est_nonfinite=(
+                                1.0 - jnp.isfinite(_cos).astype(jnp.float32)
+                            ).mean(),
+                        )
+                        if cfg.actor_update_mode == "weighted_mle":
+                            # what the E-step ACTUALLY moves the mean by, in the same
+                            # whitened metric: argmax_mu sum_i w_i log N(u_i; mu, I).
+                            _d = jnp.sum(w_i[..., None] * _u_i, axis=0)
+                            _d_norm = jnp.linalg.norm(_d, axis=-1)
+                            _est["est_wdisp_norm"] = _d_norm.mean()
+                            _est["est_wdisp_cos"] = (
+                                jnp.sum(_d * _h, axis=-1)
+                                / jnp.maximum(_d_norm * _h_norm, 1e-12)
+                            ).mean()
+                        else:
+                            _est["est_wdisp_norm"] = jnp.zeros(())
+                            _est["est_wdisp_cos"] = jnp.zeros(())
+                    else:
+                        _est = {
+                            k: jnp.zeros(())
+                            for k in (
+                                "est_M",
+                                "est_h_norm", "est_a_norm", "est_cos", "est_rel_l2",
+                                "est_rel_l2_sq",
+                                "est_var_proxy", "est_bias2_proxy", "est_nonfinite",
+                                "est_wdisp_norm", "est_wdisp_cos",
+                            )
+                        }
+
                     return loss, dict(
                         actor_loss=actor_loss,
                         loss=loss,
@@ -889,6 +1032,7 @@ def make_train_fn(
                         beta_sigma_pinned=(beta_sigma >= 1000.0 * (1 - 1e-6)).astype(
                             jnp.float32
                         ),
+                        **_est,
                     )
 
                 critic_grad_fn = jax.value_and_grad(critic_loss_fn, has_aux=True)
@@ -898,6 +1042,10 @@ def make_train_fn(
                     critic=critic_train_state,
                 )
                 critic_metrics = output[1]
+                # Gated for the same reason as log_q_spread: an extra reduction over
+                # the gradient tree perturbs XLA fusion and hence bit-identity.
+                if cfg.log_estimator_diag:
+                    critic_grad_norm = optax.global_norm(grads)
 
                 actor_grad_fn = jax.value_and_grad(actor_loss, has_aux=True)
                 output, grads = actor_grad_fn(train_state.actor.params)
@@ -906,9 +1054,20 @@ def make_train_fn(
                     actor=actor_train_state,
                 )
                 actor_metrics = output[1]
+                if cfg.log_estimator_diag:
+                    grad_metrics = dict(
+                        grad_norm_actor=optax.global_norm(grads),
+                        grad_norm_critic=critic_grad_norm,
+                    )
+                else:
+                    grad_metrics = dict(
+                        grad_norm_actor=jnp.zeros(()),
+                        grad_norm_critic=jnp.zeros(()),
+                    )
                 return (idx + 1, train_state), {
                     **critic_metrics,
                     **actor_metrics,
+                    **grad_metrics,
                 }
 
             # Shuffle data and split into mini-batches

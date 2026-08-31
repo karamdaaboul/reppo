@@ -976,3 +976,202 @@ This is recorded as a finding. **No code change is made and no confirmatory run
 is launched on it**, because deciding whether to decouple `n_estep` from the
 operator switch changes what the ladder measures and is not a change this
 amendment is authorised to make.
+
+---
+
+## Amendment L.1 (part 3) — provenance labels, Walker α, coupling direction, rerun protocol (2026-08-31)
+
+**Append-only.** sha256 of the leading 978 lines is
+`66b1d44690da1663056f57f9f97c3d10cd6f8cd4e1a583d48e7282acf36d36c5`.
+Written **before** any anchor-rerun output is opened. Wording, labels and
+protocol only: no experiment, seed, setting or analysis method is changed by any
+item in this part.
+
+### L.1.15 Author calibration-inspection answer (the reserved L.0.5 field)
+
+The reserved field is filled, verbatim as given by the author:
+
+> POSSIBLY — treat as inspected. He does not remember checking pilot A/B final
+> returns, was not shown them in the current session, but cannot rule out
+> exposure in an earlier session.
+
+The cautious labels follow, and are binding:
+
+- The pre-existing pilot cohorts — **HopperHop 3+3, LeapCubeRotateZAxis 5+5,
+  G1JoystickFlatTerrain 3+3** — are labelled **retrospective / possibly
+  inspected** and remain **excluded from all confirmatory analysis**.
+- The §1 provenance entry for HopperHop, LeapCubeRotateZAxis and
+  G1JoystickFlatTerrain is superseded by, and must be reported as:
+
+  > "design-stage possibly outcome-exposed (pilot cohorts existed and may have
+  > been seen before this prereg); confirmatory seeds 101--108 are prospective
+  > with respect to their own outcomes."
+
+This supersedes the bare `prospective` label of the §1 table and the
+task-level reading already corrected in L.0.1. It is a strictly more cautious
+label than L.0.1's, and it is the one that governs.
+
+### L.1.16 WalkerRun top-up: frozen α, and a blocking cohort-composition finding
+
+**The α value is confirmed.** Every frozen-α WalkerRun run on disk — padded and
+unpadded, both arms — was launched with
+
+    hyperparameters.update_entropy_lagrangian=false
+    hyperparameters.ent_start=0.01528
+
+so **α_Walker = 0.01528**, and it is identical across the cohort. It is read
+from the runs' own resolved Hydra overrides, not from any prose. Source path for
+the arm-A member:
+`outputs/2026-08-28/04-45-58/.hydra/overrides.yaml`
+(export `exports/WalkerRun_pathwise_fa_s2_final`, `meta.json`
+`alpha_entropy = 0.015279999934136868`). Seeds 104--108 use this value, **not**
+α₉₀₁, in both arms.
+
+**The pooling premise does not hold as registered.** §1 states WalkerRun "keeps
+its existing 3 frozen-α seeds per arm". An inventory of every non-padded
+WalkerRun export whose overrides carry `update_entropy_lagrangian=false` finds:
+
+| arm | frozen-α seeds on disk | n |
+|---|---|---|
+| A — `pathwise_fa` | s2 | **1** |
+| B — `weighted_mle` | s1, s2, s99 | **3** |
+
+Arm A has **one** frozen-α seed, not three, and the seed identifiers do not
+correspond between arms ({2} against {1, 2, 99}). Pooling to n=8 would therefore
+give n=6 in arm A and n=8 in arm B, not the registered balanced n=8.
+
+A 5+5 frozen-α WalkerRun cohort at α = 0.01528 does exist — the `pad0` cohort,
+`WalkerRun_{pathwise_fa,weighted_mle}_pad0_s0..s4`. With `action_pad = 0` no
+`ActionPad` wrapper is constructed at all (`scripts/train_and_export.py:66-69`:
+`if k > 0`), so those runs are behaviourally identical to unpadded ones and
+differ only in export namespace. **§7 nevertheless excludes "any reuse of
+padding-cohort runs in this ladder"**, and that exclusion is not overridden here.
+
+Consequence: the **WalkerRun top-up is held** and is not launched with the rest
+of the confirmatory queue. The three prospective tasks are unaffected. Three
+admissible resolutions, none chosen here: (i) supersede §7 to admit the `pad0`
+cohort as the Walker frozen-α cohort, on the recorded ground that k=0 applies no
+wrapper; (ii) run all eight Walker seeds 101--108 fresh in both arms and drop
+pooling entirely, reporting Walker as fully prospective; (iii) pool unbalanced
+(6 vs 8) and record the departure from the registered n=8.
+
+One unrelated inconsistency is recorded while inventorying: the export
+`WalkerRun_pathwise_s99_final` carries `actor_update_mode = "pathwise"` in its
+`meta.json` while the `.hydra/overrides.yaml` of the run directory its meta
+points at specifies `actor_update_mode=weighted_mle`. That run is not
+frozen-α and is outside every cohort used here, so nothing in this ladder
+depends on it, but the export is not self-consistent and should not be relied on.
+
+### L.1.17 Direction of the `n_estep` coupling (L.1.14)
+
+The coupling recorded in L.1.14 — that `actor_update_mode` also sets the KL
+estimate's sample count, 16 in arm A against 32 in arm B — has a determinate
+sign, recorded here.
+
+The Monte-Carlo KL estimate feeds the trust-region clip and the KL Lagrangian.
+Both are **convex** in the estimate, so by Jensen a noisier estimate raises the
+*expected* constraint pressure at equal true KL. Arm A's 16-sample estimate is
+the noisier of the two — roughly twice the Monte-Carlo variance of arm B's 32
+samples — so the coupling applies **more** expected constraint pressure to the
+pathwise arm. It therefore **handicaps arm A**, and the measured
+pathwise-minus-zeroth-order gap is **conservative** with respect to it: any true
+pathwise advantage is understated, not manufactured, by this asymmetry.
+
+The coupling is identical in every prior cohort (pilot, padding and
+retrospective), because it follows from `reppo.py:659-663`, which is unchanged
+across all of them. **No code change is made.** Decoupling `n_estep` from the
+operator switch would change what the ladder measures and is out of scope for
+this amendment.
+
+### L.1.18 HopperHop budget note — both framings
+
+L.1.12 records that HopperHop's calibration curve is still climbing steeply at
+the budget (43.47 → 54.83 → 145.38 → 156.57 → 163.07 over the last five
+checkpoints). Both readings are registered, and neither is dropped in favour of
+the other:
+
+- **As a limitation.** HopperHop's final return is a snapshot of a rising curve,
+  not a converged level, so its task-level gap is a gap between two
+  incompletely-trained arms. It is **budget-truncated**, and any statement about
+  the low-dimensional end of the ladder inherits that caveat.
+- **As a positive expectation.** Corollary `cor:where` places operator
+  differences **mid-learning**, not at convergence. A task measured on the rising
+  part of its curve is therefore measured where the corollary predicts the
+  operator gap is largest, so budget truncation is not purely a defect for this
+  comparison.
+
+The two framings are reported together wherever HopperHop's gap is discussed.
+No gate, rule or budget is changed.
+
+### L.1.19 Anchor reruns — protocol and agreement tolerance, fixed in advance
+
+L.1.13 records that the registered `U_t = 1.1 ×` best-checkpoint **IQM** is not
+recoverable from the original calibration artifacts. Two reruns are executed to
+recover it:
+
+**Protocol.** LeapCubeRotateZAxis and G1JoystickFlatTerrain, **seed 901**,
+identical configuration and identical launch command to the original executions
+recorded in L.1.7, with exactly one addition: `hyperparameters.log_eval_iqm=true`,
+which computes the interquartile mean over completed episodes **at every one of
+the 21 checkpoints** and stores it alongside the existing mean. The IQM is
+computed inside the evaluation function on the same episode population as the
+mean, under the same deterministic evaluation policy (`make_policy` →
+`det_action`). HopperHop needs no rerun: its best checkpoint is its final one, so
+its IQM is already recoverable from the exported final checkpoint.
+
+**Agreement tolerance, fixed here before any rerun output is opened.** The added
+logging lives in the evaluation branch and does not feed training, so training
+should be unperturbed; XLA fusion may nevertheless differ. Two tiers:
+
+- **Tier 1 — unperturbed.** Every checkpoint agrees to
+  `max |Δα| / α ≤ 1e-9` on `alpha_curve` **and**
+  `max |Δ eval_mean| / |eval_mean| ≤ 1e-9`. The rerun is then the same
+  trajectory and inherits the original's provenance entirely.
+- **Tier 2 — perturbed but acceptable.** Not Tier 1, but both
+  `|Δα₉₀₁| / α₉₀₁ ≤ 0.10` and
+  `|Δ eval_mean| / |eval_mean| ≤ 0.10` **at the final checkpoint**.
+  Rationale for 10%: it sits below the seed-to-seed α dispersion already
+  measured under the registered rule (−26.2% for LEAP between two calibration
+  seeds, L.1.10) and below nothing that would change a qualification verdict,
+  whose margins are an order of magnitude wider (L.1.11).
+- **Material departure.** Anything outside Tier 2 → **stop and report**. No
+  anchor is taken from a rerun that fails this, and no confirmatory conclusion
+  is drawn from one.
+
+**Two-execution split, registered explicitly.** The registered **α₉₀₁ values
+remain those of the original execution** (L.1.10) and are *not* re-derived from
+the reruns, whatever the reruns show — α was fixed before the reruns existed and
+re-deriving it afterwards would let a second execution reselect a registered
+quantity. The **anchors** `U_t = 1.1 ×` best-checkpoint IQM are taken **from the
+reruns**, which are the only executions that record the IQM. Each quantity
+therefore has one, and only one, source execution, and both are named here.
+
+### L.1.20 `L_t = 0` registered by supersession, with its caveat
+
+**What §2 actually says is not an "(or 0)" fallback.** §2 reads: "`L_t` = the
+spec minimum return. If the spec permits negative returns, `L_t` is taken from
+the spec, not assumed 0." For LEAP and G1 no spec minimum exists (L.1.11), so
+the registered rule has no value to return and the "not assumed 0" clause points
+away from the value now being adopted. `L_t = 0` is therefore recorded here as an
+explicit **supersession**, not as an application of the registered text.
+
+**`L_t = 0` for LeapCubeRotateZAxis and G1JoystickFlatTerrain.** It is a
+**zero-return reference point**, not a claim about any environment minimum;
+neither environment has one.
+
+**Shift-invariance caveat.** `S_t(R) = (R − L_t)/(U_t − L_t)` is not invariant to
+the choice of `L_t` when `U_t` is itself measured: shifting `L_t` rescales
+`S_t` by `(U_t − L_t)` and so rescales `Δ_t`. Because reward is defined only up
+to an additive constant per task, a task whose rewards are offset by a constant
+receives a different normalized gap under a fixed `L_t = 0`. Cross-task
+comparisons of `Δ_t` magnitude therefore carry a task-dependent scale that
+`L_t = 0` fixes by convention rather than measurement. Per-task conclusions are
+unaffected: `Δ_t` rescales by the same positive factor in both arms, so its sign,
+whether its CI excludes zero, and probability of improvement are all invariant.
+
+**Anchor-free sensitivity, registered.** Per-task **probability of improvement**
+is registered as the anchor-free sensitivity analysis for the cross-task
+comparison. It is computed per task on raw returns, is invariant to any positive
+affine renormalization, and is reported alongside the `S_t`-normalized cross-task
+summary wherever that summary is given. If the two disagree in rank pattern, the
+anchor-free version is the one that constrains the claim.
