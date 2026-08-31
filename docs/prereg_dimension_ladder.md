@@ -347,3 +347,215 @@ performance-return fields.
       the pristine snapshot if that SHA differs from `3b96deb`.
 - [ ] Exact launch commands.
 - [ ] The author's calibration-inspection answers (L.0.5).
+
+---
+
+## Pre-launch Amendment L.0b — calibration protocol finalization (2026-08-31)
+
+**Append-only.** Everything above this rule is unchanged: the registered v2
+text of `f103642a35d11df0ac7b278bab76a4219fa2cb52` plus Amendment L.0 of
+`463605fec7e4af8a3526b30c5dabb579d4b15bb0`. sha256 of the leading 349
+lines is
+`3458a0b4d3f2d9feafd0a6f9985308cb88abb017cf7a4483618d0b9b69ae8dea`.
+No calibration or confirmatory run has been launched. **No evaluation
+return was inspected in producing this amendment** — neither seed-0
+calibration returns nor any frozen-α A/B outcome. Only preregistration
+text, environment and reward specifications, Hydra run configuration, and
+committed repository configuration were read.
+
+### L.0b.1 The registered seed-901 calibration rule governs
+
+§1 specifies one learned-α calibration run at **seed 901** per new task.
+The learned-α calibrations on disk are seed 0. The registered rule stands;
+the seed-0 runs do not substitute for it.
+
+- HopperHop seed-0 calibration = **retrospective/pilot calibration**.
+- LeapCubeRotateZAxis seed-0 calibration = **retrospective/pilot calibration**.
+- G1JoystickFlatTerrain seed-0 calibration = **retrospective/pilot calibration**.
+
+The α values recorded in L.0.2 from those seed-0 trajectories
+(0.00035225937608629465 Hopper, 0.0010604216950014234 LEAP,
+0.00022178766084834933 G1) remain on the record as provenance and as the
+basis for the L.0.2 finding that the existing LEAP cohort deviates from
+the α rule. **They are not the prospective frozen-α values** and
+supersede nothing in §1.
+
+For the primary prospective experiment, one fresh learned-α calibration at
+**seed 901** is run for each of HopperHop, LeapCubeRotateZAxis and
+G1JoystickFlatTerrain. After those three runs finish, and before any
+A/B seed 101--108 run launches,
+
+    alpha_t = median(alpha_curve[2:])
+
+from that task's own seed-901 calibration is frozen, **identically in arms
+A and B**. LEAP, Hopper and G1 normalization anchors and qualification are
+likewise derived only from permitted seed-901 calibration information
+under the final registered rules, including the corrections in L.0b.2.
+
+### L.0b.2 Ceiling censoring is decoupled from the calibration-derived anchor
+
+**Status of the registered text.** §2 does set
+U_t = 1.1 × the best calibration checkpoint IQM for LEAP and G1, and does
+diagnose ceiling censoring at final IQM ≥ L_t + 0.90 (U_t − L_t). With
+L_t = 0 that threshold is 0.90 × 1.1 = **0.99 × the calibration run's own
+best checkpoint**, and a run ending near its own best does not establish
+that the environment is near a genuine task ceiling. §2 already carries a
+proviso — the ceiling gate is "available only where U_t is independent of
+the calibration run" — which forecloses the circular application. This
+amendment removes the remaining ambiguity by stating the corrected rule
+outright and by resolving the spec question §2 left open, before any
+seed-901 outcome exists.
+
+**Corrected rule.**
+
+*DMC tasks (HopperHop, WalkerRun, HumanoidRun).* L_t = 0, U_t = 1000, both
+independent of any run of ours. Ceiling qualification may use the
+registered task-scale threshold.
+
+*LEAP and G1.* The seed-901-derived U_t may still be used as a **fixed
+normalization anchor**, because it is fixed before any confirmatory
+outcome exists. It must **not** by itself be used as evidence of
+environmental ceiling censoring. A calibration-derived anchor normalizes;
+it does not certify a ceiling.
+
+**Spec determination — no independent defensible ceiling exists for either
+task.** Read from the environment sources in
+`mujoco_playground/_src` at the installed version, with no return field
+opened:
+
+- *LeapCubeRotateZAxis* (`manipulation/leap_hand/rotate_z.py`). The single
+  active positive reward term is `angvel` at scale 1.0, defined as the
+  cube's angular velocity projected on the z-axis, with the source comment
+  "Unconditionally maximize angvel in the z-direction" and the class
+  docstring "Rotate a cube around the z-axis as fast as possible without
+  dropping it." This is a raw angular velocity: **unbounded above by the
+  specification**, limited only by actuator and contact physics. The other
+  active term is `termination = −100.0` on cube drop. There is no success
+  criterion, no normalized reward, and no finite spec-defined maximum
+  return.
+- *G1JoystickFlatTerrain* (`locomotion/g1/joystick.py`). The active
+  positive terms are bounded — `tracking_lin_vel` and `tracking_ang_vel`
+  are `exp(−error/σ) ∈ (0, 1]` at scales 1.0 and 0.75, `feet_air_time` at
+  2.0 and `feet_phase` at 1.0 are bounded by construction, and `alive` is
+  scaled to 0.0 — while every other active term is a non-positive cost.
+  A finite analytic supremum is therefore derivable. It is a **loose and
+  simultaneously unattainable** bound, requiring perfect velocity tracking,
+  perfect gait phase and maximal air time together with exactly zero
+  orientation, pose, slip, collision, contact-force, joint-limit and
+  stand-still cost. It is not a spec-defined maximum, not a success
+  criterion, and not a task ceiling in the sense DMC's 1000 is one.
+
+**Consequence.** For **both** LEAP and G1 the ceiling-censoring gate is
+recorded as **unavailable**. Neither task can be declared ceiling-censored.
+No ceiling is manufactured from the calibration run. The
+calibration-derived normalization anchor is retained for both. This
+limitation is reported explicitly wherever LEAP or G1 qualification is
+discussed. No part of this determination rests on observed seed-0 or A/B
+performance; it rests on the reward specification alone.
+
+The floor-uninformative gate (final IQM ≤ L_t + 0.05 (U_t − L_t)) remains
+as registered, but for LEAP and G1 its threshold is likewise
+calibration-derived (0.05 × 1.1 = 0.055 × the calibration best) and is
+therefore reported as a within-run learnability check, not as an
+environment-level statement.
+
+### L.0b.3 Prospective versus mixed cross-task analyses
+
+**Primary per-task prospective comparisons.**
+
+| task | prospective cohort |
+|---|---|
+| HopperHop | seeds 101--108 |
+| LeapCubeRotateZAxis | seeds 101--108 |
+| G1JoystickFlatTerrain | seeds 101--108 |
+| WalkerRun (fresh-only sensitivity) | seeds 104--108 |
+
+**Retrospective or mixed evidence.**
+
+| source | status |
+|---|---|
+| HumanoidRun | retrospective |
+| WalkerRun pooled n=8 | mixed: outcome-seen 3+3 plus prospective 104--108 |
+| Hopper / LEAP / G1 seed-0 pilot A/B cohorts | retrospective only |
+
+The five-task ladder over all qualified task-level gaps is therefore
+explicitly labelled a **MIXED PROSPECTIVE/RETROSPECTIVE associational
+summary**, not a fully prospective inferential test.
+
+A **fresh-data sensitivity** analysis is preregistered here over the
+qualified prospective tasks only: HopperHop, LeapCubeRotateZAxis,
+G1JoystickFlatTerrain, and WalkerRun fresh-only. At n ≤ 4 this sensitivity
+is descriptive; per L.0.4 no p<0.05 claim is possible or required, and
+none is made.
+
+No outcome under either analysis licenses a causal statement that action
+dimension drives the gap.
+
+### L.0b.4 Suite-default γ provenance
+
+Verified from committed repository configuration and the recorded Hydra
+configuration of each calibration run; no environment or hyperparameter was
+modified, and no return field was read.
+
+| task | γ | source |
+|---|---|---|
+| HopperHop | 0.99 | base default, `config/reppo.yaml` |
+| LeapCubeRotateZAxis | 0.99 | base default, `config/reppo.yaml` |
+| G1JoystickFlatTerrain | 0.97 | `config/experiment_overrides/mjx_humanoid_large_data.yaml` |
+
+Hopper and LEAP were launched with `experiment_overrides=mjx_dmc_large_data`,
+which sets no γ and so inherits the base 0.99. G1 was launched with
+`experiment_overrides=mjx_humanoid_large_data`, whose committed first
+hyperparameter is `gamma: 0.97`. Both values are present unchanged in
+upstream commit `69d04eb` (2026-05-06), months before any work on this
+ladder (padding preregistration `d1ab422`, 2026-08-30; ladder
+preregistration `f103642`, 2026-08-31). They are group defaults selected by
+choosing the override group appropriate to the robot, not values chosen for
+this ladder.
+
+Accordingly:
+
+> Cross-task suite-default differences, including gamma, are preserved.
+> Within each task, arms A and B use identical gamma. No gamma value is
+> selected or changed in response to operator-comparison outcomes.
+
+γ is not harmonized across environments.
+
+**One adjacent manual setting is flagged rather than rationalized.** The
+LEAP seed-0 calibration was launched under the `mjx_dmc` env group with
+hand-specified critic value support on the command line,
+`env.vmin=-10 env.vmax=60`, rather than a group default; Hopper (0/150 from
+`config/env/mjx_dmc.yaml`) and G1 (−10/10 from `config/env/mjx_humanoid.yaml`)
+both used group defaults. The accompanying LEAP override
+`max_episode_steps=500` is not a free choice — it matches the environment's
+own `episode_length=500` default in `rotate_z.py`. The value support is a
+critic-representation choice and not an operator-comparison hyperparameter,
+and it was fixed before any comparison outcome; it is nonetheless a
+per-task manual selection and is recorded as one. The exact LEAP value
+support used for the prospective seed-901 calibration and for seeds
+101--108 is registered in Amendment L.1 before launch, and is identical
+across arms A and B.
+
+### L.0b.5 Outstanding before launch — revised
+
+This supersedes the L.0.6 checklist by inserting the seed-901 calibrations
+ahead of everything that depends on them.
+
+- [ ] Run three fresh learned-α calibrations at **seed 901**: HopperHop,
+      LeapCubeRotateZAxis, G1JoystickFlatTerrain. Nothing below may be
+      filled from seed-0 data.
+- [ ] Prospective frozen α per task = `median(alpha_curve[2:])` of that
+      task's **seed-901** calibration, applied identically to arms A and B.
+- [ ] LEAP and G1 normalization anchors from the seed-901 calibration
+      (L_t from spec, U_t = 1.1 × best seed-901 checkpoint IQM), used for
+      normalization only, never as ceiling evidence (L.0b.2).
+- [ ] Qualification per task from permitted seed-901 calibration
+      information; ceiling gate recorded **unavailable** for LEAP and G1.
+- [ ] LEAP critic value support (`env.vmin`, `env.vmax`) registered
+      explicitly (L.0b.4).
+- [ ] Benchmark GPU-hours per new task, from one timed full run.
+- [ ] Exact launch SHA, plus the machine-precision parity check against the
+      pristine snapshot if that SHA differs from `3b96deb`.
+- [ ] Exact launch commands.
+- [ ] Author's calibration-inspection answers (L.0.5), still
+      **TO BE FILLED BY KARAM**.
