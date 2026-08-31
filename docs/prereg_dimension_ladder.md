@@ -181,3 +181,169 @@ task; LEAP/G1 reward range from spec and anchors (L_t, U_t) with the
 calibration checkpoint-IQM used; evaluation-episode count per checkpoint;
 frozen-α values per task; benchmark GPU-hours per task; calibration-output
 provenance answers; exact launch commands.
+
+---
+
+## Pre-launch Amendment L.0 — provenance correction (2026-08-31)
+
+**Append-only.** Everything above this rule is the registered v2 text as
+committed in `f103642a35d11df0ac7b278bab76a4219fa2cb52` and is unchanged;
+sha256 of the leading 183 lines is
+`f57703af853332d917615ca3ab5eef004ecf5e167a9ab33ed58d6a6deb346e27`. This
+amendment supersedes the wording identified below rather than editing it.
+No confirmatory run has been launched. **No performance outcome was
+inspected in producing this amendment**: `final_eval_return`,
+`eval_return_curve` and every other evaluation-return field were left
+unread, and only configuration, α-trajectory and filesystem metadata were
+consulted.
+
+### L.0.1 Existing frozen-α comparison cohorts are retrospective/pilot
+
+Frozen-α A-arm and B-arm cohorts for three tasks existed on disk before
+this preregistration was committed. They are recorded here as
+**retrospective/pilot** cohorts.
+
+| task | retrospective/pilot A (frozen-α, pathwise) | retrospective/pilot B (weighted-MLE) |
+|---|---|---|
+| HopperHop | s0, s1, s2 | s0, s1, s2 |
+| LeapCubeRotateZAxis | s0, s1, s2, s3, s4 | s0, s1, s2, s3, s4 |
+| G1JoystickFlatTerrain | s0, s1, s2 | s0, s1, s2 |
+
+All 22 export directories carry filesystem modification times between
+2026-08-29T22:53:46 and 2026-08-31T02:52:12, i.e. every one of them
+predates the preregistration commit at 2026-08-31T15:09:37+00:00.
+
+**Supersession.** The `provenance` column of the §1 table labels
+HopperHop, LEAP cube RotateZ and G1 joystick as `prospective`, and §6
+describes the previously launched HopperHop and G1 outputs as
+*calibration runs* while omitting LEAP. Both are superseded. The task is
+not the unit of provenance; the cohort is. The correct distinction is:
+
+- **existing s0--s4 cohorts: retrospective/pilot** — for all three tasks,
+  LEAP included;
+- **seeds 101--108: the prospective confirmatory cohort.**
+
+The retrospective/pilot Hopper, LEAP and G1 runs are **not** included in
+the primary prospective IQM, bootstrap CI, probability of improvement, or
+task-level gap Δ_t used for the prospective ladder. They may later be
+reported separately, and labelled, as retrospective supporting evidence.
+
+Unchanged by this amendment: WalkerRun keeps its existing outcome-seen
+3+3 cohort plus fresh seeds 104--108, with pooled n=8 and fresh-only n=5
+reported separately; HumanoidRun remains retrospective.
+
+### L.0.2 LEAP α protocol deviation
+
+Recorded without reference to any performance outcome. The §1 mechanical
+rule freezes α at the median of the logged α values over all evaluation
+checkpoints excluding the first two (warm-up). For LEAP:
+
+- calibration-median α under the rule (excluding two warm-up
+  checkpoints): **0.0010604216950014234**;
+- α actually used by the existing LEAP frozen-α A/B runs: **0.00094**,
+  which is instead the calibration run's *first* checkpoint value
+  (0.000944976) rounded to two significant figures.
+
+The existing LEAP cohort therefore does not conform to the ladder's
+preregistered α-freezing rule and remains retrospective/pilot only on
+that ground as well as on the provenance ground of L.0.1.
+
+**Prospective frozen-α values.** For seeds 101--108 the mechanical rule
+is applied verbatim to the calibration trajectory. The exact values, read
+from the calibration metadata's α trajectory with no evaluation-return
+field consulted, are:
+
+| task | prospective frozen α (median of `alpha_curve[2:]`) |
+|---|---|
+| HopperHop | 0.00035225937608629465 |
+| LeapCubeRotateZAxis | 0.0010604216950014234 |
+| G1JoystickFlatTerrain | 0.00022178766084834933 |
+
+These values are fixed by the rule and by the calibration trajectory
+alone. α is not tuned against any existing A/B result, and no existing
+A/B result was examined.
+
+For reference, the α actually frozen in the retrospective/pilot cohorts
+was 0.00035 (Hopper) and 0.00023 (G1) — consistent with the mechanical
+rule to two significant figures — and 0.00094 (LEAP), which is not.
+
+### L.0.3 Verified action dimensions
+
+The §1 table's nominal `~16` and `~29` are superseded by the verified
+values below, read from the `action_dim` field of each task's exported
+checkpoint metadata. The historical text is not rewritten; these are the
+values used in analysis, per §1's instruction that the verified value
+governs.
+
+| task | verified d |
+|---|---|
+| HopperHop | 4 |
+| WalkerRun | 6 |
+| LeapCubeRotateZAxis | 16 |
+| HumanoidRun | 21 |
+| G1JoystickFlatTerrain | 29 |
+
+### L.0.4 Cross-task inference caveat
+
+The task ladder is descriptive/associational and no binary scientific
+conclusion is based on a cross-task p<0.05 threshold. With exactly four
+qualified tasks, an exact two-sided Spearman permutation test has only
+4! = 24 permutations and its smallest attainable two-sided p-value is
+approximately 0.083. Therefore, if n=4 tasks qualify, report rho and the
+exact permutation p-value descriptively but make no significance claim.
+If fewer than four tasks qualify, retain task-level reporting only as
+already preregistered.
+
+For n=5, use exact enumeration of all 5! permutations rather than a
+Monte-Carlo permutation approximation.
+
+### L.0.5 Calibration provenance
+
+Filesystem and run provenance only; no evaluation-return field was opened
+to establish any of it.
+
+| task | learned-α calibration output exists | export path | hydra run dir | export mtime |
+|---|---|---|---|---|
+| HopperHop | yes | `exports/HopperHop_pathwise_s0_final` | `outputs/2026-08-29/14-35-29` | 2026-08-29T15:01:49 |
+| LeapCubeRotateZAxis | yes | `exports/LeapCubeRotateZAxis_pathwise_s0_final` | `outputs/2026-08-30/12-40-42` | 2026-08-30T13:29:14 |
+| G1JoystickFlatTerrain | yes | `exports/G1JoystickFlatTerrain_pathwise_s0_final` | `outputs/2026-08-29/22-25-28` | 2026-08-29T23:16:22 |
+
+All three hydra run directories are present on disk. Each calibration run
+is `actor_update_mode: pathwise` with learned α (a non-constant
+`alpha_curve` over 21 checkpoints), so each is usable for the §1
+α-freezing procedure.
+
+One deviation is recorded: §1 specifies calibration seed 901 per new
+task, whereas all three existing calibration runs are **seed 0**. The
+α-freezing rule itself is unaffected — it reads a single calibration
+trajectory — but the seed identifier differs from the registered text,
+and the calibration seed is in any case excluded from all confirmatory
+comparisons.
+
+**Inspection status.**
+
+- This coding session has inspected performance outcomes: **NO.**
+- Author prior inspection: **TO BE FILLED BY KARAM.**
+
+If the author had previously inspected a task's calibration performance,
+that task's anchor and qualification decision is labelled retrospective,
+per §2 and §6 of the original preregistration.
+
+### L.0.6 Outstanding before the first prospective launch (seeds 101--108)
+
+Recorded here as a readiness checklist; each item is filled in Amendment
+L.1 at launch. Anchors and qualification are deliberately **not**
+computed in this amendment, because both require opening
+performance-return fields.
+
+- [ ] LEAP and G1 normalization anchors (L_t from spec, U_t from the
+      calibration checkpoint IQM), and the DMC anchors confirmed.
+- [ ] Qualification result per task, from permitted calibration
+      information only.
+- [ ] Exact prospective frozen α per new task — computed in L.0.2 above;
+      to be restated in L.1 alongside the launch command that consumes it.
+- [ ] Benchmark GPU-hours per new task, from one timed full run.
+- [ ] Exact launch SHA, plus the machine-precision parity check against
+      the pristine snapshot if that SHA differs from `3b96deb`.
+- [ ] Exact launch commands.
+- [ ] The author's calibration-inspection answers (L.0.5).
