@@ -559,3 +559,246 @@ ahead of everything that depends on them.
 - [ ] Exact launch commands.
 - [ ] Author's calibration-inspection answers (L.0.5), still
       **TO BE FILLED BY KARAM**.
+
+---
+
+## Amendment L.1 (part 1) — pre-seed-901 launch record (2026-08-31)
+
+**Append-only.** Everything above this rule is unchanged: the registered v2 text
+of `f103642a…`, Amendment L.0 of `463605fe…`, and Amendment L.0b of
+`ca9c1d8e79e98cbfd92d1ef7eb9e39677452ec6b`. sha256 of the leading 561 lines is
+`2148ed7c6b33281ebad97aaddd2987509f3242690bc986743e0c75f9bbf40bf2`.
+
+This is **part 1**, committed *before* the three seed-901 calibrations launch. It
+records everything §1/§2 and L.0b.5 require in advance: build, resolved
+configuration, parity, and the exact launch commands. Part 2 — the resulting α
+values, anchors, qualification and timings — is appended after those runs
+finish and before any frozen-α A/B run. **No evaluation return has been
+inspected**; every fact below comes from configuration, source, package
+metadata, or the filesystem.
+
+### L.1.1 Code governance — parity against the pristine reference
+
+| item | value |
+|---|---|
+| launch SHA | `ca9c1d8e79e98cbfd92d1ef7eb9e39677452ec6b` |
+| audited baseline (§1) | `3b96deb` |
+| pristine reference | `69d04eb93dd9415e8f54cbe995b6fb3b5ae883d4` (cvoelcker/reppo) |
+| check run | `scripts/verify_estep.py` |
+| files covered | `src/jaxrl/reppo.py` vs `tests/reppo_upstream_snapshot.py` |
+| sha256 `src/jaxrl/reppo.py` | `92fc2a51393288ea8b6ff98b27880692fc8efa613755b593a8cc0f6aa24af19d` |
+| sha256 snapshot | `5614ad94fe083a8c03e0886f27ef01172d9a465c272859530169bb87f6e1c105` |
+
+The launch SHA differs from `3b96deb`, so §1 requires the parity check; it was
+run and it **passed**.
+
+- **(a) Pathwise arm bit-identical to the pre-patch implementation — PASS.**
+  `max |new − base|` over all actor parameters = `0.000e+00`; over all critic
+  parameters = `0.000e+00`; eval return `17.916548` under both modules,
+  difference `0.000e+00`. This is exact bit-identity, not a tolerance.
+- **(b) Uniform weights collapse the weighted MLE onto the KL estimator — PASS.**
+  Identity residual `9.537e-07` (rel `3.44e-08`); `estep_weights` on a flat
+  exponent gives `max|w − 1/M| = 0.000e+00` with ESS `32.000` of 32; α→∞ gives
+  `max|w − 1/M| = 1.043e-07`. Dual stationarity on a real checkpoint:
+  `KL(w‖uniform) = 0.4954` against `eps_e = 0.5`, ESS `17.15` of 32 — **holds**.
+- **(c) Decoupled-M-step reduction — DID NOT EXECUTE.** The check aborts with
+  `FileNotFoundError` on `exports/WalkerRun_weighted_mle_s0_final`, which is
+  absent from disk (only `_s1_`, `_s2_`, `_s99_` exist). This is a missing input
+  artifact, not a numerical discrepancy. It is recorded rather than worked
+  around, and it is **not estimator-relevant to this ladder**: check (c)
+  exercises `mstep_decoupled = true`, and every ladder run — pilot, calibration
+  and confirmatory — sets `mstep_decoupled: false`. No ladder result depends on
+  the decoupled path.
+
+**Diff against the audited baseline.** `git diff 3b96deb..HEAD` over `src/`,
+`config/` and `tests/` touches only four files, all additions:
+`config/env/mjlab.yaml`, `config/env/mjlab_liftcube.yaml`,
+`src/env_utils/torch_wrappers/mjlab_env.py`, `src/torchrl/envs.py`. The JAX
+training path used by this ladder — `src/jaxrl/`, `src/networks/`,
+`src/env_utils/jax_wrappers.py`, `src/env_utils/action_pad.py`,
+`config/reppo.yaml`, `config/env/mjx_dmc.yaml`, `config/env/mjx_humanoid.yaml`,
+`config/experiment_overrides/` — is **byte-identical to `3b96deb`** (empty
+diff). The mjlab additions are torch-path files that no ladder run imports.
+
+### L.1.2 Build
+
+| component | version |
+|---|---|
+| mujoco / mujoco-mjx | 3.10.0 / 3.10.0 |
+| playground (MuJoCo Playground) | 0.0.5 |
+| jax / jaxlib | 0.5.2 / 0.5.1 |
+| flax / optax / distrax | 0.10.6 / 0.2.5 / 0.1.5 |
+| GPU 0 | NVIDIA RTX PRO 4500 Blackwell, 32623 MiB |
+| GPU 1 | NVIDIA RTX 4000 Ada Generation, 20475 MiB |
+
+### L.1.3 Two configuration facts that change how the record must be read
+
+**(i) The saved Hydra config does not describe the run.** `config/reppo.yaml`
+lists `_self_` last in its `defaults`, so the base `hyperparameters:` block wins
+at compose time and Hydra writes that pre-merge state to `.hydra/config.yaml`.
+The override group is then merged back **on top at runtime**
+(`src/jaxrl/reppo.py:1221`, `scripts/train_and_export.py:76`). Effective values
+must be obtained by re-applying that merge; they agree with the exported
+`meta.json` in every case checked. A consequence worth registering: a CLI
+override of any key the override group also sets would be **silently clobbered**
+by the group. None of the three launch commands below does this.
+
+**(ii) `eval_interval` is dead config and `num_eval` is not an episode count.**
+`reppo.py:960-961` and `1015-1020` recompute
+`eval_interval = (total_time_steps / (num_steps · num_envs)) // num_eval`,
+ignoring `cfg.eval_interval` (=2). With `total_time_steps = 5e7`,
+`num_steps = 128`, `num_envs = 1024`: 381 training iterations, `381 // 20 = 19`,
+`381 // 19 + 1 = 21` evaluation checkpoints — matching the 21-entry
+`alpha_curve` in all three seed-0 calibrations. Each checkpoint evaluates
+`num_envs = 1024` parallel environments for a full `max_episode_steps` rollout
+and averages over completed episodes, so **evaluation episodes per checkpoint is
+~1024**, not 20.
+
+### L.1.4 Resolved (post-merge) configuration for the seed-901 calibrations
+
+| item | HopperHop | LeapCubeRotateZAxis | G1JoystickFlatTerrain |
+|---|---|---|---|
+| verified action dim d | 4 | 16 | 29 |
+| env type / suite | mjx / DMC | mjx / Playground | mjx / Playground |
+| total_time_steps | 50 000 000 | 50 000 000 | 50 000 000 |
+| max_episode_steps | 1000 | 500 | 1000 |
+| eval checkpoints | 21 | 21 | 21 |
+| eval episodes/checkpoint | ~1024 | ~1024 | ~1024 |
+| gamma | 0.99 | 0.99 | 0.97 |
+| lmbda / lmbda_min | 0.95 / 0.5 | 0.95 / 0.5 | 0.95 / 0.5 |
+| critic vmin / vmax / num_bins | 0 / 150 / 151 | −10 / 60 / 151 | −10 / 10 / 151 |
+| hl_gauss | true | true | true |
+| num_envs × num_steps | 1024 × 128 | 1024 × 128 | 1024 × 128 |
+| num_mini_batches / num_epochs | 64 / 8 | 64 / 8 | 16 / 8 |
+| lr / optimizer | 3e-4 / Adam | 3e-4 / Adam | 3e-4 / Adam |
+| critic_hidden_dim | 512 | 512 | 1024 |
+| actor_hidden_dim / layers | 512 / 3 | 512 / 3 | 512 / 3 |
+| critic enc/head/pred layers | 2 / 2 / 2 | 2 / 2 / 2 | 2 / 2 / 2 |
+| reward_scaling / terminate | 1.0 / false | 1.0 / false | 1.0 / false |
+| kl_start / kl_bound / clip mode | 0.01 / 0.1 / clipped | same | same |
+| M (`estep_num_samples`) | 32 | 32 | 32 |
+| eps_E | 0.5 | 0.5 | 0.5 |
+| mstep_decoupled | false | false | false |
+| action_pad | 0 | 0 | 0 |
+| α init (`ent_start`) | 0.01 | 0.01 | 0.01 |
+| α learning rate | actor Adam, 3e-4 | same | same |
+| `update_entropy_lagrangian` | **true** (learned α) | **true** | **true** |
+| effective actor `min_std` | 0.1 | 0.1 | 0.1 |
+
+Notes on three entries that are easy to misread:
+
+- **No gradient clipping is active.** `anneal_lr = false` selects the bare
+  `optax.adam(lr)` branch (`reppo.py:343-356`); the `clip_by_global_norm` chain
+  is taken only when `anneal_lr = true`. `max_grad_norm: 0.5` is therefore
+  **inert** in every run of this campaign.
+- **α has no separate learning rate.** It is the actor network's
+  `temperature()` parameter and is trained by the same actor Adam at 3e-4.
+- **`actor_min_std` is 0.0 in config but 0.1 in effect** (Amendment A.1),
+  re-confirmed here in the exported `actor_kwargs` of all three tasks.
+
+**Estimator switches held at base defaults in all runs:** `reduce_kl: true`,
+`reverse_kl: false`, `update_kl_lagrangian: true`,
+`actor_kl_clip_mode: "clipped"`, `eps_mu: 0.1`, `eps_sigma: 5e-5`,
+`ent_loss_per_dim: false`, `beta_sigma_fixed: null`, `log_q_spread: false`,
+`aux_loss_mult: 1.0`, `exploration_noise_min = max = 1.0`,
+`exploration_base_envs: 0`, `polyak: 1.0`, `normalize_env: true`.
+
+**Config inheritance chain:**
+`config/reppo.yaml` → `defaults: [env, platform, experiment_overrides, _self_]`
+→ `_self_` wins at compose time → runtime merge of
+`experiment_overrides.hyperparameters` over `hyperparameters` → CLI overrides
+that the group does not set. Groups used: `env=mjx_dmc` (Hopper, LEAP),
+`env=mjx_humanoid` (G1); `experiment_overrides=mjx_dmc_large_data` (Hopper,
+LEAP), `experiment_overrides=mjx_humanoid_large_data` (G1).
+
+### L.1.5 A and B differ in exactly one resolved key
+
+A full flattened-config diff of the pilot A and B runs, per task, yields exactly
+one differing key in each case:
+
+| task | differing keys | A | B |
+|---|---|---|---|
+| HopperHop | 1 | `actor_update_mode = pathwise` | `weighted_mle` |
+| LeapCubeRotateZAxis | 1 | `actor_update_mode = pathwise` | `weighted_mle` |
+| G1JoystickFlatTerrain | 1 | `actor_update_mode = pathwise` | `weighted_mle` |
+
+The B commands additionally pass `eps_e=0.5`, `estep_num_samples=32` and
+`mstep_decoupled=false` explicitly, but those equal the base defaults, so the
+resolved configurations are identical apart from the operator. The same
+one-key-difference discipline governs the prospective seeds 101--108.
+
+### L.1.6 Critic value support registered for seed 901
+
+§2 requires the value support to be fixed before launch and identical across
+arms. Two conflicts surfaced in the audit and are resolved here on provenance
+grounds, not on performance.
+
+| task | seed-0 calibration | pilot A/B cohort | **registered for seed 901 and for seeds 101--108** |
+|---|---|---|---|
+| HopperHop | 0 / 150 | 0 / 150 | **0 / 150** (`mjx_dmc` group default; consistent) |
+| LeapCubeRotateZAxis | −10 / 60 | −10 / 60 | **−10 / 60** |
+| G1JoystickFlatTerrain | −10 / 10 | **−4 / 4** | **−10 / 10** |
+
+- **LEAP.** −10/60 is the pre-existing task-specific choice, used identically by
+  the calibration and both pilot arms and recorded in the exported
+  `critic_kwargs`. It is retained unchanged. It is *not* retuned, and no
+  calibration or comparison return was consulted in retaining it. For the
+  record, `0 / 150` is the `config/env/mjx_dmc.yaml` group default that Hopper
+  uses; LEAP has never run at that support, and `vmin = 0` could not represent
+  the negative returns that `rotate_z.py`'s `termination = −100.0` term and its
+  cost terms permit.
+- **G1.** The seed-0 calibration ran at the `config/env/mjx_humanoid.yaml` group
+  default −10/10, while the pilot A/B cohort was hand-set to −4/4 on the command
+  line *after* that calibration had run. Because −4/4 was set later, it cannot be
+  shown not to have been informed by the calibration's observed return scale.
+  Seed 901 and the prospective seeds 101--108 therefore use the **group default
+  −10/10**, whose provenance is clean by construction. The consequence is
+  recorded plainly: the prospective G1 cohort will run at a different value
+  support from the retrospective/pilot G1 cohort, so the two are not
+  configuration-comparable and the pilot cohort's status as retrospective-only
+  (L.0.1) is reinforced.
+
+### L.1.7 Exact launch commands (seed 901, learned α)
+
+Run from the repository root at SHA `ca9c1d8`, with
+`CUDA_DEVICE_ORDER=PCI_BUS_ID` and `JAX_PLATFORMS=cuda,cpu`.
+
+GPU 0 — G1JoystickFlatTerrain:
+
+    CUDA_VISIBLE_DEVICES=0 python scripts/train_and_export.py \
+      env=mjx_humanoid env.name=G1JoystickFlatTerrain env.asymmetric_obs=false \
+      experiment_overrides=mjx_humanoid_large_data \
+      num_trials=1 num_seeds=1 wandb.mode=disabled seed=901
+
+GPU 1 — LeapCubeRotateZAxis:
+
+    CUDA_VISIBLE_DEVICES=1 python scripts/train_and_export.py \
+      env=mjx_dmc env.name=LeapCubeRotateZAxis env.asymmetric_obs=false \
+      experiment_overrides=mjx_dmc_large_data env.vmin=-10 env.vmax=60 \
+      env.max_episode_steps=500 hyperparameters.max_episode_steps=500 \
+      num_trials=1 num_seeds=1 wandb.mode=disabled seed=901
+
+Whichever GPU frees first — HopperHop:
+
+    CUDA_VISIBLE_DEVICES=<free> python scripts/train_and_export.py \
+      env=mjx_dmc env.name=HopperHop \
+      experiment_overrides=mjx_dmc_large_data \
+      num_trials=1 num_seeds=1 wandb.mode=disabled seed=901
+
+No `hyperparameters.ent_start` or `hyperparameters.update_entropy_lagrangian`
+override appears, so α is **learned** from the 0.01 initialization, as §1
+requires of a calibration run. Exports land under
+`exports/<EnvName>_pathwise_s901_final` (naming per
+`scripts/train_and_export.py`), which cannot collide with the seed-0 pilot
+namespace. These three runs also serve as the §5 benchmark timing runs; GPU
+type, wall-clock and GPU-hours are recorded in part 2.
+
+### L.1.8 Still outstanding after this commit
+
+- [ ] α_t = `median(alpha_curve[2:])` per task, from the **seed-901** run.
+- [ ] LEAP and G1 normalization anchors from seed 901 (normalization only; the
+      ceiling gate stays **unavailable** per L.0b.2).
+- [ ] Hopper qualification against the independent 0--1000 DMC scale.
+- [ ] Floor/learnability gate per task, as registered and as narrowed in L.0b.2.
+- [ ] Wall-clock and GPU-hours per task.
+- [ ] Author's calibration-inspection answers (L.0.5) — **TO BE FILLED BY KARAM**.
