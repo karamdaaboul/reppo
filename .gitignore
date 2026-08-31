@@ -1,7 +1,7 @@
 outputs/
 wandb/
 logs/
-uv.lock
+# uv.lock IS tracked: the cluster needs it for `uv sync --frozen` (slurm/README.md)
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -193,6 +193,8 @@ data.zip
 
 # --- run artifacts (added for the E-step study) ---
 exports/
+ledger/runs.d/
+ledger/runs.d.smoke/
 checkpoints/
 figures/
 *.ckpt
