@@ -1175,3 +1175,87 @@ comparison. It is computed per task on raw returns, is invariant to any positive
 affine renormalization, and is reported alongside the `S_t`-normalized cross-task
 summary wherever that summary is given. If the two disagree in rank pattern, the
 anchor-free version is the one that constrains the claim.
+
+## Amendment L.2 — execution venue moved to RWTH CLAIX-2023 (2026-08-31)
+
+Recorded **before** any confirmatory run starts. At the time of writing
+`outputs/conf/` is empty and `ledger/runs.jsonl` contains no `namespace:
+confirmatory` record, so no seed in 101–108 has been consumed in either arm on
+any machine. The whole ladder therefore moves venue at once; nothing is split.
+
+### L.2.1 Hardware
+
+The confirmatory ladder executes on the RWTH CLAIX-2023 ML segment (`c23g`), not
+on the workstation registered in L.1.2.
+
+| | L.1.2 (calibration, seed 901) | L.2 (confirmatory, seeds 101–108) |
+|---|---|---|
+| GPU 0 | NVIDIA RTX PRO 4500 Blackwell, 32623 MiB | — |
+| GPU 1 | NVIDIA RTX 4000 Ada Generation, 20475 MiB | — |
+| node | single workstation, 2 heterogeneous GPUs | `c23g`: 2× Xeon 8468 (96 c), 512 GB, 4× NVIDIA H100 94 GB |
+| allocation | — | one GPU per run (24 cores, 122 GB), one run per array task |
+
+The seed-901 calibration runs, and therefore the frozen α values of L.1.10 and
+L.1.16, were produced on the L.1.2 workstation and are **not** re-derived here.
+α enters the confirmatory runs as a fixed number, so its provenance is unaffected
+by where the confirmatory runs execute.
+
+### L.2.2 The GPU counterbalancing becomes inapplicable
+
+The local driver `scripts/run_confirmatory_ladder.sh` froze an odd/even GPU
+assignment (odd seeds: A→GPU 0, B→GPU 1; even seeds swapped) so that each arm
+received four seeds on each of the two GPU models. That rule was specified in the
+driver, **not in the registered protocol text**, and the driver never executed.
+
+Its purpose was to balance a two-GPU-model confound. `c23g` is homogeneous — every
+run lands on an H100 — so the confound the rule balanced **does not exist** on the
+new venue, and the rule has nothing to assign. It is recorded here as
+inapplicable rather than silently dropped. No arm-level or seed-level assignment
+decision remains: the array index determines `(task, arm, seed)` deterministically
+(`slurm/ladder_matrix.sh`), and Slurm chooses the physical node.
+
+**Same hardware class within a task.** All eight seeds of both arms of any given
+task run on `c23g`. Local and cluster runs are not mixed within a task, in either
+arm.
+
+### L.2.3 What is unchanged
+
+Per-task frozen α (L.1.10, L.1.16); seeds 101–108; arms A = `pathwise`,
+B = `weighted_mle` with M = 32; ε_E = 0.5; `action_pad = 0`; 50 M environment
+steps; `update_entropy_lagrangian=false`; and
+`log_estimator_diag = log_eval_iqm = false`, which keeps every confirmatory run
+bit-identical to the pristine reference (parity check (a)). The command strings
+are byte-identical to those the local driver would have issued — verified by
+diffing all 48 — with one exception, below. The `n_estep` coupling to the operator
+switch (L.1.14, direction L.1.17) remains intact; no code change accompanies this
+amendment.
+
+**The one command difference: `hydra.run.dir`.** Every run is given
+`hydra.run.dir=outputs/conf/<task>_<arm>_s<seed>`, as the local driver already did.
+This is required, not cosmetic: under a job array, tasks starting within the same
+second would otherwise all resolve to Hydra's default `outputs/<date>/<time>/` and
+overwrite each other's `metrics.npz`, the collision that motivated copying the
+diagnostic curves into `meta.json` — here at 48× the scale. It affects only the
+output path; the exported checkpoints are unaffected either way, since
+`scripts/train_and_export.py` writes them to `exports/` relative to the repo
+root, independently of the Hydra working directory.
+
+### L.2.4 Bit-identity across venues
+
+Results produced on an H100 are **not** expected to be bit-identical to results
+produced on the L.1.2 workstation; floating-point reduction order differs across
+GPU architectures. The registered parity check (a) is an *arm-versus-arm,
+same-hardware* property — that arm A on the study code reproduces the pristine
+reference exactly — and it is preserved, because both arms of every task now
+execute on the same architecture. No confirmatory comparison in §3 is made across
+venues.
+
+### L.2.5 Unaffected open items
+
+The WalkerRun cohort-composition question (L.1.16) and the `U_t` anchors (L.1.13,
+being resolved by the reruns of L.1.19) are untouched by this amendment. The
+confirmatory runs are anchor-invariant — per-task Δ, its CI, and probability of
+improvement do not depend on `U_t`; only the cross-task Spearman summary does — so
+the ladder may launch before the anchors are recorded. Walker enters the matrix
+only if L.1.16 is resolved in favour of running seeds 101–108 fresh, which changes
+the array size from 48 to 64 and nothing else.

@@ -1,143 +1,175 @@
-# Running on RWTH CLAIX-2023
+# Running on RWTH CLAIX-2023 (WestAI)
 
-`slurm/train.sh` is a Slurm **job array**: one array task per seed, all sharing
-one config. It calls the same entrypoint as a local run
-(`scripts/train_and_export.py`) with the same hydra overrides, so anything that
-works locally works here unchanged.
+Two job scripts, both calling the same entrypoint as a local run
+(`scripts/train_and_export.py`) with the same hydra overrides:
 
-## Before the first submission
+| script | array index means | use it for |
+|---|---|---|
+| **`ladder.sh`** | one `(task, arm, seed)` triple | the registered confirmatory ladder |
+| `train.sh`      | one seed, one shared config     | ad-hoc sweeps over seeds |
 
-Two placeholders in the header must be filled in:
+`ladder_matrix.sh` holds the frozen task/alpha/env definitions and is sourced by
+both `ladder.sh` **and** the local driver `scripts/run_confirmatory_ladder.sh`, so
+the cluster and the workstation can never launch different commands.
 
-```
-#SBATCH --time=__TIME_LIMIT__      # check the c23g limit:  sinfo -p c23g -o "%P %l"
-#SBATCH --account=__PROJECT_ID__   # your project id, e.g. rwth1234
-```
+## Hardware and billing
 
-**Test on the `devel` partition first.** It is free, needs no `--account`, and
-is capped at 1 hour -- long enough for a short run to prove the environment,
-the GPU, and the config resolve before any quota is spent:
+`c23g` is the CLAIX-2023 ML segment: 50 nodes, 2× Xeon 8468 (96 cores), 512 GB host
+RAM, **4× NVIDIA H100 94 GB**. One GPU is capped at 24 cores / 122 GB and billed as
+24 core-hours per GPU-hour, which is exactly what the job headers request
+(`--gres=gpu:1 --cpus-per-task=24 --mem-per-cpu=5000M`).
 
-```bash
-sbatch --partition=devel --time=00:30:00 --array=0 \
-       --export=ALL,TOTAL_STEPS=2621440 slurm/train.sh
-```
+**There is no GPU test partition.** `devel` is free and needs no `--account`, but its
+nodes have no accelerators, so it cannot be used to smoke-test these jobs. Use a
+short `c23g` job instead (see below) — it costs ~0.1 GPU-hours.
 
-Do not run real experiments on `devel`.
-
-## Submitting
-
-Always submit **from the repo root** -- Slurm's working directory is wherever
-`sbatch` is called from, and every path in the script is relative to it.
+## 1. Bootstrap — once, on a **login** node
 
 ```bash
-sbatch --array=0-8 slurm/train.sh                  # 9 seeds -- the usual case
-sbatch slurm/train.sh                              # default array is only 0-2
+git clone https://github.com/karamdaaboul/reppo.git && cd reppo
+slurm/bootstrap.sh
 ```
 
-**The header's `--array=0-2` is a small default, not the protocol.** Every
-result in the study uses 9 seeds, and a 3-seed run cannot resolve the effects
-being measured. Always pass `--array=0-8` (or more) for real experiments.
+This creates `$HPCWORK/reppo_runs/{exports,outputs,logs}` and symlinks `exports/`,
+`outputs/` and `logs/` in the repo at them (`$HOME` has a small quota; `$HPCWORK` is
+Lustre with **no backup**, which is fine for regenerable checkpoints), runs
+`uv sync --frozen`, and prints the resolved package versions to record in the ledger.
 
-## Choosing the arm
+`uv.lock` is tracked, so `--frozen` reproduces the exact dependency set used for
+every other run in the study. Compute nodes have no internet, so the venv must exist
+before any job starts — the job scripts only check for it and refuse to run otherwise.
 
-The config is read from environment variables; unset ones keep the
-`config/reppo.yaml` defaults.
+There is deliberately **no `module load CUDA`**: `pyproject.toml` pins
+`jax[cuda12]==0.5.2`, which ships the CUDA runtime, cuBLAS and cuDNN as pip wheels
+inside `.venv`. JAX loads those in preference to any system install, so a module
+would only risk a version mismatch.
 
-| variable            | default              | meaning                                        |
-|---------------------|----------------------|------------------------------------------------|
-| `ENVNAME`           | `WalkerRun`          | mujoco_playground task id (CamelCase)          |
-| `TASK`              | `mjx_dmc`            | hydra env group: `mjx_dmc`, `mjx_humanoid`, `brax` |
-| `ACTOR_UPDATE_MODE` | `pathwise`           | `pathwise` (arm A) or `weighted_mle` (arm B)   |
-| `ALPHA`             | *(learned)*          | set to **freeze** the entropy dual at this value |
-| `EPS_E`             | `0.5`                | E-step KL budget for the eta dual              |
-| `MSTEP_DECOUPLED`   | `false`              | `true` = MPO decoupled M-step                  |
-| `EPS_MU`            | `0.1`                | decoupled M-step mean bound                    |
-| `EPS_SIGMA`         | `5.0e-5`             | decoupled M-step scale bound                   |
-| `BETA_SIGMA_FIXED`  | *(learned)*          | set to hold beta_sigma constant                |
-| `ESTEP_NUM_SAMPLES` | `32`                 | E-step samples M per state                     |
-| `TOTAL_STEPS`       | `50000000`           | environment steps                              |
-| `OVERRIDES`         | `mjx_dmc_large_data` | hydra `experiment_overrides` group             |
-
-Pass them with `--export`, which forwards your environment plus the listed
-variables:
+## 2. Smoke test — 2 short runs, ~0.1 GPU-hours
 
 ```bash
-# arm A, HumanoidRun, 9 seeds
-sbatch --array=0-8 --export=ALL,ENVNAME=HumanoidRun slurm/train.sh
-
-# arm B, frozen alpha, eta dual, single KL clip
-sbatch --array=0-8 --export=ALL,ENVNAME=HumanoidRun,ACTOR_UPDATE_MODE=weighted_mle,ALPHA=0.00329 \
-       slurm/train.sh
-
-# arm B with the decoupled M-step and a fixed beta_sigma
-sbatch --array=0-2 --export=ALL,ENVNAME=HumanoidRun,ACTOR_UPDATE_MODE=weighted_mle,ALPHA=0.00329,MSTEP_DECOUPLED=true,BETA_SIGMA_FIXED=23 \
-       slurm/train.sh
+ACCOUNT=<project> SMOKE=1 slurm/submit_ladder.sh
 ```
 
-## Monitoring
+Runs array indices 0 and 32 (one `mjx_humanoid` G1 run and one `mjx_dmc` Hopper run)
+at `TOTAL_STEPS=2621440`. `SMOKE=1` remaps the seeds into the **201+ exploratory**
+namespace and writes to `outputs/smoke/` and `ledger/runs.d.smoke/`, so no reserved
+confirmatory seed (101–108) is spent and the real ledger is untouched.
+
+Check afterwards: both tasks `COMPLETED` in `sacct`, three `exports/*_s20*_{p25,p50,final}/`
+directories per run each holding `actor.npz critic.npz normalizer.npz meta.json`, two
+**distinct** `outputs/smoke/<tag>/` directories, and `seff <jobid>` showing GPU use.
+
+## 3. The confirmatory ladder
 
 ```bash
-squeue --me                          # your queued and running jobs
-squeue --me -o "%.10i %.9P %.8j %.2t %.10M %.6D %R"
+ACCOUNT=<project> slurm/submit_ladder.sh                                # 48 runs
+ACCOUNT=<project> TASKS="g1 leap hopper walker" slurm/submit_ladder.sh  # 64 runs
+ACCOUNT=<project> THROTTLE=8 slurm/submit_ladder.sh                     # 8 at a time
+```
+
+**Always submit from the repo root** — Slurm's working directory is wherever `sbatch`
+is called from, and every path in the scripts is relative to it.
+
+3 tasks × 8 seeds (101–108) × 2 arms = 48 runs, ~34 GPU-hours (≈820 core-hours).
+The array index decodes as
+
+```
+arm  = [A, B][ idx % 2 ]                 A = pathwise, B = weighted_mle (M=32)
+seed = [101..108][ (idx / 2) % 8 ]
+task = TASKS[ idx / 16 ]                 frozen priority: g1 -> leap -> hopper -> walker
+```
+
+so low indices — scheduled first under the `%N` throttle — walk the registered task
+priority. `THROTTLE` defaults to 16, giving three waves and ~3 h wall-clock.
+
+Both launchers refuse to start from a **dirty working tree**: the ledger records
+`git_sha` for every confirmatory run, and a SHA that does not describe the code is
+worthless. Commit first, or set `ALLOW_DIRTY=1` for a throwaway run.
+
+Every run gets `hydra.run.dir=outputs/conf/<tag>`. This is not cosmetic: 48 tasks
+starting in the same second would otherwise all resolve to Hydra's default
+`outputs/<date>/<time>/` and overwrite each other's `metrics.npz`.
+
+Dry-run the whole matrix without submitting anything:
+
+```bash
+for i in $(seq 0 47); do DRY_RUN=1 SLURM_ARRAY_TASK_ID=$i bash slurm/ladder.sh; done
+```
+
+## 4. Collect the ledger
+
+Each array task writes `ledger/runs.d/conf-<tag>.json` — 48 concurrent appends to a
+single JSONL would interleave and corrupt lines. Merge them afterwards:
+
+```bash
+python slurm/collect_ledger.py                              # -> ledger/runs.jsonl
+python slurm/collect_ledger.py --dry-run                    # preview
+python slurm/collect_ledger.py --dir ledger/runs.d.smoke --dry-run
+```
+
+It is idempotent (skips `run_id`s already present), so it is safe to run after a
+partial array and again after the re-submissions. It exits non-zero and names any
+run whose status is not `completed`.
+
+## 5. Monitoring and cancelling
+
+```bash
+squeue --me                                      # RWTH asks: poll at most every 2 min
+squeue --me -o "%.14i %.9P %.12j %.2t %.10M %R"
 sacct -j <jobid> --format=JobID,State,Elapsed,MaxRSS
-tail -f logs/reppo_<jobid>_<task>.out
+seff <jobid>_<task>                              # per-task efficiency
+tail -f logs/reppo-ladder_<jobid>_<task>.out
+
+scancel <jobid>            # the whole array
+scancel <jobid>_<task>     # one run
 ```
 
-Each `.out` starts with the hostname, `nvidia-smi`, the resolved config, the
-seed, and the **git commit hash**, so every result is traceable to the code
-that produced it.
+Each `.out` opens with hostname, date, job/array ids, **git commit**, the decoded
+task/arm/seed/alpha, and `nvidia-smi`, so every result is traceable to the code that
+produced it.
 
-## Cancelling
+## 6. Re-submitting failures
+
+`scripts/train_and_export.py` raises `SystemExit(2)` if any NaN reaches
+`eval/episode_return`, and writes no export. Re-submit exactly the failed indices:
 
 ```bash
-scancel <jobid>          # the whole array
-scancel <jobid>_<task>   # one seed
-scancel --me             # everything you own
+sbatch -A <project> -p c23g --array=7,19,42 --export=ALL,TASKS="g1 leap hopper" slurm/ladder.sh
 ```
+
+The index decode is deterministic, so index 7 is always the same `(task, arm, seed)`.
+
+## 7. Ad-hoc seed sweeps — `train.sh`
+
+Unchanged from before, minus the placeholders. Config comes from environment
+variables; unset ones keep the `config/reppo.yaml` defaults.
+
+| variable | default | meaning |
+|---|---|---|
+| `ENVNAME` | `WalkerRun` | mujoco_playground task id (CamelCase) |
+| `TASK` | `mjx_dmc` | hydra env group: `mjx_dmc`, `mjx_humanoid`, `brax` |
+| `ACTOR_UPDATE_MODE` | `pathwise` | `pathwise` (arm A) or `weighted_mle` (arm B) |
+| `ALPHA` | *(learned)* | set to **freeze** the entropy dual at this value |
+| `EPS_E` | `0.5` | E-step KL budget for the eta dual |
+| `MSTEP_DECOUPLED` | `false` | `true` = MPO decoupled M-step |
+| `EPS_MU` / `EPS_SIGMA` | `0.1` / `5.0e-5` | decoupled M-step bounds |
+| `BETA_SIGMA_FIXED` | *(learned)* | hold beta_sigma constant |
+| `ESTEP_NUM_SAMPLES` | `32` | E-step samples M per state |
+| `TOTAL_STEPS` | `50000000` | environment steps |
+| `OVERRIDES` | `mjx_dmc_large_data` | hydra `experiment_overrides` group |
+
+```bash
+sbatch -A <project> --array=0-8 --export=ALL,ENVNAME=HumanoidRun slurm/train.sh
+```
+
+Note `train.sh` exposes no per-task `env.vmin/vmax/max_episode_steps` or
+`env.asymmetric_obs`, so it cannot launch the LEAP or G1 configurations — use
+`ladder.sh` for those.
 
 ## Outputs
 
-Checkpoints go to `exports/<env>_<arm>_s<seed>_{p25,p50,final}/` and are
-standalone-loadable with `scripts/load_ckpt.py`. Slurm logs go to `logs/`.
-Both directories are git-ignored.
-
-## Environment -- build the venv ONCE on a login node
-
-Compute nodes have **no internet**, so the script never installs anything. It
-checks that `.venv` exists and exits with an error otherwise. Build it once,
-from the repo root, on a **login node**:
-
-```bash
-uv sync --frozen
-```
-
-`pyproject.toml` pins `jax[cuda12]==0.5.2`, which ships the CUDA runtime,
-cuBLAS and cuDNN as pip wheels inside `.venv`. JAX loads those in preference
-to any system install, so there is **no** `module load CUDA` -- one would only
-risk a version mismatch. Set `VENV=/path/to/.venv` to point at a venv kept
-elsewhere.
-
-## Storage -- outputs go to `$HPCWORK`
-
-`$HOME` has a small quota. The `exports/` directory is already ~1 GB locally
-and nine humanoid seeds produce several GB, so the script writes checkpoints
-to `$HPCWORK/reppo_runs/exports` and symlinks `exports/` in the repo to it,
-keeping every relative path (and `scripts/load_ckpt.py`) unchanged. Override
-with `OUT_ROOT=...`.
-
-Slurm's own `--output`/`--error` paths are fixed in the header and resolve
-relative to the submit directory, so before the **first** submission point
-`logs/` at `$HPCWORK` too:
-
-```bash
-mkdir -p "$HPCWORK/reppo_runs/logs" && ln -sfn "$HPCWORK/reppo_runs/logs" logs
-```
-
-## Billing
-
-One GPU on `c23g` is limited to 24 cores and 122 GB, and is charged as
-24 core-hours per GPU-hour. The header requests exactly that share
-(`--cpus-per-task=24`, `--mem-per-cpu=5000M`). A full 50M-step run takes
-roughly 20-40 minutes on an H100-class card, so a 9-seed array is on the
-order of 4-6 GPU-hours.
+Checkpoints land in `exports/<env>_<arm><variant>_s<seed>_{p25,p50,final}/` and are
+standalone-loadable with `scripts/load_ckpt.py`. Frozen-alpha pathwise runs get the
+`_fa` suffix, so arm A of the ladder appears as e.g.
+`HopperHop_pathwise_fa_s101_final`. `exports/`, `outputs/` and `logs/` are all
+git-ignored and live under `$HPCWORK`.

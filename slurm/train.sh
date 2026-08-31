@@ -5,7 +5,10 @@
 # called from, and every path below is relative to it.
 #
 #   sbatch slurm/train.sh                                  # 3 seeds, default arm
-#   ENVNAME=HumanoidRun ACTOR_UPDATE_MODE=weighted_mle sbatch slurm/train.sh
+#   ENVNAME=HumanoidRun ACTOR_UPDATE_MODE=weighted_mle sbatch -A rwth1234 slurm/train.sh
+#
+# For the registered confirmatory ladder use slurm/ladder.sh instead -- this
+# script maps one array index to one SEED and cannot express task x arm x seed.
 #
 # Billing (RWTH, from 01.11.2025): one GPU on c23g is limited to 24 cores and
 # 122 GB, and 1 GPU-hour is charged as 24 core-hours. The header below requests
@@ -17,8 +20,9 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=24
 #SBATCH --mem-per-cpu=5000M
-#SBATCH --time=__TIME_LIMIT__          # TODO: check the c23g max wall time
-#SBATCH --account=__PROJECT_ID__       # TODO: your RWTH project id (e.g. rwth1234)
+#SBATCH --time=02:00:00                # ~2x the slowest measured 50M-step run
+# --account is NOT set here: pass it at submit time, e.g. `sbatch -A rwth1234 ...`,
+# or export SBATCH_ACCOUNT=rwth1234 once per session.
 #SBATCH --array=0-2
 #SBATCH --output=logs/%x_%A_%a.out
 #SBATCH --error=logs/%x_%A_%a.err
