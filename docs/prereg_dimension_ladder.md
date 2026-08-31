@@ -802,3 +802,177 @@ type, wall-clock and GPU-hours are recorded in part 2.
 - [ ] Floor/learnability gate per task, as registered and as narrowed in L.0b.2.
 - [ ] Wall-clock and GPU-hours per task.
 - [ ] Author's calibration-inspection answers (L.0.5) — **TO BE FILLED BY KARAM**.
+
+---
+
+## Amendment L.1 (part 2) — seed-901 calibration results (2026-08-31)
+
+**Append-only.** sha256 of the leading 804 lines is
+`d3cede10b1e7b8cb8c748e18c0cdc6056da85f09c759506aecee736fcac3507c`.
+Runs launched at `07af381751cdfd9b5690ba8eaa286cfee3d7fc6e`, whose *code* state is
+byte-identical to `ca9c1d8` and to the audited baseline `3b96deb` over the whole
+JAX training path (L.1.1). Reading seed-901 evaluation returns is authorised: §2
+derives anchors and qualification from calibration information. **No pilot or
+A/B comparison outcome has been inspected.**
+
+### L.1.9 Calibration runs and timings
+
+All three completed, `nan_in_eval = False`, 21 checkpoints, learned α confirmed
+by a non-constant `alpha_curve`. These are also the §5 benchmark timing runs.
+
+| task | GPU | wall-clock (s) | GPU-hours | in-loop `train_seconds` |
+|---|---|---|---|---|
+| LeapCubeRotateZAxis | 1 — RTX 4000 Ada | 2933 | 0.815 | 2914.2 |
+| G1JoystickFlatTerrain | 0 — RTX PRO 4500 Blackwell | 3134 | 0.871 | 3111.5 |
+| HopperHop | 1 — RTX 4000 Ada | 1596 | 0.443 | 1579.4 |
+
+Total 2.13 GPU-hours. Wall-clock exceeds `train_seconds` by the XLA compile and
+export overhead.
+
+### L.1.10 Prospective frozen α (the registered mechanical rule)
+
+α_t = `median(alpha_curve[2:])` of that task's **seed-901** calibration, to be
+frozen identically in arms A and B for seeds 101--108.
+
+| task | **α₉₀₁ (registered)** | α from the seed-0 pilot calibration | α actually frozen in the pilot cohort |
+|---|---|---|---|
+| HopperHop | `0.00037288447492755949` | 0.00035225937608629465 | 0.00035 |
+| LeapCubeRotateZAxis | `0.000782382907345891` | 0.0010604216950014234 | 0.00094 |
+| G1JoystickFlatTerrain | `0.00020752247655764222` | 0.00022178766084834933 | 0.00023 |
+
+These α₉₀₁ values supersede, for all prospective use, the seed-0 values recorded
+in L.0.2. Note the single-seed spread the procedure carries: LEAP's α moved
+−26.2% between two calibration seeds, against +5.9% (Hopper) and −6.4% (G1).
+That dispersion is a property of the registered single-calibration-seed rule and
+is recorded, not corrected.
+
+### L.1.11 Qualification
+
+Evaluation-return curves (means over ~1024 episodes per checkpoint, 21
+checkpoints):
+
+| task | best checkpoint mean | at index | final checkpoint mean |
+|---|---|---|---|
+| HopperHop | 163.072235 | 20 (= final) | 163.072235 |
+| LeapCubeRotateZAxis | 24.325214 | 18 | 20.357870 |
+| G1JoystickFlatTerrain | 32.286522 | 18 | 32.153908 |
+
+- **HopperHop** — the DMC scale is independent of our runs, so both gates apply.
+  Floor threshold `0 + 0.05·1000 = 50`; ceiling threshold `0 + 0.90·1000 = 900`.
+  Final 163.07 lies strictly between. **Not floor-uninformative, not
+  ceiling-censored: HopperHop QUALIFIES.**
+- **LeapCubeRotateZAxis** — ceiling gate **unavailable** (L.0b.2). Passes the
+  floor gate: see the invariance argument below.
+- **G1JoystickFlatTerrain** — ceiling gate **unavailable** (L.0b.2). Passes the
+  floor gate.
+
+**The floor verdict is invariant to the undefined L_t.** §2 sets
+`L_t` = the spec minimum return, but neither `rotate_z.py` nor `joystick.py`
+defines one: LEAP's sole active positive term is raw z-angular-velocity,
+unbounded *below* as well as above, alongside `termination = −100.0`; G1's active
+cost terms are likewise unbounded below. The floor threshold
+`L + 0.05(U − L)` is increasing in `L`, so the most permissive admissible `L` is
+the largest one. At `L = 0` the thresholds are 1.34 (LEAP) and 1.78 (G1) against
+final returns of 20.36 and 32.15; any `L < 0` lowers the threshold further. Both
+tasks therefore clear the floor gate under **every** admissible `L_t`, and the
+qualification conclusion does not depend on resolving the ambiguity. The
+ambiguity still matters for the *anchor*, and is left open in L.1.13.
+
+### L.1.12 HopperHop is not converged at the budget
+
+Recorded because it bears on how HopperHop functions as the low-dimensional
+anchor of the ladder. Its calibration curve is still climbing steeply at the
+final checkpoint: 43.47 → 54.83 → 145.38 → 156.57 → 163.07 over the last five.
+The registered gates are mechanical and HopperHop qualifies on them, but its
+final return is a snapshot of a rising curve, not a converged level, so a
+task-level gap measured there is a gap between two incompletely-trained arms.
+No rule is changed on this basis; it is recorded so the ladder's low-d end is
+not read as a converged comparison.
+
+### L.1.13 The registered IQM anchor is NOT computable — anchors left open
+
+§2 sets `U_t = 1.1 ×` the best checkpoint evaluation **IQM** for LEAP and G1.
+That quantity cannot be recovered from the calibration artifacts:
+
+1. The trainer stores only `eval/episode_return` — a **mean** over ~1024
+   episodes — and its std. Per-episode returns are never written, at any
+   checkpoint.
+2. Only three checkpoints per task are exported (`_p25`, `_p50`, `_final`), and
+   the best checkpoint is index **18 of 20** for both LEAP and G1 — not among
+   them. Its parameters no longer exist.
+
+The gap is material, not cosmetic. Re-evaluating the exported **final**
+checkpoints with per-episode returns, under the evaluation policy the trainer
+actually uses (`make_policy` → `det_action`, deterministic, **not** a stochastic
+sample), gives:
+
+| task | re-eval mean | re-eval **IQM** | IQM/mean | stored mean at final | re-eval mean vs stored |
+|---|---|---|---|---|---|
+| HopperHop | 156.864532 | 177.926046 | 1.1343 | 163.072235 | −3.8% |
+| LeapCubeRotateZAxis | 19.041908 | 24.261469 | 1.2741 | 20.357870 | −6.5% |
+| G1JoystickFlatTerrain | 32.199657 | 33.978524 | 1.0552 | 32.153908 | **+0.14%** |
+
+G1 reproduces the stored protocol to 0.14%, which validates the re-evaluation
+setup; Hopper and LEAP differ by a few percent through evaluation-key variance
+on strongly left-skewed return distributions (Hopper p25 = 0.00, LEAP
+p25 = −3.28, G1 min = −19.22). The IQM sits **5.5% to 27.4% above the mean**, by
+a task-dependent amount, because the IQM trims exactly that failed-episode tail.
+
+Consequence: substituting the stored mean for the registered IQM would bias
+`U_t` downward by a different factor per task. Since `Δ_t` is an affine rescale
+by `1/(U−L)` with the same anchor in both arms, **no per-task conclusion is
+affected** — the sign of `Δ_t`, whether its CI excludes zero, and probability of
+improvement are all anchor-invariant. Only the **cross-task** Spearman of §3,
+which compares `Δ_t` magnitudes across differently-scaled tasks, depends on the
+anchor.
+
+**Anchors are therefore left OPEN and no `U_t` is registered here.** §2 requires
+them only "before any confirmatory outcome is examined", and no confirmatory run
+has launched. They must be resolved before the cross-task summary is computed.
+The admissible resolutions are: (i) re-run the three calibrations with
+per-episode evaluation logging, ~2.1 GPU-hours, giving the anchor exactly as
+registered; (ii) register a superseding anchor definition (for example the best
+checkpoint **mean**, or the final-checkpoint IQM) with the deviation stated;
+(iii) invoke §2's own escape hatch and exclude the affected tasks from
+cross-task aggregation, reporting them at task level only — noting that this
+would leave fewer than four qualified tasks and, by §3, no cross-task analysis
+at all. No option is chosen here.
+
+### L.1.14 M-audit: `n_estep` is coupled to the operator switch
+
+Recorded from source. In the forward-KL branch (`reppo.py:659-663`):
+
+    n_estep = cfg.estep_num_samples if actor_update_mode == "weighted_mle" else 16
+
+**What `n_estep` feeds, by arm.**
+
+- *Pathwise (arm A).* The training estimator does **not** use it. The pathwise
+  objective is built from a **single** reparameterised sample
+  (`pred_action, log_prob = pi.sample_and_log_prob(seed=key)`, `reppo.py:647`),
+  giving `value = Q(s, pred_action)` and
+  `objective = log_prob · stopgrad(α) − value`. The 16 samples feed **only** the
+  Monte-Carlo KL estimate `kl = mean_i logp_old_i − mean_i logp_theta_i`, plus
+  the optional `log_q_spread` and `log_estimator_diag` diagnostics.
+- *Weighted-MLE (arm B).* The 32 samples feed **both** the KL estimate **and**
+  the E-step estimator itself — `q_i`, the weights `w_i`, the objective
+  `−Σ_i w_i logp_theta_i`, `ess`, `w_max`, `q_spread` and the η dual.
+
+**The confound.** `n_estep` is derived from `actor_update_mode`, so the single
+config key that separates the arms also changes the KL estimate's sample count
+from 16 to 32. Both estimates are unbiased for the same forward KL, so this is a
+**variance** difference — arm B's KL estimate has roughly half the Monte-Carlo
+variance of arm A's — and `kl` drives the trust-region clip and the KL
+Lagrangian. The A/B contrast is therefore *operator plus KL-estimator
+resolution*, not the operator alone. L.1.5's "exactly one differing resolved
+config key" remains literally true and is not retracted; what is recorded here is
+that the one key carries a second behavioural consequence.
+
+**Effect on the seed-901 calibrations: none internally.** All three are
+single-arm pathwise runs at `n_estep = 16`, so no within-run confound exists and
+α₉₀₁ is unaffected. One cross-arm consequence is recorded: α₉₀₁ is measured under
+the 16-sample KL regime and is then frozen into arm B, which runs at 32.
+
+This is recorded as a finding. **No code change is made and no confirmatory run
+is launched on it**, because deciding whether to decouple `n_estep` from the
+operator switch changes what the ladder measures and is not a change this
+amendment is authorised to make.
