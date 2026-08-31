@@ -197,3 +197,6 @@ checkpoints/
 figures/
 *.ckpt
 *.msgpack
+
+# Probe 1 restricted-z oracle raw outputs (~800 MB of per-state moment tensors)
+scripts/probe1_out/

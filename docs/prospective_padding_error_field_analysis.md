@@ -142,3 +142,43 @@ Audited commit: `3b96deb` (branch `main`) of `~/workspaces/reppo_original` — t
 **Recordables.** \(M=32\) (`estep_num_samples`); \(\varepsilon_E=0.5\) (`eps_e`); \(\Sigma\) diagonal and state-dependent (`loc, log_std` head split, \(\sigma=e^{\log\sigma}+\text{min\_std}\) with `actor_min_std: 0.0` in the padded runs, `src/networks/jax_models.py:523-524`); the Q head is the **live** critic's categorical (HL-Gauss) mean — \(\mathrm{softmax}(\text{logits})\cdot\mathrm{linspace}(v_{min}{=}0,v_{max}{=}150)\) (`src/networks/jax_models.py:305-310`); the local name `critic_target_model` (`src/jaxrl/reppo.py:630-633`) is merged from the live `train_state.critic.params` — there is no target critic — while the actor target is a true \(\pi_{old}\) snapshot refreshed once per learn step (`src/jaxrl/reppo.py:560-567`).
 
 **Formula consequences.** Answer 2 activates the ZO/weighted-MLE track with the \(\bar u\) term live (measure it in Probes 2/4); answer 3 restricts eq. (14)'s repeated-batch use to across-epoch or offline re-drawn batches; answer 1 puts the \(\pm(1-10^{-4})\) clip inside \(F(u)\) for arm B (relevant where \(\sigma\) saturates \(|\tanh y|\to1\)); answer 4 means offline weight replication must read the checkpoint \(\eta\) verbatim rather than re-solving any dual; answer 5 and the diagonal \(\Sigma\) leave the whitened-coordinate mapping of the proposition's Sec. 1 unchanged.
+
+---
+
+## Amendment A.1 — factual corrections to Amendment A (2026-08-31, post-Probe-1)
+
+Recorded after Probe 1 ran and reported. Both items are factual code/numerics
+conventions discovered while executing Probe 1, not analytic choices. **No prediction
+or falsification rule in Section 2 is altered by either**, and none of Probe 0's five
+answers is retracted: answers 1--5 of Amendment A stand as written.
+
+1. **`min_std` recordable corrected — the effective trained value is 0.1, not 0.0.**
+   Amendment A's recordables state \(\sigma=e^{\log\sigma}+\text{min\_std}\) with
+   `actor_min_std: 0.0` in the padded runs. The runs' Hydra configs do set
+   `actor_min_std: 0.0`, but that knob is never plumbed through: `make_init`
+   constructs `SACActorNetworks` without passing `min_std`
+   (`src/jaxrl/reppo.py:281-293`), so the class default `min_std = 0.1`
+   (`src/networks/jax_models.py:336,466`) is what actually trained. This is
+   independently confirmed by `scripts/export_ckpt.py:31-35`, which already records
+   the effective rather than the configured value and names the same cause, and by the
+   exported `meta.json` of every padded checkpoint (`actor_kwargs.min_std = 0.1`).
+   Consequence: \(\Sigma_z\) in all probes — the checkpoint reference law, and every
+   \(\Sigma\)-metric gradient and displacement norm built on it — uses the effective
+   0.1. Probe 1 was executed on this basis. The common standardized law
+   \(\mathcal N(0,I_k)\) is unaffected by definition, and the two laws agree closely
+   in Probe 1, which bounds the sensitivity of the reported quantities to this
+   correction.
+
+2. **Standing numerical convention for all remaining probes.** The padded error field
+   is \(O(10^{-2})\) on a critic whose output is \(O(50)\), so the one-pass form
+   \(\nu=\mathbb E[Q^2]-\mathbb E[Q]^2\) cancels roughly seven significant digits and
+   returns **negative** variances in float32 — it did so for 808 of 2048 states on a
+   first Probe 1 pass, at magnitudes that were not visible in any aggregate. For every
+   remaining probe: Q-moments are accumulated around a **per-state reference mean from
+   an independent pre-pass**, reduced in **float64**, and every report carries a
+   **\(V_e\le0\) tripwire** column that must read zero. Two-pass estimators are exempt
+   in principle — `jnp.std` never forms the cancelling difference — and the C5
+   within-state Q-spread cells were rechecked on identical draws under the safe path
+   and agree to \(\sim10^{-8}\) relative (`reports/probe1_restricted_z.md`, Sec. 6),
+   so no previously reported amplitude is affected. The convention is imposed on the
+   one-pass raw-moment accumulators that Probes 2, 4 and 7 will need.
