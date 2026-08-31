@@ -1,0 +1,12 @@
+type: mjlab
+name: Ant-Flat
+max_episode_steps: 1000
+reward_scaling: 0.1
+terminate: true
+asymmetric_obs: true
+action_bounds: null
+has_final_obs: false
+partial_reset: false
+
+vmin: 0
+vmax: 150

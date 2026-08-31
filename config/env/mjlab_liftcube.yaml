@@ -1,0 +1,21 @@
+type: mjlab
+name: Mjlab-Lift-Cube-Yam
+max_episode_steps: 1000
+# Calibrated, not inherited. mjlab's RewardManager scales every term by dt, and
+# this task runs dt = 0.005*4 = 0.02 s, so raw per-step reward is ~0.02 and the
+# reference's Ant/brax default of 0.1 would put the discounted return near 0.2
+# against a 150-wide support. 10.0 is the value measured (in safe_rl's port) to
+# put discounted returns in the 18-26 band -- the same band Ant/Go2 converge in.
+reward_scaling: 10.0
+terminate: true
+asymmetric_obs: true
+action_bounds: null
+has_final_obs: false
+partial_reset: false
+
+# Matched to safe_rl's config/mjlab_liftcube_reppo_v24.yaml so that any
+# difference against our port is attributable to the IMPLEMENTATION, not to the
+# value support. Measured there: returns_mean ~18, returns_max ~26,
+# frac_targets_clipped 0.0000.
+vmin: -20
+vmax: 150

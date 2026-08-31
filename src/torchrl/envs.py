@@ -24,6 +24,19 @@ def make_envs(cfg: DictConfig, device: torch.device, seed: int = None) -> tuple:
         )
         return envs, envs
 
+    elif cfg.env.type == "mjlab":
+        from src.env_utils.torch_wrappers.mjlab_env import MjlabEnv
+
+        envs = MjlabEnv(
+            cfg.env.name,
+            device.type,
+            cfg.hyperparameters.num_envs,
+            seed,
+            reward_scaling=cfg.env.reward_scaling,
+            action_bounds=cfg.env.action_bounds,
+        )
+        return envs, envs
+
     elif cfg.env.type == "mjx":
         from src.env_utils.torch_wrappers.mujoco_playground_env import make_env
 
