@@ -111,9 +111,11 @@ Per-state values first; the arm row is the seed median of per-seed state medians
 | N(0, I_k) | A | 0.0002284 [0.000189, 0.000256] | 0.01645 [0.015, 0.0174] | 1.09 [1.09, 1.09] |
 | N(0, I_k) | B | 0.002114 [0.000625, 0.00571] | 0.05043 [0.0273, 0.083] | 1.095 [1.09, 1.1] |
 
-By the Gaussian Poincaré inequality, $\mathrm{Var}(\tilde e_z)\le\mathbb E\|\Sigma_z^{1/2}\nabla_zQ_\phi\|^2$ for any function under a Gaussian reference law, with equality iff the function is affine in $z$. $\Omega_z\ge1$ is therefore forced; all 20 configurations respect the bound, an additional validation. The measured $\Omega_z = 1.07\text{--}1.14$ implies, via the Hermite decomposition ($\Omega^2=\sum_k k\,a_k$ with $a_k$ the variance fraction at polynomial order $k$), a guaranteed linear-in-$z$ energy fraction $a_1\ge2-\Omega^2$: at least ~86% for arm A and at least ~70% for arm B. The padded error field is a dominantly linear tilt at the sampling scale, not a high-frequency wiggle.
+**The Poincaré bound and what the numbers do and do not show.** By the Gaussian Poincaré inequality, $\mathrm{Var}(\tilde e_z)\le\mathbb E\|\Sigma_z^{1/2}\nabla_zQ_\phi\|^2$ for any function under a Gaussian reference law, with equality iff the function is affine in $z$. $\Omega_z\ge1$ is therefore forced analytically. The finite-sample per-state check produced a minimum estimated $\Omega_z$ of **1.023** across 40,960 evaluated state-checkpoint/law cells, with zero estimates below one. That is a consistency check on the estimator, not a proof of the inequality: the inequality is a theorem, and a finite-sample estimate landing below one would have indicated Monte-Carlo error or a coding fault, not a counterexample.
 
-Two refinements of that paragraph, from the measured per-state values. First, the bound is respected **per state**, not merely by the medians: the minimum $\Omega_z$ over all 2048 states is 1.023 (arm B, checkpoint law) and 1.053 (arm A), with zero states below 1 in any of the 20 configurations. Second, the $a_1$ figures quoted above are checkpoint-law numbers: taking each arm×law median $\Omega_z$ from the table, the guaranteed $a_1\ge2-\Omega^2$ is 85% (A, checkpoint), 81% (A, $\mathcal N(0,I_k)$), 70--78% (B, checkpoint) and 80% (B, $\mathcal N(0,I_k)$).
+**Aggregate $\Omega_z$ and its definition.** $\Omega_z=G_z/\sqrt{V_e}$ with $G_z^2=\mathbb E\|\Sigma_z^{1/2}\nabla_zQ_\phi\|^2$ and $V_e=\mathrm{Var}_z(Q_\phi)$, both taken under the stated reference law for $z$ and both in the $\Sigma_z$-whitened metric, so $\Omega_z$ is dimensionless and law-specific. Per-seed state medians span **1.07-1.14**, decomposing by law as: 1.069-1.072 (arm A, checkpoint law, $\Sigma_z=\Sigma_{z,c}$), 1.090-1.093 (arm A, standardized law, $\Sigma_z=I_k$), 1.104-1.143 (arm B, checkpoint law) and 1.091-1.098 (arm B, standardized law). Each figure is a within-law quantity; the checkpoint-law and standardized-law columns use different metrics and are not interchangeable.
+
+Via the Hermite decomposition ($\Omega^2=\sum_k k\,a_k$, $a_k$ the variance fraction at polynomial order $k$), $\Omega_z$ bounds the linear-in-$z$ energy fraction from below by $a_1\ge2-\Omega^2$. Evaluated at each arm x law median: 85% (A, checkpoint), 81% (A, standardized), 70-78% (B, checkpoint), 80% (B, standardized). Under every law measured here the padded error field is a dominantly linear tilt at the sampling scale rather than a high-frequency wiggle.
 
 **Aggregation discrepancy check (proposition self-check 1).** $\Omega_z^2$ is a ratio, so it is formed per state and aggregated after. The pooled energy-weighted proxy $\sqrt{\overline{G_z^2}/\overline{V_e}}$ — which the proposition forbids as a substitute — is reported beside it.
 
@@ -199,11 +201,28 @@ Median over states of $\mathbb E[R_{{\rm PW},z,j}^2]$ and $\mathbb E[\hat a_{M,j
 | PW | 5.93e-05 | 5.28e-05 | 6.98e-05 | 5.16e-05 | 6.57e-05 | 7.8e-05 | 6.84e-05 | 6.03e-05 | 9.32e-05 | 8.44e-05 | 6.28e-05 | 5.76e-05 | 5.75e-05 | 6.75e-05 | 6.01e-05 | 7.07e-05 |
 | ZO | 0.000127 | 0.000132 | 0.000141 | 0.000123 | 0.000132 | 0.000133 | 0.000144 | 0.000141 | 0.000173 | 0.000162 | 0.000147 | 0.000131 | 0.000141 | 0.000143 | 0.000137 | 0.000144 |
 
-### Interpretation — where this probe sits relative to Claim 4
+### Interpretation - where this probe sits relative to Claim 4
 
-A dominantly linear $\tilde e_z$ is the low-$\omega$ regime of Claim 4: smooth error, where the pathwise estimator inherits the error robustly and the zeroth-order estimator's smoothing advantage is nil, while additionally paying the ~75× sampling-noise ratio measured above. This probe therefore lands in the corner of the phase diagram where both terms favor pathwise; it does not exercise the high-$\omega$ corner where the crossover would reverse. That is a statement about these trained critics, not a validation of the full crossover claim.
+A dominantly linear $\tilde e_z$ is the low-$\omega$ regime of Claim 4: smooth error, where the pathwise estimator inherits the error robustly and the zeroth-order estimator's smoothing advantage is nil. Separately from that linearity finding - and **not** derived from $\Omega_z$, which is the centered padded-error frequency and carries no information about estimator variance - the ZO estimator also pays a large **ZO-to-pathwise noise-energy ratio** in the padded block.
 
-The sampling-noise ratio quoted there, $\mathrm{tr}V_M/(\mathrm{tr}C_{zz}/M)$, is arm-A-checkpoint-law specific. Seed medians as measured: **75.5** (A, checkpoint; range 73.0--76.4), 58.8 (A, $\mathcal N(0,I_k)$), **41.6** (B, checkpoint; range 33.5--44.9), 55.6 (B, $\mathcal N(0,I_k)$). The qualitative conclusion is unchanged across all four — the ZO estimator pays one to two orders of magnitude more sampling noise for a padded block whose error is already dominantly linear — but the specific factor 75 should not be carried to arm B, where it is closer to 40.
+That ratio is $\mathrm{tr}(V_M)\,/\,[\mathrm{tr}(C_{zz})/M]$. The numerator is the trace of the finite-$M$ covariance of the canonical ZO estimator $\hat a_M$, i.e. eq (14); the denominator is the pathwise estimator's sampling-noise energy at the same $M$, i.e. the $\mathrm{tr}(C_{zz})/M$ term of eq (7).
+
+$C_{zz}$ is defined **in the whitened metric**: with $H(u)=\Sigma^{1/2}\nabla_yQ_\phi(s,\tanh(\mu+\Sigma^{1/2}u))$ and $C=\operatorname{Cov}(H)$ (proposition Sec. 2), $C_{zz}$ is the padded-block diagonal sub-block of that whitened covariance. $V_M$ is likewise already a whitened-coordinate quantity, since $R_{\rm ZO}=\Sigma^{1/2}\hat g_{\rm ZO}=\hat a_M$. Numerator and denominator are therefore in the same metric and the ratio is dimensionless.
+
+**Scope of the ratio.** It compares **covariance (sampling-noise) energy only**. It excludes the squared estimator bias of each channel — $\|h_z\|^2$ for pathwise and $(1-1/M)^2\|a_z\|^2$ for ZO, the terms that sit alongside the noise terms in eqs (7) and (16) — and it is therefore **not** a total-MSE ratio between the two estimators. Against the true padded gradient $\nabla_zQ^\pi=0$ those bias terms are themselves error and dominate both channels here, so the noise ratio below characterises one component of the comparison, not the whole of it.
+
+Seed medians, reported per checkpoint arm and per reference law:
+
+| arm | reference law | ZO-to-pathwise noise-energy ratio |
+|---|---|---|
+| A (pathwise) | checkpoint | **75.5** (range 73.0-76.4) |
+| A (pathwise) | standardized $\mathcal N(0,I_k)$ | **58.8** (range 57.1-59.4) |
+| B (weighted-MLE) | checkpoint | **41.6** (range 33.5-44.9) |
+| B (weighted-MLE) | standardized $\mathcal N(0,I_k)$ | **55.6** (range 53.2-60.0) |
+
+Only with those four values on the table is a joint summary meaningful: across arms and laws the ratio spans roughly **42-76x**. No single value should be quoted as if it applied to both arms - arm A under its own law is ~75x while arm B under its own law is ~42x, and the two are measured under different $\Sigma_z$.
+
+Taken together, this probe lands in the corner of the phase diagram where both terms favor pathwise; it does not exercise the high-$\omega$ corner where the crossover would reverse. That is a statement about these trained critics, not a validation of the full crossover claim.
 
 ## 4. Saturation covariate
 
