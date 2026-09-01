@@ -23,7 +23,11 @@
 
 set -uo pipefail
 
-REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+# Under sbatch the script is staged into /var/spool/slurm, so ${BASH_SOURCE[0]}
+# points outside the repo and "$(dirname ...)/.." resolves to /var/spool/slurm.
+# $SLURM_SUBMIT_DIR is the repo root because submit_ladder.sh cds there before
+# submitting; fall back to the script path for direct local invocation.
+REPO_ROOT=${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}
 # shellcheck source=slurm/ladder_matrix.sh
 source "$REPO_ROOT/slurm/ladder_matrix.sh"
 
