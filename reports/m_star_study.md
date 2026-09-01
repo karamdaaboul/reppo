@@ -194,21 +194,44 @@ should read: no diagnostic passed.
 
 ## 4. Track C -- the DMC arm
 
-Status at time of writing: pre-registered (`7d1b729`), smoke-tested, timing runs in
-flight. See Sec. 7.
+Pre-registered at `7d1b729` before launch. **Status: running.** 16 runs queued --
+`M = 128` seeds 201-208 on GPU 1, `M = 512` seeds 211-218 on GPU 0. The control (arm A,
+pathwise frozen-alpha, n=9, mean 738.614) and the `M = 32` arm (n=8, mean 666.174,
+gap **+72.440**, pooled t = 2.816) are NOT re-run.
 
-Smoke (1 iteration, 131072 steps): both `M = 128` and `M = 512` compile and run,
-**no OOM at M=512** on the 32 GB card, `estep_num_samples` correctly echoed into
-`meta.json`. ESS at initialisation is 121.3/128 and 485.0/512 (ESS/M ≈ 0.95) -- expected,
-since the critic is untrained and `Q` nearly flat, and NOT representative of the converged
-value (~0.59).
+Seed blocks are **disjoint across M**. The export tag `HumanoidRun_weighted_mle_s{seed}`
+does not encode `M`, so a shared seed would silently overwrite. This was registered as a
+hazard in prereg Sec. 3.1 and then confirmed live: the two smoke runs both used seed 299
+and overwrote one another. The cost of disjoint blocks is that the two M arms are not
+seed-paired with each other; both are compared against the unchanged arm A, so the
+primary contrast is unaffected.
 
-One operational finding worth recording: both smokes used seed 299 and therefore **wrote
-to the same export path**, `HumanoidRun_weighted_mle_s299_final`, overwriting one another.
-The export tag does not encode `M`. This is the hazard the prereg registered in Sec. 3.1,
-confirmed live; production seeds are distinct per arm.
+### 4.1 Smoke test (passed)
 
----
+One iteration at each M: both compile and run, **no OOM at `M = 512`** on the 32 GB card,
+`estep_num_samples` correctly echoed into `meta.json`. ESS at initialisation is 121.7/128
+and 484.7/512 (`ESS/M ≈ 0.95`) -- expected with an untrained critic and nearly flat `Q`,
+and **not** representative of the converged value (~0.59 in the published cohort).
+
+### 4.2 Compute asymmetry -- REGISTERED AS A REPORTED OUTCOME
+
+Measured here, from 1- and 4-iteration runs (marginal cost = `(t4 - t1)/3`), against the
+published `M = 32` anchor of 4400 s / 399 iterations:
+
+| M | s / iteration | full 399-iter run | critic rows per minibatch | vs pathwise |
+|---|---|---|---|---|
+| 32 (committed) | 11.0 | 73 min | 65,536 | 32x |
+| 128 | **19.4** | ~2.2 h / seed | 262,144 | 128x |
+| 512 | **32.6** | ~3.6 h / seed | 1,048,576 | **512x** |
+
+**MEASURED, and the useful part: wall-clock scales far SUB-LINEARLY in M.** A 16x increase
+in `M` (32 -> 512) costs only **3.0x** wall-clock, because the E-step critic evaluation is
+one term among environment stepping, critic training and the M-step. The 512x figure is
+critic rows, not time.
+
+That materially changes the price of the fix. If the d=21 deficit is finite-sample, buying
+`M = 512` costs roughly 3x wall-clock per seed, not 16x. A win at `M = 512` is still
+reported with its price -- but the price is smaller than the critic-query ratio suggests.
 
 ## 5. Does this contradict Chatterjee & Diaconis?
 
