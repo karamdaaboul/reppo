@@ -17,7 +17,10 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=24
 #SBATCH --mem-per-cpu=5000M
-#SBATCH --time=02:00:00
+# g1 at the 50M-step default runs ~2.9 h (measured: 4779 sps on H100), so the
+# old 02:00:00 killed every g1 run ~1 h short of its final export. Shorter
+# tasks are unaffected -- SLURM bills actual use, not the request.
+#SBATCH --time=04:00:00
 #SBATCH --output=logs/%x_%A_%a.out
 #SBATCH --error=logs/%x_%A_%a.err
 
