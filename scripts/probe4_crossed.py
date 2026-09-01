@@ -41,6 +41,17 @@ literal reading that preserves the committed design):
       fixed critic.  Most literal reading: the clip belongs to the WML OPERATOR,
       because that is the code path it is a fact about.  The alternative (clip by
       TRAINING arm) is computed as a sensitivity and reported alongside.
+  A3. The plan says eta is read VERBATIM from the checkpoint (answer 4).  The
+      A-trained (pathwise) checkpoints have NO eta_param: no E-step temperature was
+      ever trained for them, so for the crossed cell "A-critic under the WML
+      operator" there is nothing to read.  Most literal reading that preserves the
+      committed crossed design: read eta verbatim where it exists (arm B), and where
+      it does not, construct it from the operator's own registered definition --
+      solve the MPO dual against the registered eps_E = 0.5, as a SINGLE scalar
+      shared across the batch, matching answer 4's "single learned scalar shared
+      across the whole batch (per-batch, never per-state)".  Both the source of eta
+      and its value are recorded per cell.  A sensitivity using the matched B-seed
+      eta on the A critic is reported alongside.
   A2. The plan fixes no explicit z budget for Probe 4 (it fixes one only for
       Probe 1's oracle stream).  N_Z below is chosen for MC convergence, and a
       split-half MC floor for Qbar is reported so the reader can see it is
@@ -64,10 +75,11 @@ M = 32                 # estep_num_samples (Amendment A recordables)
 EPS_E = 0.5            # eps_e
 ARM_B_CLIP = 1.0 - 1e-4
 R_DIM, K_DIM = 6, 16   # WalkerRun real dims, padded dims
-B_ENVS, BURN, N_CHUNKS, CHUNK_GAP = 128, 200, 8, 25   # 1024 states PER ARM lane set
-N_Z = 1024             # z draws for Qbar (see ambiguity A2)
+B_ENVS = int(os.environ.get("P4_ENVS", 128))          # lanes per arm
+BURN, N_CHUNKS, CHUNK_GAP = 200, int(os.environ.get("P4_CHUNKS", 8)), 25
+N_Z = int(os.environ.get("P4_NZ", 1024))             # z draws for Qbar (ambiguity A2)
 N_REF = 256            # independent pre-pass for the per-state centring reference
-STATE_CHUNK = 32
+STATE_CHUNK = int(os.environ.get("P4_SCHUNK", 32))
 PROBE_ROOT = 20260831
 TWO_EPS = 1.0
 
@@ -78,6 +90,32 @@ def probe_key(tag, ckpt):
     dig = hashlib.blake2b(f"{tag}|{ckpt}".encode(), digest_size=4).digest()
     return jax.random.fold_in(jax.random.PRNGKey(PROBE_ROOT),
                               int.from_bytes(dig, "big") % (2 ** 31))
+
+
+def solve_eta_scalar(Q, eps_e, lo=1e-4, hi=1e4, iters=80):
+    """Single batch-shared eta from the standard MPO E-step dual
+
+        g(eta) = eta*eps_E + eta * log mean_i exp(Q_i/eta),
+
+    solved by bisection on its derivative, which is monotone in eta.  Used ONLY where
+    the checkpoint has no eta_param to read (ambiguity A3)."""
+    Q = np.asarray(Q, dtype=np.float64).reshape(-1, Q.shape[-1])
+
+    def dg(eta):
+        z = Q / eta
+        zm = z.max(1, keepdims=True)
+        lse = zm[:, 0] + np.log(np.mean(np.exp(z - zm), 1))
+        w = np.exp(z - zm); w /= w.sum(1, keepdims=True)
+        return float(np.mean(eps_e + lse - (w * Q).sum(1) / eta))
+
+    a, b = lo, hi
+    for _ in range(iters):
+        m = np.sqrt(a * b)
+        if dg(m) < 0:
+            a = m
+        else:
+            b = m
+    return float(np.sqrt(a * b))
 
 
 def ckpt_dir(arm, seed):
@@ -124,13 +162,18 @@ def main():
 
     # --- per-checkpoint policy laws on the IDENTICAL raw states -----------------
     H = {arm: Harness(ckpt_dir(arm, seed), B_ENVS) for arm in ("A", "B")}
-    MU, SG, ETA = {}, {}, {}
+    MU, SG, ETA, ETA_SRC = {}, {}, {}, {}
     for arm, h in H.items():
         d = h.pi(jnp.asarray(raw))                    # each critic applies its OWN normalizer
         MU[arm] = np.asarray(d.distribution.loc, dtype=np.float64)
         SG[arm] = np.asarray(d.distribution.scale, dtype=np.float64)
-        ETA[arm] = float(np.asarray(h.ck.actor.eta()).ravel()[0])   # verbatim from ckpt
-    print(f"  eta read verbatim: A={ETA['A']:.6g}  B={ETA['B']:.6g}", flush=True)
+        try:
+            ETA[arm] = float(np.asarray(h.ck.actor.eta()).ravel()[0])
+            ETA_SRC[arm] = "verbatim"
+        except AttributeError:
+            ETA[arm] = None                           # solved later, see ambiguity A3
+            ETA_SRC[arm] = "solved_from_dual"
+    print(f"  eta: A={ETA['A']} ({ETA_SRC['A']})  B={ETA['B']} ({ETA_SRC['B']})", flush=True)
 
     # --- common actions: equal A-policy and B-policy samples, labels kept -------
     ku = probe_key(f"actions|{law}", f"s{seed}")
@@ -143,6 +186,7 @@ def main():
         Y[:, sl, :] = MU[arm][:, None, :] + SG[arm][:, None, :] * u_common[:, sl, :]
 
     res = {}
+    eta_used = {}
     for critic in ("A", "B"):
         h = H[critic]
         cobs = np.asarray(h.nc(jnp.asarray(raw)), dtype=np.float32)
@@ -194,7 +238,7 @@ def main():
                     yy = jnp.concatenate(
                         [jnp.broadcast_to(xb[:, :, None, :], zs.shape[:3] + (R_DIM,)), zs], -1)
                     cb = jnp.broadcast_to(cc[:, None, None, :], zs.shape[:3] + (cc.shape[-1],))
-                    return qfun(cb, yy, clip).squeeze(-1)          # (ns, M, n)
+                    return qfun(cb, yy, clip).reshape(zs.shape[:3])   # (ns, M, n)
 
                 # independent pre-pass -> per-state reference mean (Amendment A.1(2))
                 kr, zmain_key2 = jax.random.split(jax.random.fold_in(zref_key, s0))
@@ -207,7 +251,7 @@ def main():
                 if opname == "PW":
                     # grad of Qbar wrt y: E_z[grad_x Q] in the x block, 0 in the z block
                     gb = np.zeros((ns, M, R_DIM + K_DIM))
-                    NZG = 128                    # gradient sub-budget for E_z[grad_x Q]
+                    NZG = int(os.environ.get("P4_NZG", 128))   # gradient sub-budget for E_z[grad_x Q]
                     zg = zs[:, :, :NZG, :]
                     yy = jnp.concatenate(
                         [jnp.broadcast_to(xb[:, :, None, :], zg.shape[:3] + (R_DIM,)), zg], -1)
@@ -227,8 +271,14 @@ def main():
                 ess = np.full(N_S, np.nan); wkl = np.full(N_S, np.nan)
             else:
                 uw = (Y - mu_c[:, None, :]) / sgc            # whitened offsets
+                eta_c = ETA[critic]
+                if eta_c is None:
+                    eta_c = solve_eta_scalar(Qi, EPS_E)
+                    print(f"    eta for critic {critic} solved from the dual "
+                          f"(eps_E={EPS_E}): {eta_c:.6g}", flush=True)
+                eta_used[critic] = eta_c
                 def wml_dir(Q):
-                    z = Q / ETA[critic]
+                    z = Q / eta_c
                     z = z - z.max(1, keepdims=True)
                     w = np.exp(z); w /= w.sum(1, keepdims=True)
                     return (w[..., None] * uw).sum(1), w

@@ -1,0 +1,11 @@
+task,k,seed,arm,expected_path,found,git_sha,action_dim,action_pad,min_std,alpha_entropy,alpha_kl,time_steps,final_return,nan_in_eval,ess_final,checksum,slurm,gpu,integrity
+WalkerRun,16,0,A,exports/WalkerRun_pathwise_fa_pad16_s0_final,FOUND,7534b774aa44,22.0,16.0,0.1,0.015279999934136868,0.02360256016254425,52297728.0,903.568603515625,False,0.0,e23de5b89d19b9b9,slurm:3430378_0,NVIDIA H100,PASS
+WalkerRun,16,1,A,exports/WalkerRun_pathwise_fa_pad16_s1_final,FOUND,7534b774aa44,22.0,16.0,0.1,0.015279999934136868,0.01822563447058201,52297728.0,910.3348999023438,False,0.0,6c00ed4d1afb89c1,slurm:3430378_1,NVIDIA H100,PASS
+WalkerRun,16,2,A,exports/WalkerRun_pathwise_fa_pad16_s2_final,FOUND,7534b774aa44,22.0,16.0,0.1,0.015279999934136868,0.018835142254829407,52297728.0,909.5820922851562,False,0.0,25aae9ab2aa926d9,slurm:3430378_2,NVIDIA H100,PASS
+WalkerRun,16,3,A,exports/WalkerRun_pathwise_fa_pad16_s3_final,FOUND,7534b774aa44,22.0,16.0,0.1,0.015279999934136868,0.018937135115265846,52297728.0,907.1201782226562,False,0.0,cfa1ebf9508cc86c,slurm:3430378_3,NVIDIA H100,PASS
+WalkerRun,16,4,A,exports/WalkerRun_pathwise_fa_pad16_s4_final,FOUND,7534b774aa44,22.0,16.0,0.1,0.015279999934136868,0.018067296594381332,52297728.0,902.1347045898438,False,0.0,e958c5fb00ea3f89,slurm:3430378_4,NVIDIA H100,PASS
+WalkerRun,16,0,B,exports/WalkerRun_weighted_mle_pad16_s0_final,MISSING,,,,,,,,,,,,,,
+WalkerRun,16,1,B,exports/WalkerRun_weighted_mle_pad16_s1_final,MISSING,,,,,,,,,,,,,,
+WalkerRun,16,2,B,exports/WalkerRun_weighted_mle_pad16_s2_final,MISSING,,,,,,,,,,,,,,
+WalkerRun,16,3,B,exports/WalkerRun_weighted_mle_pad16_s3_final,MISSING,,,,,,,,,,,,,,
+WalkerRun,16,4,B,exports/WalkerRun_weighted_mle_pad16_s4_final,MISSING,,,,,,,,,,,,,,
