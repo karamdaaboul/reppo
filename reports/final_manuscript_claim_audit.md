@@ -19,7 +19,7 @@ and were each verified with `git log -1 -- <file>`.
 
 | File | Change |
 |---|---|
-| `blurring_the_critic.tex` (Overleaf) | +319 / −45 lines; 16 anchored edits |
+| `blurring_the_critic.tex` (Overleaf) | +331 / −46 lines over 3 commits (`3059cda`, `ab60455`); 17 anchored edits, every one asserted unique before application |
 | `reports/mechanism_evidence_synthesis.md` | new §5 (ubar strand), §4 scoped and cross-referenced, decision table replaced with 14 rows, sections renumbered |
 | `reports/ubar_ratio.md` | five numerical passages corrected (see §6) |
 | `reports/manuscript_claim_supersession.md` | **new** — Step 1 deliverable |
@@ -158,7 +158,10 @@ pdflatex -interaction=nonstopmode blurring_the_critic
 | multiply-defined labels | 0 | **0** |
 
 All seven new labels (`sec:implemented`, `sec:ladder`, `sec:planted`, `sec:ubar`,
-`eq:mhat`, `eq:vdecomp`, `eq:lossdecomp`) resolve. Without the build stubs the
+`eq:mhat`, `eq:vdecomp`, `eq:lossdecomp`) resolve. A final automated sweep confirms
+zero occurrences of each forbidden formulation, a balanced `abstract` environment, the
+`ubar_raw`/`ubar_fit` distinction present, `eta` provenance stated, and the explicit
+statement that states are never pooled across seeds. Without the build stubs the
 document does not compile on this machine at all, because `todonotes` is unreadable in
 the system tree and `references.bib` does not exist; that is true of the unmodified
 document as well.
@@ -166,9 +169,13 @@ document as well.
 ## 9. Diff summary
 
 ```
-blurring_the_critic.tex | 364 ++++++++++++++++++++++++++++++++-----------
-1 file changed, 319 insertions(+), 45 deletions(-)
+# Overleaf, 482d96c..ab60455
+blurring_the_critic.tex | 377 +++++++++++++++++++++++++++++++++-----------
+1 file changed, 331 insertions(+), 46 deletions(-)
 ```
+
+Overleaf commits: `3059cda` (main reconciliation), `ab60455` (eta provenance).
+Repository commit: `5de9b3e` (report reconciliation), on top of `39c5171`.
 
 Repository: `reports/mechanism_evidence_synthesis.md` and `reports/ubar_ratio.md`
 modified; `reports/manuscript_claim_supersession.md` and this file added;
