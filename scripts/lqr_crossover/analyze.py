@@ -62,22 +62,45 @@ def full_mse(z, batch_mean=True):
     return out[0], out[1]
 
 
-def cross_share(z):
-    """|2 (eps/sigma) s2| / ((eps/sigma)^2 s3): the spec Sec. 5.2 reconciliation.
+def cross_share(z, c_star=None):
+    """The spec Sec. 5.2 reconciliation, evaluated where it means something.
 
-    Claim 4's decomposition drops this term. If it is comparable to the error-only part
-    anywhere in the swept region, that is a limitation of the claim and belongs in the
-    paper (registered threshold: 0.25).
+        Var[g] = Var[g]_smooth + Var[g]_e + 2 Cov(g[Q^pi], dg)
+
+    Claim 4's decomposition drops the cross term. Reporting `|2Cov| / Var_e` maximised
+    over the whole grid is MEANINGLESS: as c -> 0 the error field flattens, so
+    Var_e ~ c^2 while the cross term ~ c, and the ratio diverges in exactly the cells
+    where both are negligible against the smooth part. That is a property of dividing by
+    something going to zero, not a statement about Claim 4.
+
+    So two honest numbers are returned instead:
+      `at_crossover`  |2Cov| / Var_e in the c-cell nearest the E1a crossover -- the
+                      region the claim is actually about;
+      `frac_of_total` max over the grid of |2Cov| / total MSE -- bounded, and it answers
+                      "can the dropped term matter to the quantity that governs learning".
     """
     r = eps_over_sigma(z)[:, :, None]
+    sig, om = z["sigmas"], z["omegas"]
     out = {}
     for nm, pw in (("pw", True), ("zo", False)):
+        s1 = z["s1_pw" if pw else "s1_zo"]
         s2 = z["s2_pw" if pw else "s2_zo"]
         s3 = z["s3_pw" if pw else "s3_zo"]
         s2d = np.stack([s2[:, :, i, i, :] for i in range(s2.shape[2])], axis=2)
-        num = np.abs(2.0 * r[:, None] * s2d).mean(1)
-        den = ((r[:, None] ** 2) * s3).mean(1)
-        out[nm] = num / np.maximum(den, 1e-300)
+        cross = (2.0 * r[:, None] * s2d).mean(1)
+        err = ((r[:, None] ** 2) * s3).mean(1)
+        tot = (s1[..., None] + 2.0 * r[:, None] * s2d
+               + (r[:, None] ** 2) * s3).mean(1)
+        out[nm + "_frac_of_total"] = float(
+            np.nanmax(np.abs(cross) / np.maximum(np.abs(tot), 1e-300)))
+        if c_star is not None and np.isfinite(c_star):
+            C = sig[:, None] * om[None, :]
+            k = np.unravel_index(np.argmin(np.abs(np.log(C) - np.log(c_star))), C.shape)
+            out[nm + "_at_crossover"] = float(
+                np.abs(cross[:, k[0], k[1]]).mean()
+                / max(np.abs(err[:, k[0], k[1]]).mean(), 1e-300))
+        else:
+            out[nm + "_at_crossover"] = np.nan
     return out
 
 
@@ -168,28 +191,48 @@ def fit_p(ds, cstars):
     return float(np.polyfit(np.log(np.asarray(ds)[m]), np.log(np.asarray(cstars)[m]), 1)[0])
 
 
+def group_matrix(n_sigma, n_omega):
+    """(n_c, n_sigma*n_omega) averaging matrix collapsing cells onto their c level-set.
+
+    Exactly what `log_ratio_by_c` does with a Python loop, as one matmul. The loop costs
+    ~940 ms per bootstrap resample, i.e. eight hours for the registered 10 000 x 3
+    levels; this makes it a matrix product.
+    """
+    n_c = n_sigma + n_omega - 1
+    W = np.zeros((n_c, n_sigma * n_omega))
+    for i in range(n_sigma):
+        for j in range(n_omega):
+            W[i + j, i * n_omega + j] = 1.0
+    return W / W.sum(1, keepdims=True)
+
+
 def bootstrap_p(zs, ds, *, nboot=NBOOT, seed=BOOT_RNG, level=None):
     """Hierarchical bootstrap over states, then batches within each drawn state.
 
-    `level` freezes one level ("states" or "batches") so the variance decomposition by
-    level can be reported. A CI driven entirely by the batch level is an artefact of N,
-    a knob, not evidence about p -- the report must say which dominates.
+    `level` selects which level may vary: None resamples both, "states" resamples states
+    with batches frozen, "batches" resamples batches with states frozen. Running all
+    three gives the variance decomposition by level, which the report must state -- at
+    d >= 8 the per-state spread is negligible, so a CI driven entirely by the batch level
+    is an artefact of N, a knob, not evidence about p.
     """
     rng = np.random.default_rng(seed)
+    pre = [(z["s3_pw"], z["s3_zo"],
+            group_matrix(len(z["sigmas"]), len(z["omegas"])).T,
+            np.log(c_grid(z))) for z in zs]
     ps = []
     for _ in range(nboot):
         cs = []
-        for z in zs:
-            p3, z3 = z["s3_pw"], z["s3_zo"]
-            n_st, n_b = p3.shape[0], p3.shape[1]
-            si = np.arange(n_st) if level == "batches" else \
-                rng.integers(0, n_st, n_st)
-            pw = np.empty((n_st, *p3.shape[2:])); zo = np.empty_like(pw)
-            for a, s in enumerate(si):
-                bi = np.arange(n_b) if level == "states" else rng.integers(0, n_b, n_b)
-                pw[a] = p3[s, bi].mean(0); zo[a] = z3[s, bi].mean(0)
-            r = log_ratio_by_c(pw, zo, len(z["sigmas"]), len(z["omegas"]))
-            cs.append(solve_crossover(np.log(c_grid(z)), r.mean(0))[0])
+        for p3, z3, WT, logc in pre:
+            n_st, n_b = p3.shape[:2]
+            si = np.arange(n_st) if level == "batches" else rng.integers(0, n_st, n_st)
+            if level == "states":
+                pw, zo = p3[si].mean(1), z3[si].mean(1)
+            else:
+                bi = rng.integers(0, n_b, (n_st, n_b))
+                pw = p3[si[:, None], bi].mean(1)
+                zo = z3[si[:, None], bi].mean(1)
+            r = np.log(zo) - np.log(pw)
+            cs.append(solve_crossover(logc, (r.reshape(n_st, -1) @ WT).mean(0))[0])
         ps.append(fit_p(ds, np.array(cs)))
     ps = np.array(ps); ps = ps[np.isfinite(ps)]
     if len(ps) < 2:

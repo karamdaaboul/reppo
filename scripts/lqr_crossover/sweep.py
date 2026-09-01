@@ -67,6 +67,17 @@ def git_sha() -> str:
         return "unknown"
 
 
+def prereg_sha() -> str:
+    """Commit that last touched the prereg. Printed in every E1a run log, because the
+    decision rule must be timestamped BEFORE the run that it adjudicates."""
+    try:
+        return subprocess.check_output(
+            ["git", "log", "-1", "--format=%H", "--", "docs/prereg_lqr_crossover.md"],
+            cwd=REPO_ROOT, text=True).strip()
+    except Exception:
+        return "unknown"
+
+
 def make_kernel(d, M, r):
     """Jitted per-state kernel: scan over replicate batches, emit batch-resolved stats.
 
@@ -209,13 +220,15 @@ def run_d(d, *, M=M_DEFAULT, n_states=64, n_batch=40, r_batch=250, kind="rank1",
         omega_inf_factor=np.array(
             [EF.omega_inf(pe, grad_norm=a, val_norm=b) if b == "inf" else np.nan
              for a, b in EF.ALL_CONVENTIONS]),
-        git_sha=git_sha(), seconds=time.time() - t0, **res)
+        git_sha=git_sha(), prereg_sha=prereg_sha(),
+        seconds=time.time() - t0, **res)
 
     row = dict(name=name, d=d, M=M, kind=kind, rank=int(pe.rank), eps_frac=eps_frac,
                normalize=normalize, cost=cost, n_states=n_states,
                n_rep=n_batch * r_batch, rho_closed=s.rho_closed, cond_H=s.cond_H,
                tr_H2=s.tr_H2, lyap_resid_rel=s.lyap_resid_rel, retries=s.retries,
                eps_over_qspread=float(eps_frac), git_sha=git_sha(),
+               prereg_sha=prereg_sha(),
                seconds=round(time.time() - t0, 2), npz=os.path.basename(path))
     with open(os.path.join(OUT, "index.jsonl"), "a") as f:
         f.write(json.dumps(row) + "\n")
@@ -233,6 +246,9 @@ def main():
     ap.add_argument("--eps-frac", type=float, default=0.05)
     ap.add_argument("--normalize", default="unit_H", choices=("unit_H", "none"))
     ap.add_argument("--cost", default="identity", choices=("identity", "random_psd"))
+    ap.add_argument("--n-states", type=int, default=None)
+    ap.add_argument("--n-batch", type=int, default=None)
+    ap.add_argument("--r-batch", type=int, default=None)
     ap.add_argument("--coarse", action="store_true",
                     help="M6 gate: N=200, is the contour interior at every d?")
     ap.add_argument("--smoke", action="store_true", help="1/100 scale")
@@ -246,10 +262,17 @@ def main():
     elif a.smoke:
         kw.update(n_states=4, n_batch=4, r_batch=25, tag=a.tag + "_smoke")
 
+    for k, v in (("n_states", a.n_states), ("n_batch", a.n_batch),
+                 ("r_batch", a.r_batch)):
+        if v is not None:
+            kw[k] = v
+
     os.makedirs(OUT, exist_ok=True)
     ds = [a.d] if a.d else list(DS)
     print(f"sweep: d={ds} M={a.M} kind={a.kind} eps_frac={a.eps_frac} "
           f"normalize={a.normalize} sha={git_sha()[:10]}")
+    print(f"  prereg committed at {prereg_sha()} "
+          f"(docs/prereg_lqr_crossover.md)")
     t0 = time.time()
     for d in ds:
         run_d(d, **kw)
