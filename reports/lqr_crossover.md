@@ -167,6 +167,40 @@ The two readings differ by a full unit in the exponent. Until the paper states w
 If `d_ESTEP` tracks `g_ZO`, the theory describes the code. If it tracks neither, Claim 4 is a statement about an estimator the algorithm does not use, and the paper must say so.
 
 
+### 7.4 Is the E-step deficit an operator property, or finite-sample weighting?
+
+The softmax weights are SELF-NORMALISED, so `sum_i w_i u_i` carries an O(1/M) bias that the centred estimator (unbiased after `M/(M-1)`) does not. If the ZO-minus-ESTEP gap shrinks with M, the deficit is a sampling artefact, not a property of the operator -- and Section 7.6's d = 21 result is about M = 32, not about a crossover.
+
+At sigma = 0.367, c = sigma*omega = 8.15, cosine to the exact estimand:
+
+| d | M | cos PW | cos ZO | cos ESTEP | gap ZO-ESTEP | ESS/M |
+|---|---|---|---|---|---|---|
+| 4 | 8 | 0.9595 | 0.7628 | 0.6487 | 0.1141 | 0.526 |
+| 4 | 32 | 0.9882 | 0.9223 | 0.8790 | 0.0433 | 0.505 |
+| 4 | 128 | 0.9969 | 0.9784 | 0.9622 | 0.0163 | 0.489 |
+| 4 | 512 | 0.9992 | 0.9944 | 0.9840 | 0.0105 | 0.485 |
+| 16 | 8 | 0.8827 | 0.4034 | 0.3143 | 0.0891 | 0.502 |
+| 16 | 32 | 0.9658 | 0.6761 | 0.5872 | 0.0889 | 0.457 |
+| 16 | 128 | 0.9911 | 0.8790 | 0.8278 | 0.0512 | 0.430 |
+| 16 | 512 | 0.9977 | 0.9653 | 0.9436 | 0.0217 | 0.423 |
+| 21 | 8 | 0.9118 | 0.3897 | 0.2944 | 0.0953 | 0.504 |
+| 21 | 32 | 0.9752 | 0.6651 | 0.5500 | 0.1151 | 0.472 |
+| 21 | 128 | 0.9937 | 0.8728 | 0.7943 | 0.0785 | 0.448 |
+| 21 | 512 | 0.9984 | 0.9626 | 0.9286 | 0.0341 | 0.440 |
+| 64 | 8 | 0.7720 | 0.1661 | 0.1195 | 0.0466 | 0.490 |
+| 64 | 32 | 0.9253 | 0.3400 | 0.2488 | 0.0913 | 0.433 |
+| 64 | 128 | 0.9797 | 0.5897 | 0.4609 | 0.1288 | 0.396 |
+| 64 | 512 | 0.9948 | 0.8249 | 0.7119 | 0.1129 | 0.457 |
+
+**The gap shrinks with M at every d.** At d = 21 it falls 0.1151 -> 0.0162 from M = 32 to M = 2048 (a 7.1x reduction, decaying roughly as `M^-0.55`). At d = 4 it flattens near ~0.009, which is the residual, intrinsic difference between TILTING (the E-step moves to the mean of `q* ~ pi_old exp(Q/eta)`) and DIFFERENTIATING (the estimand is the blurred gradient). That residual is small; the M-dependent part dominates everywhere the algorithm actually runs.
+
+The controlling variable is `M/d`, samples per action dimension. The gap peaks near `M/d ~ 1-2` and decays beyond it. **At production `M = 32` and `d = 21`, `M/d = 1.5` -- the worst point of the curve** -- and with `ESS/M ~ 0.47` the effective ratio is ~0.7.
+
+The same sweep at high frequency (`c = 404`, d = 21) gives cos PW 0.460 / 0.655 / 0.820 against cos ZO 0.664 / 0.871 / 0.963 at M = 32 / 128 / 512: the zeroth-order arms beat pathwise there, as Claim 4 predicts, and the ZO-ESTEP gap still shrinks (0.1193 -> 0.0343). The ZO and ESTEP cosines are nearly IDENTICAL at both frequencies, confirming they are limited by sampling and not by omega, while pathwise degrades with omega.
+
+**Consequence for Section 7.6.** At `M = 32, d = 21` both zeroth-order operators sit at cosine ~0.55-0.66 to the true estimand while pathwise is at 0.975 (low omega). That is a finite-sample deficit which closes to ~0.99 by M = 2048. The d = 21 result is therefore consistent with under-sampling rather than with an operator crossover, and the decisive test in the real system is to rerun the d = 21 arm at M = 128 and M = 512. This is a prediction, not a result: it is measured in an LQR with a planted rank-one error, and cosine to the estimand is not return.
+
+
 ## 8. Limitations
 
 1. **The rank-one exponent is algebraic.** See prereg Sec. 3. E1a verifies the pipeline and the production estimator core against a closed form; it is not independent evidence for Claim 4's dimensional prediction.

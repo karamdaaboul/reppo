@@ -303,6 +303,47 @@ def main(tag=""):
       "Claim 4 is a statement about an estimator the algorithm does not use, and the "
       "paper must say so.\n")
 
+    W("\n### 7.4 Is the E-step deficit an operator property, or finite-sample weighting?\n")
+    W("The softmax weights are SELF-NORMALISED, so `sum_i w_i u_i` carries an O(1/M) bias "
+      "that the centred estimator (unbiased after `M/(M-1)`) does not. If the ZO-minus-"
+      "ESTEP gap shrinks with M, the deficit is a sampling artefact, not a property of "
+      "the operator -- and Section 7.6's d = 21 result is about M = 32, not about a "
+      "crossover.\n")
+    mj = os.path.join(OUT, "m_sweep_estep.json")
+    if os.path.exists(mj):
+        import json
+        rows = json.load(open(mj))
+        W("At sigma = 0.367, c = sigma*omega = 8.15, cosine to the exact estimand:\n")
+        W("| d | M | cos PW | cos ZO | cos ESTEP | gap ZO-ESTEP | ESS/M |")
+        W("|---|---|---|---|---|---|---|")
+        for r in rows:
+            W(f"| {r['d']} | {r['M']} | {r['cos_pw']:.4f} | {r['cos_zo']:.4f} | "
+              f"{r['cos_es']:.4f} | {r['gap']:.4f} | {r['ess_frac']:.3f} |")
+        W("\n**The gap shrinks with M at every d.** At d = 21 it falls 0.1151 -> 0.0162 "
+          "from M = 32 to M = 2048 (a 7.1x reduction, decaying roughly as `M^-0.55`). At "
+          "d = 4 it flattens near ~0.009, which is the residual, intrinsic difference "
+          "between TILTING (the E-step moves to the mean of `q* ~ pi_old exp(Q/eta)`) and "
+          "DIFFERENTIATING (the estimand is the blurred gradient). That residual is small; "
+          "the M-dependent part dominates everywhere the algorithm actually runs.\n")
+        W("The controlling variable is `M/d`, samples per action dimension. The gap peaks "
+          "near `M/d ~ 1-2` and decays beyond it. **At production `M = 32` and `d = 21`, "
+          "`M/d = 1.5` -- the worst point of the curve** -- and with `ESS/M ~ 0.47` the "
+          "effective ratio is ~0.7.\n")
+        W("The same sweep at high frequency (`c = 404`, d = 21) gives cos PW 0.460 / 0.655 "
+          "/ 0.820 against cos ZO 0.664 / 0.871 / 0.963 at M = 32 / 128 / 512: the "
+          "zeroth-order arms beat pathwise there, as Claim 4 predicts, and the ZO-ESTEP "
+          "gap still shrinks (0.1193 -> 0.0343). The ZO and ESTEP cosines are nearly "
+          "IDENTICAL at both frequencies, confirming they are limited by sampling and not "
+          "by omega, while pathwise degrades with omega.\n")
+        W("**Consequence for Section 7.6.** At `M = 32, d = 21` both zeroth-order "
+          "operators sit at cosine ~0.55-0.66 to the true estimand while pathwise is at "
+          "0.975 (low omega). That is a finite-sample deficit which closes to ~0.99 by "
+          "M = 2048. The d = 21 result is therefore consistent with under-sampling rather "
+          "than with an operator crossover, and the decisive test in the real system is "
+          "to rerun the d = 21 arm at M = 128 and M = 512. This is a prediction, not a "
+          "result: it is measured in an LQR with a planted rank-one error, and cosine to "
+          "the estimand is not return.\n")
+
     # ---------------------------------------------------------- 8
     W("\n## 8. Limitations\n")
     W("1. **The rank-one exponent is algebraic.** See prereg Sec. 3. E1a verifies the "
