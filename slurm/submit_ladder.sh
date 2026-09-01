@@ -34,14 +34,17 @@ for d in exports outputs logs .venv; do
 done
 
 if [ "$SMOKE" = 1 ]; then
-  # Two short runs exercising both env groups: index 0 is G1 (mjx_humanoid) and
-  # index 32 is Hopper (mjx_dmc). slurm/ladder.sh remaps the seeds into the 201+
-  # exploratory namespace, so no reserved confirmatory seed is spent.
+  # Two short runs exercising both env groups AND both arms: index 0 is G1
+  # (mjx_humanoid, arm A pathwise) and index 33 is Hopper (mjx_dmc, arm B
+  # weighted MLE). Arm is idx % 2, so an even/even pair such as 0,32 would
+  # leave the weighted-MLE E-step, dual and ESS code paths untested.
+  # slurm/ladder.sh remaps the seeds into the 201+ exploratory namespace, so
+  # no reserved confirmatory seed is spent.
   : "${TOTAL_STEPS:=2621440}"
   echo "SMOKE: 2 short runs on ${PARTITION:-c23g}, TOTAL_STEPS=$TOTAL_STEPS (~0.1 GPU-hours)"
   set -x
   sbatch --account="$ACCOUNT" --partition="${PARTITION:-c23g}" \
-         --time=00:30:00 --array=0,32 --job-name=reppo-smoke \
+         --time=00:30:00 --array=0,33 --job-name=reppo-smoke \
          --export=ALL,TASKS="$TASKS",SMOKE=1,TOTAL_STEPS="$TOTAL_STEPS" \
          slurm/ladder.sh
   exit $?
