@@ -191,6 +191,14 @@ plots/
 data.zip
 .github/*
 
+# slurm/bootstrap.sh replaces exports/, logs/ and outputs/ with symlinks into
+# $HPCWORK. The trailing-slash patterns elsewhere in this file match only real
+# directories, so the symlinks stayed untracked and tripped the dirty-tree
+# guard in submit_ladder.sh -- bootstrap then submit could never succeed.
+/exports
+/logs
+/outputs
+
 # --- run artifacts (added for the E-step study) ---
 exports/
 ledger/runs.d/
