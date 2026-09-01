@@ -10,6 +10,12 @@
 # Probe 4 analyses critics produced by the original training process, not corrected
 # training.
 #
+# Supersedes the variant in c3b5e05, which was registered but never executed.  That
+# one ran a detached 3b96deb worktree on c25g to avoid touching the estep-study tree;
+# the byte-identical parity result above makes the worktree unnecessary, so this runs
+# in-tree at the analysis commit and additionally writes a post-run ledger entry with
+# the checkpoint checksum, which the c3b5e05 version did not.
+#
 # index 0-4 -> arm A (pathwise), seeds 0-4 ; 5-9 -> arm B (weighted_mle), seeds 0-4
 #SBATCH --job-name=pad16-regen
 #SBATCH --partition=c23g
