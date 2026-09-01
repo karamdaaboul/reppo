@@ -19,7 +19,7 @@ and were each verified with `git log -1 -- <file>`.
 
 | File | Change |
 |---|---|
-| `blurring_the_critic.tex` (Overleaf) | +331 / −46 lines over 3 commits (`3059cda`, `ab60455`); 17 anchored edits, every one asserted unique before application |
+| `blurring_the_critic.tex` (Overleaf) | +329 / −45 lines over 2 commits (`3059cda`, `ab60455`); 17 anchored edits, every one asserted unique before application |
 | `reports/mechanism_evidence_synthesis.md` | new §5 (ubar strand), §4 scoped and cross-referenced, decision table replaced with 14 rows, sections renumbered |
 | `reports/ubar_ratio.md` | five numerical passages corrected (see §6) |
 | `reports/manuscript_claim_supersession.md` | **new** — Step 1 deliverable |
@@ -171,7 +171,7 @@ document as well.
 ```
 # Overleaf, 482d96c..ab60455
 blurring_the_critic.tex | 377 +++++++++++++++++++++++++++++++++-----------
-1 file changed, 331 insertions(+), 46 deletions(-)
+1 file changed, 329 insertions(+), 45 deletions(-)
 ```
 
 Overleaf commits: `3059cda` (main reconciliation), `ab60455` (eta provenance).
