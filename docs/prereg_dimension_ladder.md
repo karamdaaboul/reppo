@@ -1591,3 +1591,152 @@ remain confounded by design. The dimension argument rests on convergence of the
 native ladder, the action-padding intervention, the direct estimator and
 error-field probes, and any later within-task effective-dimension experiment.
 The ladder supplies external-validity, associational evidence only.
+
+---
+
+## Amendment L.1 (part 5) — Walker α frozen; supersessions recorded (2026-09-01)
+
+**Append-only.** sha256 of the leading 1593 lines is
+`423353b5503fe0b8a404360edf626b8f8a19d96dc691f6066bda2d02b4ebf879`.
+Written after `git pull`; from this amendment onward the prereg is edited by more
+than one author, and the working rule is pull → single append-only commit → push
+immediately.
+
+### L.1.31 WalkerRun frozen α — traceable, and 0.01528 retired
+
+The fresh WalkerRun learned-α calibration required by L.1.25 has run: seed 901,
+identical mechanical rule, `log_eval_iqm=true`, unique Hydra directory
+(`outputs/manual/cal901-walker`), executed on the L.1.2 workstation like the other
+three calibrations.
+
+| quantity | value |
+|---|---|
+| **α₉₀₁(WalkerRun)** | **`0.014509912580251694`** |
+| rule | `median(alpha_curve[2:])`, 21 checkpoints, learned α confirmed non-constant |
+| wall-clock / GPU-hours | 1173 s / 0.326 (GPU 0, RTX PRO 4500 Blackwell) |
+| `nan_in_eval` | false |
+| d, γ, value support | 6, 0.99, 0/150 |
+
+**The historical value `0.015279999934136868` (0.01528) is formally retired.** It
+is not used for seeds 101--108 in either arm. Its provenance was class E and could
+not be established (L.1.26): documented as a learned-α median but 3.05% away from
+the only surviving Walker learned-α curve, with the remaining calibration exports
+carrying all-NaN `alpha_curve`. The replacement is 5.04% below it and, unlike it,
+is reproducible from a named artifact by a stated rule.
+
+The historical Walker frozen-α runs (arm A seed 2; arm B seeds 1, 2, 99) remain
+retrospective supporting evidence and are not pooled with the fresh cohort
+(L.1.25). They were trained at the retired α, which is a further reason not to
+pool them, independent of the cohort-composition finding of L.1.16.
+
+Frozen α for all four confirmatory tasks is now complete:
+
+| task | d | frozen α for seeds 101--108 |
+|---|---|---|
+| HopperHop | 4 | `0.00037288447492755949` |
+| WalkerRun | 6 | `0.014509912580251694` |
+| LeapCubeRotateZAxis | 16 | `0.000782382907345891` |
+| G1JoystickFlatTerrain | 29 | `0.00020752247655764222` |
+
+### L.1.32 WalkerRun qualification, and a pre-outcome interpretive limit
+
+Recorded **before any confirmatory outcome exists**.
+
+WalkerRun is a DMC task, so its anchors are the independent `L_t = 0`,
+`U_t = 1000`, and the IQM anchor rule of §2 does not apply to it. Gates:
+floor `0.05 · 1000 = 50`, ceiling `0.90 · 1000 = 900`. The calibration's final
+evaluation mean is **885.74**. Since `50 < 885.74 < 900`, **WalkerRun passes both
+gates mechanically and QUALIFIES.** No gate, rule or threshold is changed.
+
+**Interpretive note, registered in advance.** The margin is 1.4 percentage points
+of the task scale, and the calibration curve is flat from the sixth checkpoint
+onward (859.6 → 885.7 across the final fifteen). WalkerRun is therefore close to
+the same ceiling that already disqualified WalkerStand/Walk, HumanoidStand/Walk
+and CheetahRun in §2's recorded screen. A task evaluated near its ceiling
+compresses any A−B difference toward zero, because both arms are bounded by the
+same task limit rather than separated by the operator.
+
+Consequently: **a null gap at d = 6 carries ceiling compression and cannot on its
+own support the low-dimensional clause of O1.** O1 requires the gap's CI to
+include zero in *both* qualified low-dimensional tasks (d ≤ 6). WalkerRun may
+still contribute that reading, but not by itself and not without this caveat
+attached.
+
+**HopperHop is designated the load-bearing low-dimensional point.** Its
+calibration is far from either gate (163.07 against 50 and 900) and it is
+measured on the rising part of its curve, which is where Corollary `cor:where`
+places operator differences (L.1.18). Its budget-truncation caveat continues to
+apply in full and is reported alongside. This designation is made before any
+confirmatory outcome and does not change any gate, seed, or analysis rule; it
+fixes in advance which low-d point carries the weight, so that the choice cannot
+be made after seeing the gaps.
+
+### L.1.33 SUPERSEDED by L.2 — local execution mechanism
+
+Amendment L.2 (`bc0257a`, 2026-08-31T22:50:43Z) moved the confirmatory ladder to
+the RWTH CLAIX-2023 `c23g` segment. L.1 part 4 was appended at 23:19:53Z and was
+written from the pre-L.2 state, so two of its items re-registered a plan L.2 had
+already superseded. Both are marked superseded here; neither is rewritten.
+
+- **L.1.28 (GPU counterbalancing) is superseded.** Its odd/even assignment of arms
+  to two heterogeneous GPUs balanced a two-GPU-model confound. `c23g` is
+  homogeneous — every run lands on an H100 — so that confound does not exist and
+  the rule has nothing to assign, exactly as L.2.2 states. The array index
+  determines `(task, arm, seed)` deterministically via `slurm/ladder_matrix.sh`,
+  and Slurm chooses the physical node.
+- **L.1.30 (local queue mechanism) is superseded** as to execution venue and
+  launch mechanism. `scripts/run_confirmatory_ladder.sh` never executed and the
+  local queue is permanently cancelled. What survives from L.1.30 unchanged: the
+  frozen α per task, the fixed task priority G1 → LEAP → Hopper → Walker, the
+  restriction on what may be inspected during execution, and the rule that
+  task-level A−B outcomes are analysed only after all registered seeds of that
+  task complete.
+
+Everything else in part 4 is venue-independent and stands: the Tier-2 rerun
+outcome and anchors (L.1.22), the two withdrawals (L.1.23, L.1.24), the α
+provenance audit (L.1.26), the export-mismatch inventory (L.1.27) and the parity
+result (L.1.29).
+
+### L.1.34 G1 best-checkpoint index — two figures, one governing definition
+
+Two different best-checkpoint indices appear for G1JoystickFlatTerrain and are
+reconciled here. They are not in conflict; they are different statistics computed
+on different executions.
+
+| figure | statistic | execution | best index | value |
+|---|---|---|---|---|
+| L.1.11 | evaluation **mean** per checkpoint | original seed-901 calibration | **18** | 32.286522 |
+| L.1.22 | evaluation **IQM** per checkpoint | seed-901 instrumentation rerun | **20** | 34.475914 |
+
+The registered anchor definition is `U_t = 1.1 ×` the best-checkpoint **IQM**, and
+the IQM exists only in the rerun (L.1.13, L.1.19). **The rerun IQM figure
+therefore governs**: index 20, `U_t = 37.923505`. The mean-based index 18 is
+retained in L.1.11 as the qualification-time record and is not used for the
+anchor.
+
+For LeapCubeRotateZAxis the two indices coincide at 18, which is coincidence
+rather than agreement — the same two-statistic, two-execution distinction applies.
+
+### L.1.35 Export-mismatch table — cause restated
+
+The mismatches tabulated in L.1.27 are **pointer artifacts of the same-second
+Hydra directory collision** described in L.1.21, not mislabelled data.
+
+Hydra's default run directory is `outputs/<date>/<HH-MM-SS>` with
+`hydra.job.chdir: True`, so two runs launched within the same second resolve to
+one directory; the `hydra_run_dir` recorded by the later export then points at a
+directory whose `.hydra/overrides.yaml` belongs to the other run.
+
+In every mismatched case **the export name and its own `meta.json` agree** — on
+seed and on `actor_update_mode` alike. The disagreement is only ever between
+`meta.json` and the `.hydra/overrides.yaml` reached through the stale pointer.
+**The checkpoints are correctly labelled.** Every quantity used anywhere in this
+preregistration is read from `meta.json`, which `scripts/export_ckpt.py` writes
+into `exports/<tag>/` independently of the Hydra working directory, so no recorded
+value is affected.
+
+The collision is fixed prospectively by the explicit unique `hydra.run.dir` passed
+by every launch (L.1.21, and L.2.3 for the array), and the diagnostic curves that
+previously lived only in the collided `metrics.npz` are now persisted into
+`meta.json`. The table stands as a manuscript-verification item for the affected
+historical exports; nothing was modified.
