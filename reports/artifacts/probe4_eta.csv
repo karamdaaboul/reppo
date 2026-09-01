@@ -1,0 +1,11 @@
+log,seed,law,eta_A,eta_A_src,eta_B,eta_B_src
+probe4_3431304_0.out,0,ckpt,0.405963,solved_from_dual,0.04109194502234459,verbatim
+probe4_3431369_5.out,0,std,0.408331,solved_from_dual,0.04109194502234459,verbatim
+probe4_3431369_1.out,1,ckpt,0.513868,solved_from_dual,0.05256585031747818,verbatim
+probe4_3431369_6.out,1,std,0.503373,solved_from_dual,0.05256585031747818,verbatim
+probe4_3431369_2.out,2,ckpt,0.361737,solved_from_dual,0.05555357411503792,verbatim
+probe4_3431369_7.out,2,std,0.365773,solved_from_dual,0.05555357411503792,verbatim
+probe4_3431369_3.out,3,ckpt,0.407921,solved_from_dual,0.0505363903939724,verbatim
+probe4_3431369_8.out,3,std,0.396537,solved_from_dual,0.0505363903939724,verbatim
+probe4_3431369_4.out,4,ckpt,0.47068,solved_from_dual,0.05522558093070984,verbatim
+probe4_3431369_9.out,4,std,0.464377,solved_from_dual,0.05522558093070984,verbatim

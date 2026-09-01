@@ -256,9 +256,12 @@ def main():
                     yy = jnp.concatenate(
                         [jnp.broadcast_to(xb[:, :, None, :], zg.shape[:3] + (R_DIM,)), zg], -1)
                     cb = jnp.broadcast_to(cc[:, None, None, :], zg.shape[:3] + (cc.shape[-1],))
+                    # all three levels map BOTH y and the critic obs over axis 0:
+                    # cb has been broadcast to carry the z axis, so leaving it
+                    # unmapped at the innermost level leaves it one rank too high
                     g3 = jax.vmap(jax.vmap(jax.vmap(
                         jax.grad(lambda y, c, cl: qfun(c, y, cl).squeeze()),
-                        in_axes=(0, None, None)), in_axes=(0, 0, None)), in_axes=(0, 0, None))
+                        in_axes=(0, 0, None)), in_axes=(0, 0, None)), in_axes=(0, 0, None))
                     gb[:, :, :R_DIM] = np.asarray(g3(yy, cb, clip),
                                                   dtype=np.float64).mean(2)[:, :, :R_DIM]
                     Gbar[sl] = gb
@@ -303,7 +306,10 @@ def main():
                   f"Ve<=0:{r['Ve_nonpos']} QbarMC={r['Qbar_mc']:.3g}", flush=True)
 
     np.savez(out, env_id=env_id, chunk_id=chunk_id, state_src=state_src,
-             act_src=act_src, seed=seed, law=law, eta_A=ETA["A"], eta_B=ETA["B"],
+             act_src=act_src, seed=seed, law=law,
+             eta_A=(eta_used.get("A") if ETA["A"] is None else ETA["A"]),
+             eta_B=(eta_used.get("B") if ETA["B"] is None else ETA["B"]),
+             eta_src_A=ETA_SRC["A"], eta_src_B=ETA_SRC["B"],
              **{f"{k.replace('|','_')}_{f}": v
                 for k, d in res.items() for f, v in d.items()})
     print(f"[seed {seed} law {law}] wrote {out} in {time.time()-t0:.0f}s", flush=True)

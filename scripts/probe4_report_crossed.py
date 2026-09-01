@@ -29,7 +29,7 @@ if not files:
     sys.exit(f"no Probe 4 npz for law={LAW} in {OUT}")
 data = {}
 for f in files:
-    z = np.load(f)
+    z = np.load(f, allow_pickle=True)
     data[int(z["seed"])] = z
 seeds = sorted(data)
 print(f"law={LAW}  seeds={seeds}  ({len(files)} files)\n")
@@ -115,14 +115,20 @@ tot_ve = sum(sec[c]["Ve_nonpos"] for c in CELLS)
 print(f"  V_e <= 0 tripwire total (must be 0)        : {tot_ve}")
 print(f"  Qbar MC s.e. vs padded Q spread            : "
       + ", ".join(f"{c} {sec[c]['Qbar_mc']/max(sec[c]['Qspread'],1e-30):.4f}" for c in CELLS))
-print(f"  eta read verbatim from ckpt (A, B) per seed: "
-      + ", ".join(f"s{s}:({float(data[s]['eta_A']):.4g},{float(data[s]['eta_B']):.4g})"
-                  for s in seeds))
+# eta actually used, per (seed, law). Arm B is read verbatim from the checkpoint;
+# arm A has no eta_param at all and is solved from the registered dual (ambiguity A3).
+import csv as _csv
+_eta = {(int(r["seed"]), r["law"]): r
+        for r in _csv.DictReader(open(f"{OUT}/probe4_eta.csv"))}
+print("  eta used (A solved from dual, B verbatim)  : "
+      + ", ".join("s%d:(%.4g,%.4g)" % (s, float(_eta[(s, LAW)]["eta_A"]),
+                                       float(_eta[(s, LAW)]["eta_B"])) for s in seeds))
 zero = {c: float(np.mean([np.mean(data[s][f"{c}_D"] == 0) for s in seeds])) for c in CELLS}
 print(f"  zero-step frequency                        : "
       + ", ".join(f"{c} {zero[c]:.4f}" for c in CELLS))
 
-json.dump(dict(law=LAW, seeds=seeds, primary=res, secondary=sec,
+json.dump(dict(law=LAW, seeds=seeds,
+               eta={str(k): v for k, v in _eta.items() if k[1] == LAW}, primary=res, secondary=sec,
                zero_step_freq=zero, nboot=NBOOT, rng_seed=20260831),
           open(f"{OUT}/probe4_result_{LAW}.json", "w"), indent=2)
 print(f"\nwrote {OUT}/probe4_result_{LAW}.json")
