@@ -5,7 +5,7 @@
 #   slurm/ladder.sh                      SLURM job array, one GPU per array task
 #
 # Nothing here may be changed on outcomes. The alphas are the seed-901 calibration
-# values frozen in docs/prereg_dimension_ladder.md (L.1.10 / L.1.16); the env args
+# values frozen in docs/prereg_dimension_ladder.md (L.1.10 / L.1.16 / L.1.31); the env args
 # are the launch commands registered in L.1.7.
 
 # Arms. A is the pathwise operator, B is weighted MLE with M = 32. The mode also
@@ -35,7 +35,7 @@ alpha_of () {
     g1)     echo "0.00020752247655764222" ;;
     leap)   echo "0.000782382907345891" ;;
     hopper) echo "0.00037288447492755949" ;;
-    walker) echo "0.015279999934136868" ;;
+    walker) echo "0.014509912580251694" ;;   # seed-901 calibration (L.1.31); 0.01528 retired
     *)      echo "alpha_of: unknown task '$1'" >&2; return 1 ;;
   esac
 }
