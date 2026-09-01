@@ -2,7 +2,7 @@
 
 **THE UNIFORM EMPIRICAL-MEAN TERM DOES NOT DOMINATE THE FROZEN BATCH ACTOR GRADIENT IN THE HIGH-DIMENSIONAL CONDITION.** At d=29 the centered critic-dependent component is the larger one (R_batch_theta = 0.085 arm A, 0.452 arm B in the mean-output and empirical-KL metrics, both < 1). The term is MATERIAL BUT NON-DOMINANT only on WalkerRun d=6 (1.90 / 2.63) and d=22 arm A (1.45).
 
-**Clipping changes the decomposition materially and must not be folded into "Gaussian sampling noise."** The +-(1-1e-4) clip binds on up to 20.7% of samples (walker arm B), inflates RMS ||ubar|| by up to 3.0x over the raw-Gaussian value, and gives ubar_fit a systematic mean vector up to 18x the raw one. The tanh transform itself is innocent: it drops out of the mean score exactly.
+**Clipping changes the decomposition materially and must not be folded into "Gaussian sampling noise."** The +-(1-1e-4) clip binds on a condition-median 22.1% of samples (walker arm B; 43.3% at the most affected single checkpoint, leap arm B seed 106), inflates RMS ||ubar|| by up to 3.0x over the raw-Gaussian value, and gives ubar_fit a systematic mean vector up to 18x the raw one. The tanh transform itself is innocent: it drops out of the mean score exactly.
 
 ---
 
@@ -125,7 +125,7 @@ at a spread of roughly 0.6. The only condition with a spread below that (hopper 
 `sqrt(d/M)`, the empirical mean to `sqrt(2/M) Gamma((d+1)/2)/Gamma(d/2)`, and the
 empirical median to `chi_d^{-1}(0.5)/sqrt(M)`:
 
-**worst `|ratio - 1|` over all 30 comparisons = 0.0053.**
+**worst `|ratio - 1|` = 0.0053 over the 30 condition-median comparisons, and 0.0213 over all 222 per-checkpoint comparisons (74 checkpoints x 3 benchmarks).**
 
 The median is compared only to the chi median, never to `sqrt(d/M)`.
 
@@ -137,7 +137,7 @@ bias:
 | hopper | A | 4 | 1.40% | 0.597 | 0.355 | 0.0841 | 0.0052 | 0.460 |
 | hopper | B | 4 | 4.34% | 0.385 | 0.354 | 0.0385 | 0.0079 | 0.179 |
 | walker | A | 6 | 1.76% | 0.768 | 0.435 | 0.0805 | 0.0096 | 0.646 |
-| **walker** | **B** | 6 | **20.7%** | **1.292** | 0.433 | **0.171** | 0.0093 | **1.261** |
+| **walker** | **B** | 6 | **22.1%** | **1.292** | 0.433 | **0.171** | 0.0093 | **1.261** |
 | leap | A | 16 | 1.35% | 0.711 | 0.708 | 0.0809 | 0.0162 | 0.120 |
 | leap | B | 16 | 5.21% | 0.700 | 0.708 | 0.0966 | 0.0155 | 0.172 |
 | walker-pad16 | A | 22 | 0.42% | 1.028 | 0.829 | 0.107 | 0.0169 | 0.614 |
@@ -147,7 +147,7 @@ bias:
 
 This is **transformation-induced bias, not Gaussian sampling noise.** The clipped
 residual has a systematic conditional mean an order of magnitude above the raw one
-(walker B: 0.171 vs 0.0093; g1 B: 0.205 vs 0.0217), and up to 3.0x the RMS norm. It is
+(walker B: 0.171 vs 0.0093, a factor of 18.4; g1 B: 0.205 vs 0.0217), and up to 3.0x the RMS norm at the condition-median level (15.1x at the most affected single checkpoint, hopper arm A seed 101). It is
 concentrated in arm B, whose policies are much wider (walker B median sigma 3.39 vs
 arm A 0.475), pushing `|tanh y|` against the clip.
 
@@ -340,11 +340,13 @@ Summarised in Sec. 6. Separating the two sources as instructed:
   within 0.53%, has a negligible mean vector (0.005–0.022), and averages down within a
   batch exactly as `sqrt(d/(MB))` predicts. This component is fully characterised and
   benign.
-* **Clipping/transformation-induced bias**: the `+-(1-1e-4)` clip binds on 0.10%–20.7%
-  of samples, inflates `RMS ||ubar||` by up to 3.0x, and gives `ubar_fit` a systematic
-  conditional mean up to 18x the raw one. On walker arm B — the worst case, with 20.7%
-  clipping and median policy width 3.39 — clipping, not Gaussian sampling, produces the
-  majority of the uniform term. **The tanh transform itself contributes nothing**: it
+* **Clipping/transformation-induced bias**: the `+-(1-1e-4)` clip binds on a condition-median 0.10%–22.1%
+  of samples (per-checkpoint maximum 43.3%, leap arm B seed 106), inflates
+  `RMS ||ubar||` by up to 3.0x at the condition-median level (15.1x at the most affected
+  single checkpoint), and gives `ubar_fit` a systematic conditional mean up to 18.4x the
+  raw one. On walker arm B — the worst condition, with 22.1% clipping and median policy
+  width 3.39 — clipping, not Gaussian sampling, produces the majority of the uniform
+  term. **The tanh transform itself contributes nothing**: it
   drops out of the mean score exactly (verified to `1.1e-15`), so the clip is the sole
   transformation-level source.
 

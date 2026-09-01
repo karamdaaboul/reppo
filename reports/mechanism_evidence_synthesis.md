@@ -4,9 +4,12 @@ Four bodies of evidence, deliberately kept apart. They were produced under diffe
 designs with different identification properties, and combining their conclusions
 would manufacture support that none of them individually provides.
 
-Analysis commits `7534b77`, `7663d03`, `6da5ad5`, branch `estep-study`. Sources:
-`reports/g1_kl_readonly_audit.md`, `reports/probe4_padding_error_field_results.md`,
-`reports/planted_error_phase_diagram.md`.
+Analysis commits `7534b77`, `7663d03`, `6da5ad5`, `0fd0a30`, branch `estep-study`;
+final analysis HEAD `39c5171`. Sources: `reports/g1_kl_readonly_audit.md`,
+`reports/probe4_padding_error_field_results.md`,
+`reports/planted_error_phase_diagram.md`, and — superseding the earlier reading of the
+implemented E-step wherever they conflict — `reports/ubar_code_trace.md` and
+`reports/ubar_ratio.md`, preregistered at `docs/prereg_ubar_ratio.md` (`5912170`).
 
 ---
 
@@ -118,12 +121,59 @@ removes by construction and the operational measure does not.
 manuscript's `g_ZO`. Expanding the raw self-normalised softmax,
 `sum_i w_i u_i = ubar + (1/eta) m_hat + O(eta^-2)`, where `m_hat` is `g_ZO`'s numerator
 but `ubar = (1/M) sum_i u_i` is **absent from `g_ZO`** because its coefficients sum to
-zero. The implemented E-step therefore carries an irreducible `O(sqrt(d/M))`
-mean-estimation noise the pathwise operator does not pay. This is the `ubar` term
-Amendment A answer 2 records as live. It is the likely source of the systematic
-WML-worse-than-`g_ZO` gap (median MSE ratio ≈ 1.13 above `r = 1`).
+zero. The implemented E-step therefore carries an `O(sqrt(d/M))` mean-estimation
+displacement, in this synthetic setting, that the pathwise operator does not pay. This
+is the `ubar` term Amendment A answer 2 records as live, and it is the likely source of
+the systematic WML-worse-than-`g_ZO` gap here (median MSE ratio ≈ 1.13 above `r = 1`).
 
-## 5. What remains unidentified
+> **Superseded in scope by Sec. 5.** The word "irreducible" appeared here in the
+> earlier version and is withdrawn: within a training minibatch the term does average
+> down across states, and the frozen-checkpoint audit finds it neither
+> dimension-amplified nor dominant in the trained system. The algebra above stands; the
+> extrapolation from it to the benchmark does not, and Sec. 5 replaces it.
+
+## 5. What the uniform empirical-mean audit establishes
+
+74 frozen checkpoints, both arms, `d in {4, 6, 16, 22, 29}`, `M = 32`, preregistered
+before any checkpoint number was computed. **This section supersedes Sec. 4's closing
+paragraph**, which inferred from the planted setting that the implemented E-step
+"carries an irreducible `O(sqrt(d/M))` mean-estimation noise". The algebra is right;
+the inference about what it does in the trained system was untested, and is now tested.
+
+* **The decomposition is exact.** The whitened mean score equals `sum_i w_i u_i_fit`
+  (autodiff agreement `1.1e-15`), the weights are fully stop-gradiented, and
+  `v = ubar + c` holds identically. This is the complete mean-score decomposition.
+* **The first-order identification of `c` fails at operating logits.** `c ~= m_hat/eta`
+  meets its preregistered adequacy criteria in **1 of 10** conditions, with residuals to
+  **5.364**. It holds only where the softmax logit spread is below about 0.6. In two
+  conditions the E-step has collapsed onto a single sample (median ESS **1.07** with
+  max weight 0.968, and **1.36** with 0.848, out of M=32).
+* **`ubar` and `c` are orthogonal** in every condition (cosines within
+  `[-0.029, +0.013]`), so `ubar` rotates the score rather than reinforcing or
+  cancelling it. State-level energy ratio `R2_exact` is **0.20-0.71**.
+* **Not dimension-amplified.** In the only matched within-task manipulation of
+  estimator-visible `d` (WalkerRun 6 -> 22), all-pairs `Rho` medians are **1.035** and
+  **0.485**, both below the registered 1.3 threshold:
+  **DIMENSION AMPLIFICATION REFUTED IN THE MATCHED ESTIMATOR PROBE.** Unpaired in seed,
+  differing `alpha`, contaminated padded cohort; no return conclusion.
+* **Not dominant where the return gap is.** At `d=29` the batch actor-gradient ratio is
+  **0.085** (arm A) and **0.452** (arm B) in the mean-output and empirical-KL metrics:
+  the centred critic-dependent component is larger in both. `ubar` is material but
+  non-dominant only at WalkerRun `d=6` (1.90, 2.63) and padded `d=22` arm A (1.45).
+* **Clipping, not tanh, is the transformation-level source.** The tanh Jacobian is
+  mu-independent and cancels exactly; the clip binds on a condition-median up to
+  **22.1%** of samples (43.3% at one checkpoint), inflates RMS `||ubar||` up to 3.0x,
+  and gives `ubar_fit` a systematic mean vector up to **18.4x** the raw one.
+  `ubar_fit` therefore carries transformation-induced bias, not Gaussian noise, and
+  `d/M` does not predict it.
+
+**Consequence.** `ubar` is a real, sometimes material finite-sample difference between
+the implemented E-step and the centred estimator the manuscript analyses. It is
+**common across tasks, largest in several low-dimensional conditions, and least
+important at `d=29`**. It therefore does not explain why only one task has a detected
+return gap, and it is closed as a dimension-based explanation of it.
+
+## 6. What remains unidentified
 
 * `omega` on any learned critic, by any route available in the retained artifacts.
 * `Q^pi`, hence `e`, hence whether the manuscript's crossover condition is anywhere
@@ -134,27 +184,46 @@ WML-worse-than-`g_ZO` gap (median MSE ratio ≈ 1.13 above `r = 1`).
 * Any action-dimension trend: not evaluable, and the anchors may not be built now.
 * Whether the Probe 4 critic-source asymmetry ("each critic is hurt more by its own
   training operator") is real. Post-hoc, n=5.
+* What the nonlinear centred component `c` is, mechanistically, outside the small-logit
+  regime. The audit measures it but does not model it, and in two conditions the
+  weighting has collapsed to a near-argmax.
+* Which of the distinctions between the analysed estimator and the executed algorithm —
+  nonlinear softmax weighting, action clipping, covariance updating, shared trunk
+  parameters, or the trust-region gate — carries the g1 difference, if any does.
+  `ubar` is now excluded as a dimension-based explanation, which narrows the list
+  without resolving it.
 * Whether Probe 1 and Probe 4 agree on a common checkpoint set — Probe 1's published
   numbers were computed on the lost originals, Probe 4's on the regenerations.
 
 ---
 
-## 6. Paper-level decision table
+## 7. Paper-level decision table
 
-| Claim | Current evidence | Evidence after this work | Status | Allowed wording | Must NOT be used |
-|---|---|---|---|---|---|
-| **Same smoothed-critic target** | Proposition `prop:estimand`, proof only | Verified numerically: PW unbiased for the blurred gradient; `g_ZO` unbiased up to `1-1/M`; both agree as sampling error vanishes (2 validation tests) | **Supported** | "Both estimators target the blurred gradient; we verify this numerically." | Do not extend the verification to the *implemented* E-step without the `ubar` caveat. |
-| **First-order natural-gradient equivalence** | Proposition `prop:estep`, proof only | Holds for `g_ZO`. For the **actual** raw-softmax E-step it holds only after removing `ubar`; the raw WML direction has median cosine >0.99 with `ubar` and \|cos\|<0.2 with `g_ZO` | **Mixed** | "The operators coincide to first order. The implementation's uncentred weights add a `ubar` term absent from the idealised estimator." | Do not say the implemented E-step *is* `g_ZO`. |
-| **Estimator variance difference** | Same-critic probe: ZO-like 4.5–7x noisier than PW on frozen learned critics | Unchanged; plus the planted result that the error-induced ratio is `r^-2` | **Supported, narrowly** | "Relative to `Q_phi`, the score-based estimator is noisier on these critics." | Do not describe this as measuring critic quality or as ruling it out. It is variance w.r.t. `Q_phi`, not w.r.t. `Q^pi`. |
-| **`sigma`–`omega`–dimension crossover (Claim 4)** | Claim with unmodelled constants; no measurement | Confirmed in the planted setting for the **error-induced variance**: crossover at `r*` in [0.974, 1.128] over 19 slices, 0/240 misclassified. **Not** confirmed operationally: WML wins 34/76 above `r=1`, crossover `r* ≈ 1.67` | **Supported for the stated quantity; unsupported as an operational rule** | "In a controlled setting with known error field, the predicted crossover in error-induced variance appears at `sigma omega = sqrt(d)`. The advantage does not transfer one-for-one to update quality, because the sampling estimators still pay the classical `d` factor on the smooth part." | Do not claim the E-step produces better updates whenever `sigma omega > sqrt(d)`. Do not present the planted result as evidence about learned critics. |
-| **Learned-critic padded-coordinate robustness** | Probe 1 (restricted-z) on the lost originals | Probe 4 crossed table: prediction holds on B-trained critics 5/5, reverses on A-trained 0/5, both laws | **Mixed** | "The prediction that the E-step is more affected holds for critics trained by the E-step and reverses for pathwise-trained critics." | Do not report only the supporting half. Do not draw returns from these checkpoints — all 10 trip the registered contamination rule. |
-| **Action-dimension return trend** | Non-monotone across d=4,6,16,29; registered statistic not evaluable | Unchanged. Nothing here restores it | **Unidentified** | "The registered cross-task statistic is not evaluable; its anchors were not registered before outcomes were observed." | Do not claim a dimension trend. Do not define anchors post hoc or substitute a replacement test. |
-| **Explanation of the g1 return gap** | Attributed to the estimator contrast | Confounded: the defective branch provably fired in 64/64 runs; g1-B has 6.9x arm A's KL dispersion and 12.6x its overshoot; but within g1-B, dispersion correlates **positively** with return | **Unidentified; the comparison is confounded** | "The g1 comparison is confounded by KL-gate behaviour that differs sharply between arms on that task; the confound cannot be removed from the retained data." | Do not say the KL defect caused the g1 result. Do not call the 64 comparisons "clean" without qualification. Do not present g1 as a clean operator contrast. |
-| **Entropy-dual observation** | `sigma` held at a target throughout training, so it cannot be raised by choosing an earlier checkpoint | Reinforced from a new direction: with the dual frozen, the entropy bonus inflates `sigma` in coordinates where `Q` is flat — `sigma_pad/sigma_real` = 1.74–1.93 (A) and 3.64–5.58 (B) on 10/10 padded checkpoints | **Supported** | "The entropy term drives policy width in directions the critic cannot rank; with a frozen dual this shows up as width inflation on inert coordinates, 10/10 checkpoints." | Do not use the padded runs' returns as evidence for anything — the registered contamination rule fires on all of them. |
+Every row: allowed wording, forbidden wording, exact evidence source.
 
----
+| # | Claim | Status | Allowed wording | Must NOT be used | Evidence |
+|--:|---|---|---|---|---|
+| 1 | Same blurred-critic estimand | **SUPPORTED** | "Both estimators target the gradient of the same Gaussian-smoothed critic." | Do not extend to the *implemented* E-step without the `ubar` caveat. | `planted_error_phase_diagram.md` §6 (2 validation tests); `blurring_the_critic.tex` `prop:estimand` |
+| 2 | Population first-order natural-gradient identity | **SUPPORTED** under the stated idealised assumptions | "Under the stated assumptions and matched KL budgets the idealised population mean updates coincide to first order." | Do not say the *implemented* operators coincide. | `prop:estep`, `cor:identical`; unaffected by the audit |
+| 3 | First-order description of implemented WML | **UNSUPPORTED GENERALLY AT OPERATING LOGITS**; local expansion only | "`c ~= m_hat/eta` is a small-logit expansion; it fails its adequacy criteria in 9 of 10 audited conditions (residuals to 5.364)." | Do not call `m_hat/eta` the empirical centred WML direction. Do not use it to explain the benchmark. | `ubar_ratio.md` §5 |
+| 4 | Exact implemented mean-score decomposition `v = ubar + c` | **SUPPORTED** | "The implemented mean score decomposes exactly into a uniform empirical-mean term and a nonlinear centred term." | Do not call `v` the full implemented actor update. | `ubar_code_trace.md` §0.8 (T4, T5); `ubar_ratio.md` §2 |
+| 5 | `ubar` as a dimension-amplified mechanism | **REFUTED IN THE MATCHED ESTIMATOR PROBE** | "`Rho` medians 1.035 and 0.485, both below the registered 1.3 threshold." | Do not say dimension amplification is observed. Do not say it cannot affect returns. | `ubar_ratio.md` §9 |
+| 6 | `ubar` as the dominant g1 gradient component | **NOT SUPPORTED**; centred component larger | "At `d=29` the ratio is 0.085 (arm A) and 0.452 (arm B); the centred critic-dependent component is larger in both." | Do not say `ubar` dominates, caused g1, or that removing it would improve return. | `ubar_ratio.md` §11b; `ubar_batch_gradient.csv` |
+| 7 | Clipping-induced fitted-score bias | **SUPPORTED** at frozen checkpoints; no return-level claim | "The hard clip gives `ubar_fit` a transformation-induced bias; the tanh transform itself cancels exactly." | Do not attribute it to tanh. Do not apply `d/M` to `ubar_fit`. Do not infer returns. | `ubar_ratio.md` §6, §12 |
+| 8 | Claim 4 error-induced variance crossover | **SUPPORTED** in the planted ground-truth setting | "Under the assumptions of Claim 4, the critic-error-induced variance of the centred value estimator becomes smaller than the pathwise one when `sigma*omega > sqrt(d)`; 0/240 cells misclassified, per-slice `r*` in [0.974, 1.128]." | Do not state it for total variance, exact `c`, `v`, the actor gradient, update MSE, or return. | `planted_error_phase_diagram.md` §3 |
+| 9 | Claim 4 as an operational WML-selection rule | **UNSUPPORTED** | "The advantage does not transfer: above `r=1` the actual WML operator wins only 34 of 76 cells, with its own crossover near 1.67." | Do not write "the E-step wins when `sigma*omega > sqrt(d)`". | `planted_error_phase_diagram.md` §4 |
+| 10 | Learned-critic padded-coordinate prediction (Probe 4) | **MIXED** | "Holds on B-trained critics (5/5, +0.0137) and reverses on A-trained critics (0/5, -0.0019), identically under both reference laws." | Do not report only the supporting critic source. Do not infer returns; all 10 checkpoints trip the width gate. | `probe4_padding_error_field_results.md` §3 |
+| 11 | Action-dimension return trend | **UNIDENTIFIED** | "The ordering is not monotone in `d`; the registered cross-task statistic is not evaluable." | Do not claim a trend. Do not define anchors post hoc. | `mechanism_evidence_synthesis.md` §1 |
+| 12 | Cause of the g1 return gap | **UNIDENTIFIED AND CONFOUNDED** | "The comparison is confounded by KL-gate behaviour that differs sharply between arms on that task; the confound cannot be removed from the retained data." | Do not say the KL defect caused it, that `ubar` caused it, or that the runs are clean. | `g1_kl_readonly_audit.md` §7; `ubar_ratio.md` §14 |
 
-## 7. Required language
+Two further rows retained from the earlier synthesis, unchanged in status:
+
+| # | Claim | Status | Note |
+|--:|---|---|---|
+| 13 | Estimator variance relative to `Q_phi` | Supported, narrowly | It is variance conditional on `Q_phi`, **not** error relative to `Q^pi`. Critic quality is **not** eliminated; `omega` remains unidentified on learned critics. |
+| 14 | Entropy-dual width inflation on inert coordinates | Supported | 10/10 padded checkpoints, ratios 1.74-1.93 (A) and 3.64-5.58 (B). Returns from those runs remain unusable. |
+
+## 8. Required language
 
 * The 64 comparisons are **protocol-consistent and reproducible**, with
   **construct-validity concerns** from the implementation defects. Not "clean".
