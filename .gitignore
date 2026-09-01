@@ -210,3 +210,7 @@ figures/
 
 # Probe 1 restricted-z oracle raw outputs (~800 MB of per-state moment tensors)
 scripts/probe1_out/
+
+# SLURM stdout/stderr accidentally landing in the repo root
+/*.out
+/*.err

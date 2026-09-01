@@ -1,0 +1,66 @@
+{
+  "_comment": "PROSPECTIVE sweep configuration for the planted-error phase diagram. Committed BEFORE the sweep is run. Claim 4 is quoted verbatim from blurring_the_critic.tex lines 563-577 (claim:crossover).",
+  "claim4_verbatim": {
+    "setting": "Sigma = sigma^2 I",
+    "omega_definition": "omega := ||grad e||_inf / ||e||_inf   (function sup-norms over the action domain)",
+    "var_pw_bound": "Var[g_PW]_e  <~  (1/M) ||grad e||_inf^2",
+    "var_zo_bound": "Var[g_ZO]_e  <~  (d/M) ||e||_inf^2 / sigma^2",
+    "prediction": "the zeroth-order estimator has the smaller ERROR-INDUCED variance when sigma*omega > sqrt(d)",
+    "source": "blurring_the_critic.tex, claim:crossover"
+  },
+  "estimators_verbatim": {
+    "g_PW": "(1/M) sum_i grad Q_phi(mu + Sigma^{1/2} u_i)",
+    "g_ZO": "Sigma^{-1/2} (1/M) sum_i (Q_phi(mu + Sigma^{1/2} u_i) - Qbar) u_i, Qbar = sample mean",
+    "source": "blurring_the_critic.tex, eq:estimators"
+  },
+  "wml_operator": {
+    "form": "Delta_mu_WML = sum_i w_i (a_i - mu), w_i = softmax(Q_i / eta)",
+    "eta": "solved per batch by minimising g(eta) = eta*eps_E + eta*log((1/M) sum_i exp(Q_i/eta)) (standard MPO E-step dual)",
+    "note": "this is the ACTUAL weighted-MLE mean update, not a generic finite-difference estimator; g_ZO is reported alongside because it is the manuscript's own eq:estimators object"
+  },
+  "trust_region": {
+    "step": "Delta_mu = sqrt(2 eps) * Sigma ghat / ||ghat||_Sigma",
+    "gradient_norm": "||g||_Sigma^2 = g^T Sigma g",
+    "displacement_norm": "||v||_{Sigma^-1}^2 = v^T Sigma^-1 v",
+    "source": "docs/wasted_step_fraction_proposition.md Sec.1, resolved against blurring_v6 prop:estep"
+  },
+  "oracle": {
+    "Q_pi": "-0.5 (a - a_star)^T H (a - a_star) with H = I",
+    "mu": "0",
+    "a_star": "G * v_signal, ||v_signal|| = 1, G = 1.0 fixed for every d so the true signal energy does not change with d",
+    "exact_gradient": "grad Q_pi(0) = G * v_signal; because Q_pi is quadratic its Gaussian blur has the SAME gradient, so the oracle is exact, not Monte Carlo"
+  },
+  "planted_error": {
+    "primary": "e(a) = eps * sin(omega * v_e^T a + phase), ||v_e|| = 1",
+    "why_single_sinusoid": "for J=1 the theorem's sup-norms are attained analytically: ||e||_inf = eps and ||grad e||_inf = eps*omega, so omega is EXACT and independently verifiable rather than assumed",
+    "secondary": "J=4 superposed random directions with sup-norms calibrated numerically (robustness only)",
+    "eps": 1.0,
+    "eps_secondary": [0.1, 1.0]
+  },
+  "grid": {
+    "d":     [2, 4, 8, 16, 32, 64],
+    "sigma": [0.05, 0.1, 0.2, 0.4, 0.8],
+    "omega": [0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0],
+    "r_definition": "r = sigma * omega / sqrt(d)",
+    "M": 32,
+    "eps_E": 0.5,
+    "n_directions": 8,
+    "n_batches": 4096,
+    "seed": 20260901,
+    "boundary_marked_before_results": 1.0
+  },
+  "budget": {
+    "PW": "M critic forward passes + M critic backward passes",
+    "ZO": "M critic forward passes, 0 backward passes",
+    "WML": "M critic forward passes, 0 backward passes",
+    "note": "equal M for all three, as in eq:estimators; PW's extra backward passes are an asymmetry in favour of the sampling estimators and are REPORTED, not corrected for"
+  },
+  "primary_outcome": "ratio_e = Var[g_ZO]_e / Var[g_PW]_e, where Var[.]_e is the trace of the covariance of the EXACT error-induced component, isolated by common random numbers: ghat[Q_pi + e] - ghat[Q_pi]. Claim 4 predicts ratio_e < 1 iff r > 1.",
+  "secondary_outcomes": [
+    "trust-region-normalised update MSE against the exact oracle update, per estimator",
+    "directional cosine to the oracle gradient",
+    "P(WML update error < PW update error)",
+    "large-M agreement of both estimators with the blurred gradient (baseline proposition)"
+  ],
+  "falsification": "The r=1 boundary is marked before results are inspected. The observed crossover of ratio_e is estimated with uncertainty and reported wherever it lands. No fitting of the crossover to 1.0 is permitted; a crossover away from 1, or absent, is reported as such."
+}
