@@ -1,0 +1,13 @@
+{
+ "run_id": "fr-g1-WML32-s306",
+ "status": "completed",
+ "wall_clock_s": 0,
+ "gpu_hours": 0.0,
+ "start": "2026-09-02T04:02:12+02:00",
+ "slurm_job": "3443771_6",
+ "gpu": "NVIDIA H100",
+ "git_sha": "b3e3c39d758bdf7dbdbf7ec0877ac6417d3f7512",
+ "export_path": "scripts/train_and_export.py env=mjx_humanoid env.name=G1JoystickFlatTerrain env.asymmetric_obs=false experiment_overrides=mjx_humanoid_large_data seed=306 num_trials=1 num_seeds=1 wandb.mode=disabled hyperparameters.actor_update_mode=weighted_mle hyperparameters.update_entropy_lagrangian=false hyperparameters.ent_start=0.00020752247655764222 hyperparameters.faithful_same_point=true hyperparameters.fresh_minibatch_key=true hyperparameters.log_faithful_diag=true hydra.run.dir=outputs/faithful_repair/g1_WML32_s306 exports/G1JoystickFlatTerrain_weighted_mle_s306_final",
+ "export_present": false,
+ "checkpoint_sha256": null
+}

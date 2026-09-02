@@ -1,0 +1,13 @@
+{
+ "run_id": "fr-walker-WML32-s301",
+ "status": "completed",
+ "wall_clock_s": 0,
+ "gpu_hours": 0.0,
+ "start": "2026-09-02T04:10:37+02:00",
+ "slurm_job": "3443772_12",
+ "gpu": "NVIDIA H100 80GB HBM3",
+ "git_sha": "b3e3c39d758bdf7dbdbf7ec0877ac6417d3f7512",
+ "export_path": "scripts/train_and_export.py env=mjx_dmc env.name=WalkerRun experiment_overrides=mjx_dmc_large_data seed=301 num_trials=1 num_seeds=1 wandb.mode=disabled hyperparameters.actor_update_mode=weighted_mle hyperparameters.update_entropy_lagrangian=false hyperparameters.ent_start=0.014509912580251694 hyperparameters.faithful_same_point=true hyperparameters.fresh_minibatch_key=true hyperparameters.log_faithful_diag=true hydra.run.dir=outputs/faithful_repair/walker_WML32_s301 exports/WalkerRun_weighted_mle_s301_final",
+ "export_present": false,
+ "checkpoint_sha256": null
+}

@@ -15,16 +15,26 @@ cd "${SLURM_SUBMIT_DIR:?}" || exit 1
 ARCH=${FR_ARCH:?set FR_ARCH to c23g or c25g}
 IDX=${SLURM_ARRAY_TASK_ID:?}
 
-read -r RUN_ID CMD EXPECT < <(./.venv/bin/python - "$ARCH" "$IDX" <<'PY'
+# NEWLINE-delimited: `read -r A B C` splits on whitespace and would truncate the
+# command to its first word. Each field is read on its own line instead.
+mapfile -t FIELDS < <(./.venv/bin/python - "$ARCH" "$IDX" <<'PY'
 import json, sys
 arch, idx = sys.argv[1], int(sys.argv[2])
 rows = [json.loads(l) for l in open("ledger/runs_faithful_repair.jsonl")]
 rows = [r for r in rows if r["gpu_architecture"] == arch]
 rows.sort(key=lambda r: (r["task_key"], r["arm"], r["seed"]))
 r = rows[idx]
-print(r["run_id"], r["command"], r["expected_export_final"])
+print(r["run_id"]); print(r["command"]); print(r["expected_export_final"])
 PY
 )
+RUN_ID="${FIELDS[0]}"; CMD="${FIELDS[1]}"; EXPECT="${FIELDS[2]}"
+# refuse to run a command that does not look like the registered trainer
+case "$CMD" in
+  "python scripts/train_and_export.py "*) : ;;
+  *) echo "ERROR: resolved command does not match the ledger: [$CMD]" >&2; exit 2 ;;
+esac
+# refuse to record success if the expected export is absent afterwards
+echo "resolved cmd length: ${#CMD} chars"
 source .venv/bin/activate
 export CUDA_DEVICE_ORDER=PCI_BUS_ID JAX_PLATFORMS=cuda,cpu
 export XLA_PYTHON_CLIENT_PREALLOCATE=true WANDB_MODE=disabled
@@ -37,6 +47,10 @@ echo "cmd    $CMD"
 echo "==================================================="
 t0=$(date +%s); start=$(date -Is)
 if $CMD; then status=completed; else status=failed; fi
+if [ "$status" = completed ] && [ ! -d "$EXPECT" ]; then
+  echo "ERROR: run reported success but $EXPECT is absent" >&2
+  status=failed_no_export
+fi
 t1=$(date +%s)
 echo "DONE $RUN_ID status=$status wall_s=$((t1-t0))"
 mkdir -p ledger/runs.d.faithful_repair
