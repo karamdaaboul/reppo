@@ -1,0 +1,10 @@
+Failed to import warp: No module named 'warp'
+Failed to import mujoco_warp: No module named 'warp'
+seed 301, law B, R=200 S=128 M=32
+per-coordinate saturation 0.5800 | all-d saturated per sample 0.1206
+  critic PW   PW-1   zero frac 0.01902 (487) | all-d saturated frac 0.12250 | zero AND saturated 0.01902 | P(saturated | zero) 1.0000
+  critic PW   PW-32  zero frac 0.00000 (0) | all-d saturated frac 0.00000 | zero AND saturated 0.00000 | P(saturated | zero) 0.0000
+  critic WML  PW-1   zero frac 0.01902 (487) | all-d saturated frac 0.12250 | zero AND saturated 0.01902 | P(saturated | zero) 1.0000
+  critic WML  PW-32  zero frac 0.00000 (0) | all-d saturated frac 0.00000 | zero AND saturated 0.00000 | P(saturated | zero) 0.0000
+  PW-1   zero mask identical across critic sources: True
+  PW-32  zero mask identical across critic sources: True

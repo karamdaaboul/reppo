@@ -1,0 +1,23 @@
+host n23g0005.hpc.itc.rwth-aachen.de  mode run  git e74b297  2026-09-02T22:12:32+02:00
+reports/artifacts/cd_bank_walker_corrected.npz: OK
+Failed to import warp: No module named 'warp'
+Failed to import mujoco_warp: No module named 'warp'
+  seed 301 law A done
+  seed 301 law B done
+  seed 302 law A done
+  seed 302 law B done
+  seed 303 law A done
+  seed 303 law B done
+  seed 304 law A done
+  seed 304 law B done
+  seed 305 law A done
+  seed 305 law B done
+  seed 306 law A done
+  seed 306 law B done
+  seed 307 law A done
+  seed 307 law B done
+  seed 308 law A done
+  seed 308 law B done
+wrote reports/artifacts/cd_walker_corrected.csv (128 rows), reports/artifacts/cd_walker_corrected_diagnostics.csv, reports/artifacts/cd_walker_corrected_checks.json
+reports/artifacts/cd_bank_walker_corrected.npz: OK
+done 2026-09-02T22:14:03+02:00

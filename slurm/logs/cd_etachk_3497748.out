@@ -1,0 +1,17 @@
+Failed to import warp: No module named 'warp'
+Failed to import mujoco_warp: No module named 'warp'
+cell = seed 301; R reduced to 20 for this diagnostic; S=128 M=32
+
+--- law A (reference arm PW) | saturation |tanh y|>0.999 = 0.0061
+  critic PW   eta interior 1.000 clipped 0.000 | max gap interior +2.29e-05  max gap clipped +nan
+      PW-32 zero-norm frac 0.00000
+  critic WML  eta interior 0.985 clipped 0.015 | max gap interior +1.53e-05  max gap clipped +0.0296
+      PW-32 zero-norm frac 0.00000
+  zero-norm mask identical across critic sources: True (y is shared, so saturation must give an identical mask)
+
+--- law B (reference arm WML) | saturation |tanh y|>0.999 = 0.5802
+  critic PW   eta interior 1.000 clipped 0.000 | max gap interior +3.05e-05  max gap clipped +nan
+      PW-32 zero-norm frac 0.00000
+  critic WML  eta interior 0.934 clipped 0.066 | max gap interior +1.53e-05  max gap clipped +0.0706
+      PW-32 zero-norm frac 0.00000
+  zero-norm mask identical across critic sources: True (y is shared, so saturation must give an identical mask)

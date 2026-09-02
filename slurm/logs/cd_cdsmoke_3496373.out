@@ -1,0 +1,61 @@
+host n23g0030.hpc.itc.rwth-aachen.de  mode smoke  git 016c4a8  2026-09-02T21:37:53+02:00
+Failed to import warp: No module named 'warp'
+Failed to import mujoco_warp: No module named 'warp'
+PASS   C2a PW-32 == mean of action gradients                max|diff| 0 <= tol 4.79e-13 (32-term mean, float64)
+PASS   C2b PW-1 == first sample of the same cloud           max|diff| 0, tol exactly 0 (pure indexing, no arithmetic)
+PASS   C2c ZO-32 == centered value-only closed form         max|diff| 4.44e-16 <= tol 5.06e-12
+PASS   C2d ZO centered: constant F annihilates              max|ZO| 0 <= tol 5.31e-12 = |F|*M*eps*max|u/s|*20 (float64)
+PASS   C2e WML-32 == softmax(F/eta) on (y-mu)               max|diff| 4.44e-16 <= tol 9.14e-13
+PASS   C3 eta attains the preregistered dual minimum        max relative excess 5.67e-16 <= tol 1e-09 over 35 clouds (ref: scipy bounded)
+PASS   C4a normalised updates have unit whitened norm       max|1-||g||_S| 2.22e-16 <= tol 2.66e-14
+PASS   C4b D == mean squared whitened deviation             max|diff| vs 1-||gbar||^2 form 2.22e-16 <= tol 1.87e-13
+PASS   C4c D tracks an ANISOTROPIC Sigma change             predicted D 0.1464466 -> 0.0527864 (delta 0.0936602, nonzero by derivation); measured 0.1464466 -> 0.0527864; max|err| 0 <= tol 3.55e-14
+       note: uniform 2x rescale gives D 0.1464466 (unchanged, as derived)
+
+9/9 in stage unit
+Failed to import warp: No module named 'warp'
+Failed to import mujoco_warp: No module named 'warp'
+PASS   C0 scratch config is self-consistent                 per_policy 4 x n_policies 4 == n_bank 16, s_eval 8 (registered bank is 2048 = 16 x 128; 128 here is scratch only)
+state
+  PW   seed 301 collected 4 states
+state
+  PW   seed 302 collected 4 states
+state
+  WML  seed 301 collected 4 states
+state
+  WML  seed 302 collected 4 states
+bank /hpcwork/qzi10910/cd_scratch_slurm/scratch_bank.npz  states 16  eval 8  distinct 16
+sha256 62d7e74dd75c890ba847b6d2f78416cc97c2c37e3c69a0ee2f6ef52b0a2b1f62
+  seed 301 law A done
+  seed 301 law B done
+  seed 302 law A done
+  seed 302 law B done
+wrote /hpcwork/qzi10910/cd_scratch_slurm/scratch_run1.csv (32 rows), /hpcwork/qzi10910/cd_scratch_slurm/scratch_run1_diagnostics.csv, /hpcwork/qzi10910/cd_scratch_slurm/scratch_run1_checks.json
+  seed 301 law A done
+  seed 301 law B done
+  seed 302 law A done
+  seed 302 law B done
+wrote /hpcwork/qzi10910/cd_scratch_slurm/scratch_run2.csv (32 rows), /hpcwork/qzi10910/cd_scratch_slurm/scratch_run2_diagnostics.csv, /hpcwork/qzi10910/cd_scratch_slurm/scratch_run2_checks.json
+PASS   C7 same seed reproduces the run exactly              CSV byte-identical over two independent invocations (5758 bytes)
+PASS   C1 innovations shared across laws and critic sources one u per seed across all 4 law x critic cells; distinct across seeds; redraw bitwise identical (np.array_equal), tol exactly 0
+PASS   C5 operator x critic x law indexing complete and unique 32 rows, 32 unique cells, expected 32; laws ['A', 'B'] critics ['PW', 'WML'] operators 4
+PASS   C6 law change moves sigma and y, nothing else        states (one frozen bank sha 62d7e74dd75c..), critics and innovations identical across laws; sigma and y=mu+sigma*u differ by construction, tol exactly 0
+
+5/5 in stage pipe
+
+=== 14/14 checks pass ===
+  PASS C2a PW-32 == mean of action gradients
+  PASS C2b PW-1 == first sample of the same cloud
+  PASS C2c ZO-32 == centered value-only closed form
+  PASS C2d ZO centered: constant F annihilates
+  PASS C2e WML-32 == softmax(F/eta) on (y-mu)
+  PASS C3 eta attains the preregistered dual minimum
+  PASS C4a normalised updates have unit whitened norm
+  PASS C4b D == mean squared whitened deviation
+  PASS C4c D tracks an ANISOTROPIC Sigma change
+  PASS C0 scratch config is self-consistent
+  PASS C7 same seed reproduces the run exactly
+  PASS C1 innovations shared across laws and critic sources
+  PASS C5 operator x critic x law indexing complete and unique
+  PASS C6 law change moves sigma and y, nothing else
+done 2026-09-02T21:41:29+02:00
