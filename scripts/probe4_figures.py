@@ -1,7 +1,7 @@
-import numpy as np, json, matplotlib
+import numpy as np, json, sys, matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-OUT = "reports/artifacts"
+OUT = sys.argv[1] if len(sys.argv) > 1 else "reports/artifacts"
 CELLS = ["A_PW", "A_WML", "B_PW", "B_WML"]
 COL = {"A_PW": "#2b6cb0", "A_WML": "#63b3ed", "B_PW": "#9c4221", "B_WML": "#ed8936"}
 seeds = [0, 1, 2, 3, 4]
