@@ -1,0 +1,13 @@
+{
+ "run_id": "fr-g1-PW1-s302",
+ "status": "completed",
+ "wall_clock_s": 2497,
+ "gpu_hours": 0.6936,
+ "start": "2026-09-02T09:45:46+02:00",
+ "slurm_job": "3444832_0",
+ "gpu": "NVIDIA H100 80GB HBM3",
+ "git_sha": "1c6259ef959400eba617e1d1392bfaf58248688c",
+ "export_path": "exports/G1JoystickFlatTerrain_pathwise_fa_s302_final",
+ "export_present": true,
+ "checkpoint_sha256": "9653d4caf667f5b9e9d3e41a67d0816bdb6819c9c1e758984fac564bab0155ca"
+}

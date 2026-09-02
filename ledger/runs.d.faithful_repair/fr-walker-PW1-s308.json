@@ -1,0 +1,13 @@
+{
+ "run_id": "fr-walker-PW1-s308",
+ "status": "completed",
+ "wall_clock_s": 882,
+ "gpu_hours": 0.245,
+ "start": "2026-09-02T10:02:31+02:00",
+ "slurm_job": "3444832_11",
+ "gpu": "NVIDIA H100 80GB HBM3",
+ "git_sha": "1c6259ef959400eba617e1d1392bfaf58248688c",
+ "export_path": "exports/WalkerRun_pathwise_fa_s308_final",
+ "export_present": true,
+ "checkpoint_sha256": "091fee12a75bd008702c6d6baf24703d9d93dc84efd7c2341e2e90cf8b587e17"
+}

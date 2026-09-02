@@ -1,13 +1,13 @@
 {
  "run_id": "fr-walker-PW1-s307",
- "status": "failed",
- "wall_clock_s": 48,
- "gpu_hours": 0.0133,
- "start": "2026-09-02T04:27:30+02:00",
- "slurm_job": "3444556_11",
+ "status": "completed",
+ "wall_clock_s": 935,
+ "gpu_hours": 0.2597,
+ "start": "2026-09-02T04:51:57+02:00",
+ "slurm_job": "3444831_11",
  "gpu": "NVIDIA H100",
- "git_sha": "7152fb90d89a3d7a4b17aa71804c6ee4ce697a5e",
+ "git_sha": "1c6259ef959400eba617e1d1392bfaf58248688c",
  "export_path": "exports/WalkerRun_pathwise_fa_s307_final",
- "export_present": false,
- "checkpoint_sha256": null
+ "export_present": true,
+ "checkpoint_sha256": "c3c4afdf18232193d5b3f6d8f529c9c2294ca9bee920b51da49b1ae2b76830b6"
 }

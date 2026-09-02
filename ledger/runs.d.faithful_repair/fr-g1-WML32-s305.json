@@ -1,0 +1,13 @@
+{
+ "run_id": "fr-g1-WML32-s305",
+ "status": "completed",
+ "wall_clock_s": 3845,
+ "gpu_hours": 1.0681,
+ "start": "2026-09-02T09:59:15+02:00",
+ "slurm_job": "3444832_6",
+ "gpu": "NVIDIA H100 80GB HBM3",
+ "git_sha": "1c6259ef959400eba617e1d1392bfaf58248688c",
+ "export_path": "exports/G1JoystickFlatTerrain_weighted_mle_s305_final",
+ "export_present": true,
+ "checkpoint_sha256": "592db5314c8e0ebf3f4ea85170d4969989c6b139399dd80a72474f28b280779b"
+}

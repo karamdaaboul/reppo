@@ -1,0 +1,13 @@
+{
+ "run_id": "fr-walker-WML32-s302",
+ "status": "completed",
+ "wall_clock_s": 1377,
+ "gpu_hours": 0.3825,
+ "start": "2026-09-02T04:55:05+02:00",
+ "slurm_job": "3444831_12",
+ "gpu": "NVIDIA H100",
+ "git_sha": "1c6259ef959400eba617e1d1392bfaf58248688c",
+ "export_path": "exports/WalkerRun_weighted_mle_s302_final",
+ "export_present": true,
+ "checkpoint_sha256": "1c35ab3b47211bae8edc272b0c3de29a231bec1f62285de6f1a7caa76efcde55"
+}

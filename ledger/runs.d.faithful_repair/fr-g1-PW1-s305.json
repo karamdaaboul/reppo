@@ -1,13 +1,13 @@
 {
  "run_id": "fr-g1-PW1-s305",
- "status": "failed",
- "wall_clock_s": 59,
- "gpu_hours": 0.0164,
- "start": "2026-09-02T04:25:54+02:00",
- "slurm_job": "3444556_2",
+ "status": "completed",
+ "wall_clock_s": 2613,
+ "gpu_hours": 0.7258,
+ "start": "2026-09-02T04:38:49+02:00",
+ "slurm_job": "3444831_2",
  "gpu": "NVIDIA H100",
- "git_sha": "7152fb90d89a3d7a4b17aa71804c6ee4ce697a5e",
+ "git_sha": "1c6259ef959400eba617e1d1392bfaf58248688c",
  "export_path": "exports/G1JoystickFlatTerrain_pathwise_fa_s305_final",
- "export_present": false,
- "checkpoint_sha256": null
+ "export_present": true,
+ "checkpoint_sha256": "eceee834943fdc5e40a9fa2d02c6aff82c8f02722d2b635b31c6a68c3e533655"
 }
