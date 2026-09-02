@@ -26,7 +26,10 @@ the clip that sits between the two log probabilities — are upstream and unmodi
 HEAD.**
 
 Consequence to disclose: the repair in §2 makes the faithful arm differ from *released*
-REPPO on exactly one point. It is a repair of an upstream implementation inconsistency,
+REPPO on this point. **Corrected in  §1:
+there are TWO behaviour-affecting differences, not one — the same-point likelihood
+evaluation here, and the fresh minibatch innovations of §5. The wording "exactly one
+point" in the original lock was wrong and the preregistration supersedes it.** It is a repair of an upstream implementation inconsistency,
 not a repair of anything this project introduced, and not a redesign of the algorithm.
 
 ## 1. Latent and action representation (frozen)
