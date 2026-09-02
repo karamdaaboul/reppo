@@ -47,6 +47,20 @@ import numpy as np  # noqa: E402
 from scripts.critic_fidelity.common import ACTION_CLIP, Harness  # noqa: E402
 
 # ---------------------------------------------------------------- fixed design
+# Two preregistered pilots. Only the RNG root, the state count and the rollout count
+# differ; every other constant is shared, so pilot 2 is a precision replication of
+# pilot 1 rather than a redesign. `p1` is the default so that the pilot-1 numbers in
+# reports/mc_oracle_walker_pilot.md stay exactly reproducible from this file.
+#
+#   p1  docs/prereg_mc_oracle_walker_pilot.md          (commit 63c2cd2)
+#   p2  docs/prereg_mc_oracle_walker_pilot_2.md        sized by the measured
+#       variance-scaling law in reports/artifacts/mc_oracle_power.json
+PILOTS = {
+    "p1": {"root": 20260902, "s_per_arm": 32, "n_rep": 8},
+    "p2": {"root": 20260903, "s_per_arm": 128, "n_rep": 96},
+}
+
+PILOT = "p1"
 ROOT = 20260902          # prereg 4.2 state-generation RNG root
 BURN = 50                # prereg 4.2, matching scripts/analysis/ubar_ratio.py:27
 S_PER_ARM = 32           # prereg 4.2
@@ -59,6 +73,21 @@ H_LONG = 1000            # prereg 4.5
 SUB_STATES = 8           # prereg 4.5: first 8 of each stratum
 SUB_PERTS = 8            # prereg 4.5
 SUB_C = 0.10             # prereg 4.5
+
+
+def set_pilot(tag: str):
+    """Select a preregistered constant set. Refuses anything not registered."""
+    global PILOT, ROOT, S_PER_ARM, S_TOTAL, N_REP
+    if tag not in PILOTS:
+        raise SystemExit("unknown pilot %r; registered: %s" % (tag, sorted(PILOTS)))
+    cfg = PILOTS[tag]
+    PILOT = tag
+    ROOT = cfg["root"]
+    S_PER_ARM = cfg["s_per_arm"]
+    S_TOTAL = 2 * S_PER_ARM
+    N_REP = cfg["n_rep"]
+    print("pilot %s: root=%d S=%d (%d per arm) rollouts=%d per group"
+          % (tag, ROOT, S_TOTAL, S_PER_ARM, N_REP), flush=True)
 
 
 def fold(tag: str, *parts) -> jax.Array:
@@ -209,6 +238,7 @@ def build_bank(pw_ckpt: str, wml_ckpt: str, out: str):
     np.savez(out, **payload)
 
     manifest = {
+        "pilot": PILOT,
         "n_states": S_TOTAL,
         "per_arm": S_PER_ARM,
         "burn_in": BURN,
@@ -349,6 +379,7 @@ def run_pilot(ckpt: str, bank: str, out: str, subset: bool = False):
     np.savez(
         out,
         ckpt=np.array(ckpt), tag=np.array(tag), horizon=np.array(horizon),
+        pilot=np.array(PILOT),
         subset=np.array(bool(subset)),
         alpha=np.array(orc.alpha), gamma=np.array(orc.gamma),
         state_index=idx, source=np.array(src),
@@ -368,11 +399,15 @@ def run_pilot(ckpt: str, bank: str, out: str, subset: bool = False):
 
 if __name__ == "__main__":
     mode = sys.argv[1]
+    args = sys.argv[2:]
+    if args and args[-1] in PILOTS:          # optional trailing pilot tag
+        set_pilot(args[-1])
+        args = args[:-1]
     if mode == "states":
-        build_bank(sys.argv[2], sys.argv[3], sys.argv[4])
+        build_bank(args[0], args[1], args[2])
     elif mode == "pilot":
-        run_pilot(sys.argv[2], sys.argv[3], sys.argv[4], subset=False)
+        run_pilot(args[0], args[1], args[2], subset=False)
     elif mode == "horizon":
-        run_pilot(sys.argv[2], sys.argv[3], sys.argv[4], subset=True)
+        run_pilot(args[0], args[1], args[2], subset=True)
     else:
-        raise SystemExit("modes: states | pilot | horizon")
+        raise SystemExit("modes: states | pilot | horizon  [p1|p2]")

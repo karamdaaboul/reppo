@@ -257,37 +257,52 @@ def diagnostics(r):
     }
 
 
-# ---------------------------------------------------- POST-HOC (not preregistered)
+# ------------------------------------------------- SECONDARY: support variants
 VMIN, VMAX = 0.0, 150.0
 
 
-def posthoc_clipped_target(r):
-    """POST-HOC diagnostic. NOT preregistered; added after seeing the WML output.
+def support_variants(r):
+    """SECONDARY diagnostic: the critic-target support applied to the oracle.
 
-    src/jaxrl/utils.py:45 clips the regression target into [vmin, vmax] BEFORE the
-    two-hot encoding, so Q_phi is fit to E[clip(G, 0, 150)] rather than to E[G]. The
-    preregistered estimand is the unclipped soft Q^pi, and that is what the primary
-    result reports. This recomputes the same statistics against a clipped oracle so
-    the size of the mismatch is visible rather than argued about.
+    `src/jaxrl/utils.py:45` clips the regression target into [vmin, vmax] BEFORE the
+    two-hot encoding, and the HL-Gauss head cannot represent a value outside that
+    interval either. So Q_phi is fit to E[clip(G, 0, 150)], while the PRIMARY estimand
+    -- unchanged in both preregistrations -- is the true unclipped soft Q^pi.
 
-    It is an APPROXIMATION of the training target, not a match: training clips a
-    lambda-return that bootstraps on Q_phi (itself >= 0), whereas this clips a
-    500-step unbootstrapped MC return. E[clip(G_lambda)] != E[clip(G_MC)].
+    Two variants are reported, and neither replaces the primary:
+
+      clip_per_rollout   mean_r clip(G_r)   -- closest to how training clips each
+                         sampled target before encoding it
+      project_mean       clip(mean_r G_r)   -- the oracle mean projected onto the
+                         representable interval
+
+    Both APPROXIMATE the training target rather than matching it: training clips a
+    lambda-return that bootstraps on Q_phi (itself >= 0), whereas these clip a
+    500-step unbootstrapped MC return, so E[clip(G_lambda)] != E[clip(G_MC)].
+
+    In pilot 1 this was computed post-hoc, after the WML output revealed the
+    mismatch. In pilot 2 it is preregistered as a secondary.
     """
     q = r["q_oracle"]
     d = int(r["mu"].shape[1])
-    qc = np.clip(q, VMIN, VMAX)
-    eA = r["q_phi"] - qc[0].mean(0)
-    eB = r["q_phi"] - qc[1].mean(0)
-    out = {"D": stat_D(eA, eB),
-           "frac_rollouts_below_vmin": float((q < VMIN).mean()),
+    out = {"frac_rollouts_below_vmin": float((q < VMIN).mean()),
            "frac_rollouts_above_vmax": float((q > VMAX).mean()),
            "frac_points_mean_below_vmin":
                float((q.reshape(-1, *q.shape[2:]).mean(0)[..., 0] < VMIN).mean())}
-    for c in C_STEPS:
-        p_, m_ = fd_index(r, c)
-        out["N_%.2f" % c] = stat_N(eA, eB, p_, m_, c)
-        out["r_%.2f" % c] = r_rms(out["N_%.2f" % c], out["D"], d)
+    for name, qc in (("clip_per_rollout", np.clip(q, VMIN, VMAX)),
+                     ("project_mean", None)):
+        if qc is None:
+            mA = np.clip(q[0].mean(0), VMIN, VMAX)
+            mB = np.clip(q[1].mean(0), VMIN, VMAX)
+        else:
+            mA, mB = qc[0].mean(0), qc[1].mean(0)
+        eA, eB = r["q_phi"] - mA, r["q_phi"] - mB
+        sub = {"D": stat_D(eA, eB)}
+        for c in C_STEPS:
+            p_, m_ = fd_index(r, c)
+            sub["N_%.2f" % c] = stat_N(eA, eB, p_, m_, c)
+            sub["r_%.2f" % c] = r_rms(sub["N_%.2f" % c], sub["D"], d)
+        out[name] = sub
     return out
 
 
@@ -355,7 +370,7 @@ def main(pw_p, wml_p, pw_h, wml_h, outdir):
             if keep_rows.sum() >= 4:
                 entry["no_clip_all_k"] = all_stats(r, sel_states=np.where(keep_rows)[0])
             entry["no_clip_frac_points"] = float(mask.mean())
-        entry["posthoc_clipped_target"] = posthoc_clipped_target(r)
+        entry["support_variants"] = support_variants(r)
         entry["sigma_error_link"] = sigma_error_link(r)
         res[tag] = entry
         res[tag]["_boot"] = bs
