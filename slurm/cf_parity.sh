@@ -11,12 +11,13 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=24
 #SBATCH --mem-per-cpu=5000M
-#SBATCH --time=01:30:00
+#SBATCH --time=00:45:00
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 set -uo pipefail
-WT=$HOME/repos/reppo_headparity
-DEST=/hpcwork/qzi10910/cfparity
+WT=${CF_WT:-$HOME/repos/reppo_headparity}
+DEST=${CF_DEST:-/hpcwork/qzi10910/cfparity}
+RESTORE=${CF_RESTORE:-}
 BASE=${CF_BASE:?}          # pre-freeze commit
 NEW=${CF_NEW:?}            # freeze commit, flag off
 mkdir -p "$DEST"
@@ -57,5 +58,6 @@ git checkout -q "$NEW" || exit 1
 run B_PW  pathwise
 run B_WML weighted_mle
 
-git checkout -q "$BASE"
-echo "PARITY-RUNS-DONE"
+# leave the scratch worktree where it was found
+git checkout -q "${RESTORE:-$BASE}"
+echo "PARITY-RUNS-DONE wt=$WT dest=$DEST"
