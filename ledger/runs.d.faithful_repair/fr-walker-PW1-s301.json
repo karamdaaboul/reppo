@@ -1,0 +1,13 @@
+{
+ "run_id": "fr-walker-PW1-s301",
+ "status": "failed",
+ "wall_clock_s": 49,
+ "gpu_hours": 0.0136,
+ "start": "2026-09-02T04:27:29+02:00",
+ "slurm_job": "3444556_8",
+ "gpu": "NVIDIA H100",
+ "git_sha": "7152fb90d89a3d7a4b17aa71804c6ee4ce697a5e",
+ "export_path": "exports/WalkerRun_pathwise_fa_s301_final",
+ "export_present": false,
+ "checkpoint_sha256": null
+}
