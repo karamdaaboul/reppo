@@ -237,3 +237,37 @@ The raw-moment accumulator was not used: `jnp.std` forms the mean first and then
 * **C5** — executed as float32 `jnp.std` with centered two-pass variance, not the requested float64 protocol. The k=6 float64 recheck is outstanding and is listed in C5 as unresolved follow-up. C5 is descriptive and has no role in the contamination verdict.
 * No other measurement in this report failed. All 30 k=6 sigma probes and all 30 training logs (3 levels × 2 arms × 5 seeds) were present and complete.
 
+
+---
+
+## Provenance note — 2026-09-02 — the k=6 checkpoints are not on this cluster
+
+Appended after the fact. Nothing above this line is altered, and no measurement,
+table or verdict in this report is changed by it.
+
+An audit of cited-but-untracked artifacts across every committed report found that
+the ten checkpoints this report rests on are **absent at this HEAD**:
+
+    exports/WalkerRun_pathwise_fa_pad6_s{0,1,2,3,4}_final
+    exports/WalkerRun_weighted_mle_pad6_s{0,1,2,3,4}_final
+
+No `*pad6*` path exists anywhere on CLAIX under `~` or `/hpcwork/qzi10910`, and
+`ledger/runs.jsonl` carries **no** pad6 record, so these runs were never entered in
+the ledger on this machine.
+
+They are **not lost.** All ten are present and complete — `actor.npz`, `critic.npz`,
+`meta.json`, `normalizer.npz` — on the FZI workstation at
+
+    /home/human/workspaces/reppo_original/exports/
+
+mtime 2026-08-31 05:11 UTC, alongside 20 further intermediate `pad6` checkpoints
+(`_p25`, `_p50`), 30 `pad6` directories in total. That is the same location and the
+same pattern already recorded for the k=16 originals in Amendment A and quoted in
+`reports/probe4_padding_error_field_results.md`: produced in `~/workspaces/reppo_original`
+on a different machine, carrying no ledger entry here.
+
+**Consequence.** The `CONTAMINATED` verdict above stands as reported, but it is not
+reproducible from this repository and this cluster alone. Reproducing it requires
+either copying the ten directories from the workstation or regenerating them, and a
+regeneration would be a different training process from the one that produced these
+numbers unless it follows the `slurm/pad16_parity.sh` route used for k=16.
