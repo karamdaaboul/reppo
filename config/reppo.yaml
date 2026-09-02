@@ -82,6 +82,9 @@ hyperparameters:
   log_q_spread: false            # pathwise-arm diagnostic; breaks bit-identity if on
   log_estimator_diag: false      # Phase 3/4 estimator diagnostics; breaks bit-identity if on
   log_eval_iqm: false            # per-checkpoint eval IQM (ladder U_t anchor); off by default
+  kl_num_samples: null           # DEV ONLY: KL MC samples; null = tied to the operator switch
+  sqrt_rho: 1.0                  # M32 + fixed covariance correction; 1.0 = exact no-op
+  log_cov_diag: false            # per-coord sigma / clamp / gate diagnostics; breaks bit-identity if on
   ## entropy settings
   ent_start: 0.01
   ent_target_mult: 0.5

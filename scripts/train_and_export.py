@@ -70,6 +70,36 @@ def build_env(cfg: DictConfig):
     raise ValueError(f"Unknown environment type: {cfg.env.type}")
 
 
+def _git_provenance() -> dict:
+    """Commit and dirty-tree state, recorded into every export and run directory.
+
+    The Track C M-sweep runs recorded no commit at all, which
+    reports/m_sample_count_audit.md Sec. 1 flags as a provenance defect: those runs
+    were launched from a dirty tree and the exact source state is unrecoverable.
+    A dirty tree is not an error here -- development runs legitimately have one --
+    but it must be on the record, so the diff itself is stored alongside the hash.
+    """
+    import subprocess
+
+    def _git(*args):
+        try:
+            return subprocess.run(
+                ["git", *args], cwd=REPO_ROOT, capture_output=True, text=True,
+                timeout=30, check=False,
+            ).stdout.strip()
+        except Exception:
+            return ""
+
+    diff = _git("diff", "HEAD")
+    return dict(
+        git_commit=_git("rev-parse", "HEAD") or "unknown",
+        git_dirty=bool(diff),
+        git_diff_sha256=(
+            __import__("hashlib").sha256(diff.encode()).hexdigest() if diff else ""
+        ),
+    )
+
+
 @hydra.main(version_base=None, config_path="../config", config_name="reppo")
 def main(cfg: DictConfig) -> None:
     cfg.hyperparameters = OmegaConf.merge(
@@ -193,6 +223,16 @@ def main(cfg: DictConfig) -> None:
     pad = cfg.env.get("action_pad", None)
     if pad is not None:  # explicit (incl. 0) -> own namespace; never collide with unpadded runs
         variant += f"_pad{int(pad)}"
+    # Appended ONLY when the value differs from the shipped default, so every tag
+    # already on disk stays byte-stable and no published export is orphaned.
+    # Closes the hazard registered in docs/prereg_m_sweep_dmc.md Sec. 3.1: the tag
+    # did not encode estep_num_samples, so two arms differing only in M silently
+    # overwrote each other (the two Track C smoke runs did exactly that).
+    if int(cfg.hyperparameters.estep_num_samples) != 32:
+        variant += f"_m{int(cfg.hyperparameters.estep_num_samples)}"
+    _sqrt_rho = float(cfg.hyperparameters.get("sqrt_rho", 1.0))
+    if _sqrt_rho != 1.0:
+        variant += f"_rho{_sqrt_rho:g}"
     tag = f"{cfg.env.name}_{mode}{variant}_s{cfg.seed}"
     duals = summarize(state)
 
@@ -216,9 +256,11 @@ def main(cfg: DictConfig) -> None:
     common_meta = dict(
         actor_update_mode=mode,
         estep_num_samples=int(cfg.hyperparameters.estep_num_samples),
+        sqrt_rho=_sqrt_rho,
         reward_scaling=float(cfg.env.reward_scaling),
         action_pad=int(cfg.env.get("action_pad", None) or 0),
         hydra_run_dir=os.getcwd(),
+        **_git_provenance(),
     )
 
     # Mid-training snapshots. The 25% one is the high-entropy checkpoint; the
