@@ -61,6 +61,12 @@ hyperparameters:
   reduce_kl: true
   reverse_kl: false # previous default "false"
   update_kl_lagrangian: true
+  # ---- faithful-repair flags (docs/prereg_corrected_operator_replication.md) --
+  # Default false: with all three false the behaviour is byte-identical to 07319d4,
+  # verified by slurm/fr_parity.sh (36/36 arrays, max abs diff 0.0).
+  faithful_same_point: false
+  fresh_minibatch_key: false
+  log_faithful_diag: false
   actor_kl_clip_mode: "clipped" # "full", "clipped", "kl_relu_clipped", "kl_bound_clipped", "value"
   ## actor update operator
   actor_update_mode: "pathwise"  # "pathwise" (original) | "weighted_mle" (MPO E-step)
