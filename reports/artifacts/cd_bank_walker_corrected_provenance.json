@@ -1,0 +1,138 @@
+{
+ "bank": "reports/artifacts/cd_bank_walker_corrected.npz",
+ "sha256": "8b2cb3180fd307612c9bcd8c3298302e3fbd860ac54f8890cf1849e70711e36b",
+ "bytes": 276586,
+ "git_sha": "8f176d576a616ac66c820b84e8bd9caf86010008",
+ "git_sha_short": "8f176d5",
+ "command": "sbatch --time=00:40:00 -J cdbank slurm/crossed_dispersion.sh bank",
+ "inner_command": "./.venv/bin/python scripts/analysis/crossed_dispersion.py bank walker reports/artifacts/cd_bank_walker_corrected.npz",
+ "slurm_job": 3496535,
+ "partition": "c23g",
+ "elapsed": "00:07:22",
+ "task": "walker",
+ "tier": "corrected (seeds 301-308)",
+ "rng_root": 20260904,
+ "burn_in": 50,
+ "n_states": 2048,
+ "obs_dim": 24,
+ "n_distinct_states": 2048,
+ "n_policies": 16,
+ "per_policy": 128,
+ "s_eval": 128,
+ "eval_idx_sha256": "5d341b84afb0144382a47bc15db6dfb564ba366ed9e80a4627a01187aa635f9a",
+ "post_hoc_filtering": "none; no replacement; every collected state retained",
+ "policies": [
+  {
+   "arm": "PW",
+   "seed": 301,
+   "ckpt": "exports/WalkerRun_pathwise_fa_s301_final",
+   "actor_sha256": "e0cbb41c2bbd92aca194bfd058f28d4188a6f7bdce5c4fac6103b8711d8812b4",
+   "n_states": 128
+  },
+  {
+   "arm": "PW",
+   "seed": 302,
+   "ckpt": "exports/WalkerRun_pathwise_fa_s302_final",
+   "actor_sha256": "f8be432948db058219e2c4c1da66133c5285457b96b42be9472e4482509dcfb1",
+   "n_states": 128
+  },
+  {
+   "arm": "PW",
+   "seed": 303,
+   "ckpt": "exports/WalkerRun_pathwise_fa_s303_final",
+   "actor_sha256": "0e4bc876c3a54aef389426e1b7dfc47798372e6017a645066f6fea5cfe88a72f",
+   "n_states": 128
+  },
+  {
+   "arm": "PW",
+   "seed": 304,
+   "ckpt": "exports/WalkerRun_pathwise_fa_s304_final",
+   "actor_sha256": "3c70af60fb0d522afcb48449cb4c32edf98b83790ac2124ba8f67301a0ce2a88",
+   "n_states": 128
+  },
+  {
+   "arm": "PW",
+   "seed": 305,
+   "ckpt": "exports/WalkerRun_pathwise_fa_s305_final",
+   "actor_sha256": "aa308929b3d513c13291e7fa263c095915f97753eb429871887e8e684514e873",
+   "n_states": 128
+  },
+  {
+   "arm": "PW",
+   "seed": 306,
+   "ckpt": "exports/WalkerRun_pathwise_fa_s306_final",
+   "actor_sha256": "9a4201c4a6daaa9a1d603d0819e4c7907d8c3cf4dacf01812799e63d9bfe1233",
+   "n_states": 128
+  },
+  {
+   "arm": "PW",
+   "seed": 307,
+   "ckpt": "exports/WalkerRun_pathwise_fa_s307_final",
+   "actor_sha256": "5d9a5b7790eb89acfdb4e3c09ce8aa9b49fe91f8f7e30d13806ab05049c2c998",
+   "n_states": 128
+  },
+  {
+   "arm": "PW",
+   "seed": 308,
+   "ckpt": "exports/WalkerRun_pathwise_fa_s308_final",
+   "actor_sha256": "02c7ae00ab931429d789cb2847e257a2c3fbbf0f04bf1d49c69d0f0cea5748ea",
+   "n_states": 128
+  },
+  {
+   "arm": "WML",
+   "seed": 301,
+   "ckpt": "exports/WalkerRun_weighted_mle_s301_final",
+   "actor_sha256": "0e68d7ecc210cb9938384cd08294edf42f0d3f7ec24039ce59b22760151790dd",
+   "n_states": 128
+  },
+  {
+   "arm": "WML",
+   "seed": 302,
+   "ckpt": "exports/WalkerRun_weighted_mle_s302_final",
+   "actor_sha256": "449e5499a1ad10ae9563e5b72f41a74e6f5d43fca2c245c8c10f469b4976d649",
+   "n_states": 128
+  },
+  {
+   "arm": "WML",
+   "seed": 303,
+   "ckpt": "exports/WalkerRun_weighted_mle_s303_final",
+   "actor_sha256": "f431fb5428560baf31c25a1265ff6cb1dfb2fc53d89002a56d3b60628f01be67",
+   "n_states": 128
+  },
+  {
+   "arm": "WML",
+   "seed": 304,
+   "ckpt": "exports/WalkerRun_weighted_mle_s304_final",
+   "actor_sha256": "766f1d22923d7a5b7d1547e2a0be195d95e94130e1537fa1dddba28579b092e6",
+   "n_states": 128
+  },
+  {
+   "arm": "WML",
+   "seed": 305,
+   "ckpt": "exports/WalkerRun_weighted_mle_s305_final",
+   "actor_sha256": "257ed1880ba9a2b2781632c5e51b3de69ece1f2d894ee602565cb4bc41c5946d",
+   "n_states": 128
+  },
+  {
+   "arm": "WML",
+   "seed": 306,
+   "ckpt": "exports/WalkerRun_weighted_mle_s306_final",
+   "actor_sha256": "54023e677fda54988e023b6bdba97af0761fd275b19339a188616c48d1b498a0",
+   "n_states": 128
+  },
+  {
+   "arm": "WML",
+   "seed": 307,
+   "ckpt": "exports/WalkerRun_weighted_mle_s307_final",
+   "actor_sha256": "15a743ed179c28879411e6922e618f3ee16cae2a8d7af74c24c6ef05448b191e",
+   "n_states": 128
+  },
+  {
+   "arm": "WML",
+   "seed": 308,
+   "ckpt": "exports/WalkerRun_weighted_mle_s308_final",
+   "actor_sha256": "9fdc23ee2f729c17d0a932532b47e6905b6f9729c21e58f7949835bc859996d3",
+   "n_states": 128
+  }
+ ]
+}
