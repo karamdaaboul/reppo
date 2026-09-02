@@ -8,7 +8,7 @@ Usage: mk_exports_manifest.py <out.csv>
 from __future__ import annotations
 import csv, datetime, glob, hashlib, json, os, subprocess, sys
 
-ROOT = "/rwthfs/rz/cluster/home/qzi10910/repos/reppo"
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.chdir(ROOT)
 FILES = ("actor.npz", "critic.npz", "meta.json", "normalizer.npz")
 COLS = ["dir", "env_name", "actor_update_mode", "seed", "seed_index", "action_dim",
