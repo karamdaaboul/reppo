@@ -214,3 +214,15 @@ scripts/probe1_out/
 # SLURM stdout/stderr accidentally landing in the repo root
 /*.out
 /*.err
+
+# Committed report figures.
+# The blanket `*.png` and `figures/` rules above are meant for scratch plots, but
+# they also matched published figures, and because ignored files never appear in
+# `git status` the omissions were invisible: reports/figures/ had to be force-added
+# one file at a time, two corrected-tier figures were never added at all, and all
+# three planted-error figures were missing without any warning.
+# `figures/` excludes the directory itself, so the directory must be re-included
+# before anything inside it can be.
+!reports/figures/
+!reports/figures/**
+!reports/artifacts/*.png
