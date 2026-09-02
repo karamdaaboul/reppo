@@ -1,0 +1,26 @@
+{
+ "PW-1": {
+  "status": "IDENTICAL",
+  "compared": 322,
+  "identical": 322,
+  "mismatched": 0,
+  "exports": [
+   "WalkerRun_pathwise_fa_s499_final",
+   "WalkerRun_pathwise_fa_s499_p25",
+   "WalkerRun_pathwise_fa_s499_p50"
+  ],
+  "detail": []
+ },
+ "WML-32": {
+  "status": "IDENTICAL",
+  "compared": 327,
+  "identical": 327,
+  "mismatched": 0,
+  "exports": [
+   "WalkerRun_weighted_mle_s499_final",
+   "WalkerRun_weighted_mle_s499_p25",
+   "WalkerRun_weighted_mle_s499_p50"
+  ],
+  "detail": []
+ }
+}
