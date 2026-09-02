@@ -257,6 +257,60 @@ def diagnostics(r):
     }
 
 
+# ---------------------------------------------------- POST-HOC (not preregistered)
+VMIN, VMAX = 0.0, 150.0
+
+
+def posthoc_clipped_target(r):
+    """POST-HOC diagnostic. NOT preregistered; added after seeing the WML output.
+
+    src/jaxrl/utils.py:45 clips the regression target into [vmin, vmax] BEFORE the
+    two-hot encoding, so Q_phi is fit to E[clip(G, 0, 150)] rather than to E[G]. The
+    preregistered estimand is the unclipped soft Q^pi, and that is what the primary
+    result reports. This recomputes the same statistics against a clipped oracle so
+    the size of the mismatch is visible rather than argued about.
+
+    It is an APPROXIMATION of the training target, not a match: training clips a
+    lambda-return that bootstraps on Q_phi (itself >= 0), whereas this clips a
+    500-step unbootstrapped MC return. E[clip(G_lambda)] != E[clip(G_MC)].
+    """
+    q = r["q_oracle"]
+    d = int(r["mu"].shape[1])
+    qc = np.clip(q, VMIN, VMAX)
+    eA = r["q_phi"] - qc[0].mean(0)
+    eB = r["q_phi"] - qc[1].mean(0)
+    out = {"D": stat_D(eA, eB),
+           "frac_rollouts_below_vmin": float((q < VMIN).mean()),
+           "frac_rollouts_above_vmax": float((q > VMAX).mean()),
+           "frac_points_mean_below_vmin":
+               float((q.reshape(-1, *q.shape[2:]).mean(0)[..., 0] < VMIN).mean())}
+    for c in C_STEPS:
+        p_, m_ = fd_index(r, c)
+        out["N_%.2f" % c] = stat_N(eA, eB, p_, m_, c)
+        out["r_%.2f" % c] = r_rms(out["N_%.2f" % c], out["D"], d)
+    return out
+
+
+def sigma_error_link(r):
+    """How the measured error concentrates in the heavy tail of the policy scale."""
+    eA, eB, _ = errors(r)
+    K = eA.shape[1]
+    a, b = eA[..., 0], eB[..., 0]
+    ca = a - a.mean(1, keepdims=True); cb = b - b.mean(1, keepdims=True)
+    per = K / (K - 1) * (ca * cb).mean(1)              # per-state centred power
+    srms = np.sqrt((r["sigma"] ** 2).mean(1))
+    order = np.argsort(srms)
+    lo, hi = order[:len(order) // 2], order[len(order) // 2:]
+    return {"sigma_rms_median": float(np.median(srms)),
+            "sigma_rms_p95": float(np.percentile(srms, 95)),
+            "sigma_rms_max": float(srms.max()),
+            "D_low_sigma_half": float(per[lo].mean()),
+            "D_high_sigma_half": float(per[hi].mean()),
+            "spearman_sigma_vs_D": float(np.corrcoef(
+                np.argsort(np.argsort(srms)).astype(float),
+                np.argsort(np.argsort(per)).astype(float))[0, 1])}
+
+
 # ------------------------------------------------------------------------- main
 def main(pw_p, wml_p, pw_h, wml_h, outdir):
     os.makedirs(outdir, exist_ok=True)
@@ -301,6 +355,8 @@ def main(pw_p, wml_p, pw_h, wml_h, outdir):
             if keep_rows.sum() >= 4:
                 entry["no_clip_all_k"] = all_stats(r, sel_states=np.where(keep_rows)[0])
             entry["no_clip_frac_points"] = float(mask.mean())
+        entry["posthoc_clipped_target"] = posthoc_clipped_target(r)
+        entry["sigma_error_link"] = sigma_error_link(r)
         res[tag] = entry
         res[tag]["_boot"] = bs
         res[tag]["_diag_arrays"] = dg
