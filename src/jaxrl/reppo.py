@@ -126,6 +126,22 @@ class ReppoConfig(struct.PyTreeNode):
     # it is gated: default OFF keeps confirmatory runs bit-identical to the pristine
     # reference; the seed-901 anchor reruns turn it on.
     log_eval_iqm: bool = False
+    # ---- faithful-repair flags (docs/faithful_repair_design.md) --------------
+    # Repairs ONE upstream coding inconsistency: the old- and new-policy log
+    # probabilities entering the sampled KL are evaluated at different action
+    # points, because `jnp.clip` sits between them. With this on, the pre-squash
+    # latent y_i is materialised and BOTH log probabilities are computed from that
+    # same y_i, so no clip is needed and the tanh Jacobian cancels exactly.
+    # The published gate and the published exponential multiplier are UNCHANGED.
+    # Default off: with every faithful flag off the code is byte-identical to the
+    # original implementation.
+    faithful_same_point: bool = False
+    # Split a fresh actor-sampling key inside the minibatch scan. Legacy behaviour
+    # reuses one key for every minibatch of an epoch.
+    fresh_minibatch_key: bool = False
+    # Faithful-repair diagnostics. Computed, never zero-placeheld; disabled fields
+    # are written as NaN.
+    log_faithful_diag: bool = False
     # E-step KL budget. eta is solved against this by its own dual, rather than
     # being tied to the entropy dual alpha.
     eps_e: float = 0.5
@@ -203,6 +219,34 @@ def gaussian_logp(x, loc, scale):
     """Diagonal-Gaussian log density, summed over action dims."""
     return jnp.sum(
         -0.5 * (((x - loc) / scale) ** 2) - jnp.log(scale) - 0.5 * jnp.log(2 * jnp.pi),
+        axis=-1,
+    )
+
+
+def tanh_log_det_jacobian(y):
+    """sum_j log(1 - tanh(y_j)^2), evaluated stably from the PRE-SQUASH latent.
+
+    Uses log(1 - tanh(y)^2) = 2*(log 2 - y - softplus(-2y)), which is finite for
+    every finite y and does not underflow as |y| grows. Never calls arctanh.
+    """
+    return jnp.sum(
+        2.0 * (jnp.log(2.0) - y - jax.nn.softplus(-2.0 * y)), axis=-1
+    )
+
+
+def gaussian_kl_diag(mu0, sg0, mu1, sg1):
+    """Exact KL( N(mu0, sg0^2) || N(mu1, sg1^2) ) for diagonal Gaussians, summed
+    over action dimensions.
+
+    The tanh push-forward is a smooth invertible reparameterisation, so the KL
+    between the transformed laws equals the KL between the pre-squash Gaussians:
+    the Jacobian term appears in both densities and cancels in the log ratio.
+    This is therefore the exact KL of the tanh-Normal policies as well.
+    """
+    return jnp.sum(
+        jnp.log(sg1 / sg0)
+        + (sg0**2 + (mu0 - mu1) ** 2) / (2.0 * sg1**2)
+        - 0.5,
         axis=-1,
     )
 
@@ -612,6 +656,18 @@ def make_train_fn(
         def update(train_state, key) -> tuple[SACTrainState, dict[str, jax.Array]]:
             def minibatch_update(carry, indices):
                 idx, train_state = carry
+                # Faithful-repair: a fresh actor-sampling key per minibatch. Legacy
+                # reuses the epoch key for every minibatch, so the standard-normal
+                # array is bit-identical across the whole epoch. Folding on `idx`
+                # keeps this deterministic for a fixed root seed. Only the actor
+                # stream is touched: env, rollout, permutation and eval keys are
+                # derived elsewhere and are unaffected, so changing the actor sample
+                # count cannot shift the environment realisation.
+                akey = (
+                    jax.random.fold_in(key, idx)
+                    if cfg.fresh_minibatch_key
+                    else key
+                )
                 # Sample data at indices from the batch
                 minibatch, target_values = jax.tree.map(
                     lambda x: jnp.take(x, indices, axis=0), data
@@ -681,7 +737,7 @@ def make_train_fn(
                     # pre-squash Gaussian std: the policy's own scale parameter,
                     # which is what locates a run on the sigma axis
                     pi_sigma = pi.distribution.scale
-                    pred_action, log_prob = pi.sample_and_log_prob(seed=key)
+                    pred_action, log_prob = pi.sample_and_log_prob(seed=akey)
                     value = critic_target_model.critic(
                         minibatch.critic_obs, pred_action
                     )
@@ -706,19 +762,64 @@ def make_train_fn(
                             if cfg.actor_update_mode == "weighted_mle"
                             else 16
                         )
-                        old_pi_action, old_pi_act_log_prob = actor_target_model.actor(
-                            minibatch.obs
-                        ).sample_and_log_prob(sample_shape=(n_estep,), seed=key)
-                        old_pi_action = jnp.clip(old_pi_action, -1 + 1e-4, 1 - 1e-4)
+                        if cfg.faithful_same_point:
+                            # ---- same-point latent path -----------------------
+                            # Materialise y_i and keep it. Both log probabilities,
+                            # the critic action and the WML likelihood all use this
+                            # one (y_i, a_i) pair. No clip: y_i is carried forward,
+                            # so arctanh is never needed and the clip rate is zero
+                            # by construction.
+                            mu_old_f, sg_old_f = actor_target_model.gaussian(
+                                minibatch.obs
+                            )
+                            mu_old_f = jax.lax.stop_gradient(mu_old_f)
+                            sg_old_f = jax.lax.stop_gradient(sg_old_f)
+                            mu_new_f, sg_new_f = actor_model.gaussian(minibatch.obs)
+                            u_i = jax.random.normal(
+                                akey, (n_estep, *mu_old_f.shape)
+                            )
+                            y_i = mu_old_f[None] + sg_old_f[None] * u_i
+                            old_pi_action = jnp.tanh(y_i)
 
-                        # keep the per-sample arrays: the E-step needs them un-averaged.
-                        # The .mean(0) below is the uniform-weight special case.
-                        logp_old_i = old_pi_act_log_prob.sum(-1)            # (M, B)
-                        logp_theta_i = pi.log_prob(old_pi_action).sum(-1)   # (M, B)
+                            # The tanh Jacobian is identical in both terms and
+                            # cancels in their difference; it is subtracted from
+                            # both so each is a true transformed log density.
+                            _ldj = tanh_log_det_jacobian(y_i)
+                            logp_old_i = (
+                                gaussian_logp(y_i, mu_old_f[None], sg_old_f[None])
+                                - _ldj
+                            )
+                            logp_theta_i = (
+                                gaussian_logp(y_i, mu_new_f[None], sg_new_f[None])
+                                - _ldj
+                            )
+                            # exact analytic KL(pi_old || pi_new), an independent
+                            # diagnostic for the sampled estimate below
+                            kl_analytic = gaussian_kl_diag(
+                                mu_old_f, sg_old_f, mu_new_f, sg_new_f
+                            )
+                        else:
+                            old_pi_action, old_pi_act_log_prob = (
+                                actor_target_model.actor(minibatch.obs)
+                                .sample_and_log_prob(
+                                    sample_shape=(n_estep,), seed=akey
+                                )
+                            )
+                            old_pi_action = jnp.clip(
+                                old_pi_action, -1 + 1e-4, 1 - 1e-4
+                            )
+
+                            # keep the per-sample arrays: the E-step needs them
+                            # un-averaged. The .mean(0) below is the uniform-weight
+                            # special case.
+                            logp_old_i = old_pi_act_log_prob.sum(-1)            # (M, B)
+                            logp_theta_i = pi.log_prob(old_pi_action).sum(-1)   # (M, B)
+                            kl_analytic = jnp.full(logp_old_i.shape[1:], jnp.nan)
 
                         old_pi_act_log_prob = logp_old_i.mean(0)
                         pi_act_log_prob = logp_theta_i.mean(0)
 
+                        # KL(pi_old || pi_theta), forward, orientation unchanged
                         kl = old_pi_act_log_prob - pi_act_log_prob
 
                     lagrangian = actor_model.lagrangian()
@@ -992,7 +1093,65 @@ def make_train_fn(
                             )
                         }
 
+                    # ---- faithful-repair diagnostics -------------------------
+                    # Computed, never zero-placeheld. When disabled every field is
+                    # NaN so a reader cannot mistake a placeholder for a measurement.
+                    _nan = jnp.float32(jnp.nan)
+                    if cfg.log_faithful_diag and not cfg.reverse_kl:
+                        _kl_d = jax.lax.stop_gradient(kl)
+                        _gate_open = (_kl_d < cfg.kl_bound).astype(jnp.float32)
+                        _q = jnp.quantile(
+                            _kl_d,
+                            jnp.array([0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]),
+                        )
+                        _lag_raw = actor_model.lagrangian_log_param.value.squeeze()
+                        _kl_an = jax.lax.stop_gradient(kl_analytic)
+                        _fd = dict(
+                            fr_gate_operator=_gate_open.mean(),
+                            fr_gate_kl_only=1.0 - _gate_open.mean(),
+                            fr_kl_q10=_q[0], fr_kl_q25=_q[1], fr_kl_q50=_q[2],
+                            fr_kl_q75=_q[3], fr_kl_q90=_q[4], fr_kl_q95=_q[5],
+                            fr_kl_q99=_q[6],
+                            fr_kl_min=_kl_d.min(), fr_kl_max=_kl_d.max(),
+                            fr_kl_analytic_med=jnp.nanmedian(_kl_an),
+                            fr_kl_sampled_minus_analytic_med=jnp.nanmedian(
+                                _kl_d - _kl_an
+                            ),
+                            fr_kl_sampled_minus_analytic_mean=jnp.nanmean(
+                                _kl_d - _kl_an
+                            ),
+                            fr_lag_raw=_lag_raw,
+                            fr_lag_eff=jax.lax.stop_gradient(lagrangian).squeeze(),
+                            fr_lag_finite=jnp.isfinite(
+                                jax.lax.stop_gradient(lagrangian)
+                            ).all().astype(jnp.float32),
+                            fr_action_sat=(
+                                jnp.abs(jax.lax.stop_gradient(old_pi_action))
+                                > 1.0 - 1e-4
+                            ).mean().astype(jnp.float32),
+                            fr_sigma_mean=pi_sigma.mean(),
+                            fr_sigma_min=pi_sigma.min(),
+                            fr_sigma_max=pi_sigma.max(),
+                        )
+                    else:
+                        _fd = dict(
+                            (k, _nan)
+                            for k in (
+                                "fr_gate_operator", "fr_gate_kl_only",
+                                "fr_kl_q10", "fr_kl_q25", "fr_kl_q50", "fr_kl_q75",
+                                "fr_kl_q90", "fr_kl_q95", "fr_kl_q99",
+                                "fr_kl_min", "fr_kl_max",
+                                "fr_kl_analytic_med",
+                                "fr_kl_sampled_minus_analytic_med",
+                                "fr_kl_sampled_minus_analytic_mean",
+                                "fr_lag_raw", "fr_lag_eff", "fr_lag_finite",
+                                "fr_action_sat", "fr_sigma_mean", "fr_sigma_min",
+                                "fr_sigma_max",
+                            )
+                        )
+
                     return loss, dict(
+                        **_fd,
                         actor_loss=actor_loss,
                         loss=loss,
                         temp=actor_model.temperature(),
