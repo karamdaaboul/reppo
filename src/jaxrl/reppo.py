@@ -25,6 +25,13 @@ from src.env_utils.jax_wrappers import (
     NormalizeVec,
 )
 from src.jaxrl import utils
+from src.jaxrl.estimators import (
+    centred_zo,
+    softmax_displacement,
+    whiten_from_squashed,
+    whitened_grad_at_mean,
+    zo_diagnostics,
+)
 from src.networks.jax_models import (
     CategoricalCriticNetwork,
     CriticNetwork,
@@ -126,6 +133,30 @@ class ReppoConfig(struct.PyTreeNode):
     # it is gated: default OFF keeps confirmatory runs bit-identical to the pristine
     # reference; the seed-901 anchor reruns turn it on.
     log_eval_iqm: bool = False
+    # DEVELOPMENT ONLY. Decouples the KL Monte-Carlo sample count from the operator
+    # switch. `n_estep` is set by actor_update_mode (16 pathwise / estep_num_samples
+    # weighted_mle) and feeds BOTH the KL estimate and, in arm B, the E-step itself
+    # (L.1.14). This truncates only the KL estimate to its first `kl_num_samples`
+    # draws; the E-step still uses all of them. None = use all of them = the exact
+    # registered behaviour, and the None path is byte-identical (no slice op is
+    # emitted). The confirmatory ladder never sets this.
+    kl_num_samples: int | None = None
+    # "M32 + fixed covariance correction" arm
+    # (docs/prereg_wml_covariance_correction.md). Rescales the E-step samples about
+    # their OWN weighted mean, in PRE-TANH space, before the weighted-MLE fit:
+    #     mu_w    = sum_j w_j y_j
+    #     y_tilde = mu_w + sqrt_rho * (y_j - mu_w)
+    # The weighted mean is preserved exactly; the weighted second moment scales by
+    # rho = sqrt_rho**2. This moves the fit toward the population second moment the
+    # frozen probe measured (reports/m_sample_count_audit.md Sec. 5). It does NOT
+    # claim the residual bias is zero.
+    # sqrt_rho == 1.0 is an EXACT no-op: the branch is taken in Python, so no op is
+    # emitted and the arm stays bit-identical to the shipped weighted_mle arm.
+    sqrt_rho: float = 1.0
+    # Diagnostics for that arm: per-coordinate sigma, fraction of coordinates pinned
+    # at min_std, tanh clamp rates, KL gate fire rate. Same bit-identity caveat as
+    # log_q_spread -- adding ops perturbs XLA fusion -- so default OFF.
+    log_cov_diag: bool = False
     # E-step KL budget. eta is solved against this by its own dual, rather than
     # being tied to the entropy dual alpha.
     eps_e: float = 0.5
@@ -688,6 +719,12 @@ def make_train_fn(
                     log_prob = log_prob.sum(-1)
                     entropy = -log_prob
 
+                    # covariance-correction diagnostics: defined on every branch
+                    # so the aux dict has a fixed shape regardless of arm.
+                    y_estep_i = None
+                    estep_clamp = jnp.zeros(())
+                    tilde_clamp = jnp.zeros(())
+
                     # policy KL constraint
                     if cfg.reverse_kl:
                         pi_action, pi_act_log_prob = pi.sample_and_log_prob(
@@ -706,9 +743,44 @@ def make_train_fn(
                             if cfg.actor_update_mode == "weighted_mle"
                             else 16
                         )
-                        old_pi_action, old_pi_act_log_prob = actor_target_model.actor(
-                            minibatch.obs
-                        ).sample_and_log_prob(sample_shape=(n_estep,), seed=key)
+                        _old_pi = actor_target_model.actor(minibatch.obs)
+                        if cfg.actor_update_mode == "weighted_mle":
+                            # Decomposed EXACTLY as distrax's
+                            # Transformed._sample_n_and_log_prob does it, so the
+                            # pre-tanh draw y_j is RETAINED rather than recovered by
+                            # arctanh. arctanh cannot recover it: the E-step clips to
+                            # +-(1 - 1e-4), whose arctanh ceiling is 4.9517, while |y|
+                            # reaches 9.32 in practice, and ~9% of states carry at
+                            # least one clamped coordinate in an M=32 cloud.
+                            # Verified bit-identical to the call it replaces, on BOTH
+                            # actions and log-probs (0 of 43008 floats differ):
+                            # scripts/msweep_audit/bitcheck.py.
+                            # Arm A keeps the original call verbatim.
+                            y_estep_i, _lp_base_i = (
+                                _old_pi.distribution.sample_and_log_prob(
+                                    seed=key, sample_shape=(n_estep,)
+                                )
+                            )
+                            old_pi_action, _fldj_i = jax.vmap(
+                                _old_pi.bijector.forward_and_log_det
+                            )(y_estep_i)
+                            old_pi_act_log_prob = jax.vmap(jnp.subtract)(
+                                _lp_base_i, _fldj_i
+                            )
+                        else:
+                            old_pi_action, old_pi_act_log_prob = (
+                                _old_pi.sample_and_log_prob(
+                                    sample_shape=(n_estep,), seed=key
+                                )
+                            )
+                        if cfg.log_cov_diag:
+                            estep_clamp = jnp.mean(
+                                (jnp.abs(old_pi_action) >= 1.0 - 1e-4).astype(
+                                    jnp.float32
+                                )
+                            )
+                        else:
+                            estep_clamp = jnp.zeros(())
                         old_pi_action = jnp.clip(old_pi_action, -1 + 1e-4, 1 - 1e-4)
 
                         # keep the per-sample arrays: the E-step needs them un-averaged.
@@ -716,8 +788,13 @@ def make_train_fn(
                         logp_old_i = old_pi_act_log_prob.sum(-1)            # (M, B)
                         logp_theta_i = pi.log_prob(old_pi_action).sum(-1)   # (M, B)
 
-                        old_pi_act_log_prob = logp_old_i.mean(0)
-                        pi_act_log_prob = logp_theta_i.mean(0)
+                        if cfg.kl_num_samples is None:
+                            _lo, _lt = logp_old_i, logp_theta_i
+                        else:
+                            _nkl = min(int(cfg.kl_num_samples), n_estep)
+                            _lo, _lt = logp_old_i[:_nkl], logp_theta_i[:_nkl]
+                        old_pi_act_log_prob = _lo.mean(0)
+                        pi_act_log_prob = _lt.mean(0)
 
                         kl = old_pi_act_log_prob - pi_act_log_prob
 
@@ -751,7 +828,40 @@ def make_train_fn(
                         w_i = jax.lax.stop_gradient(
                             estep_weights(q_i, jax.lax.stop_gradient(eta))
                         )
-                        objective = -jnp.sum(w_i * logp_theta_i, axis=0)
+                        # "M32 + fixed covariance correction". w_i is already
+                        # detached, so this changes WHAT THE FIT TARGETS, not the
+                        # weights, not the critic, not the KL. sqrt_rho == 1.0 takes
+                        # the Python branch below and emits no op.
+                        if cfg.sqrt_rho == 1.0:
+                            logp_fit_i = logp_theta_i
+                            tilde_clamp = jnp.zeros(())
+                        else:
+                            _mu_w = jnp.sum(w_i[..., None] * y_estep_i, axis=0)
+                            _y_tilde = _mu_w[None] + cfg.sqrt_rho * (
+                                y_estep_i - _mu_w[None]
+                            )
+                            # Forward composition, mirroring the sampling path: the
+                            # squashed action and its log-det come from the SAME
+                            # forward pass, so no arctanh is taken anywhere and the
+                            # clip is not needed for numerical safety. a_tilde feeds
+                            # only this log-prob; the critic still sees the ORIGINAL
+                            # actions, so the E-step weights are unchanged.
+                            _a_tilde, _fldj_t = jax.vmap(
+                                pi.bijector.forward_and_log_det
+                            )(_y_tilde)
+                            logp_fit_i = (
+                                pi.distribution.log_prob(_y_tilde) - _fldj_t
+                            ).sum(-1)
+                            tilde_clamp = (
+                                jnp.mean(
+                                    (jnp.abs(_a_tilde) >= 1.0 - 1e-4).astype(
+                                        jnp.float32
+                                    )
+                                )
+                                if cfg.log_cov_diag
+                                else jnp.zeros(())
+                            )
+                        objective = -jnp.sum(w_i * logp_fit_i, axis=0)
                         ess = effective_sample_size(w_i, axis=0)
                         w_max = w_i.max(axis=0)
                         # the actual E-step signal: spread of the softmax exponent
@@ -904,17 +1014,18 @@ def make_train_fn(
                         _sg = jax.lax.stop_gradient(_sg)
 
                         # h = Sigma^{1/2} grad_y Q(s, tanh(y)) at y = mu.  eq (7)/(19).
+                        # The core sums internally, so this returns per-state values.
                         def _q_of_y(y):
                             return critic_target_model.critic(
                                 minibatch.critic_obs, jnp.tanh(y)
-                            ).sum()
+                            )
 
-                        _h = _sg * jax.lax.stop_gradient(jax.grad(_q_of_y)(_mu))
-                        _h_norm = jnp.linalg.norm(_h, axis=-1)
+                        _h = whitened_grad_at_mean(_q_of_y, _mu, _sg)
 
                         # Recover the whitened draws behind the M reused samples.
-                        _u_i = (jnp.arctanh(jax.lax.stop_gradient(old_pi_action))
-                                - _mu[None]) / _sg[None]
+                        _u_i = whiten_from_squashed(
+                            jax.lax.stop_gradient(old_pi_action), _mu[None], _sg[None]
+                        )
                         _cobs_i = jnp.broadcast_to(
                             minibatch.critic_obs,
                             (n_estep, *minibatch.critic_obs.shape),
@@ -926,52 +1037,21 @@ def make_train_fn(
                         )
                         # canonical centred ZO estimator, eq (13)/(16):
                         #   a_hat_M = (1/M) sum_i (Q_i - Qbar) u_i,  E[a_hat_M] = (1-1/M) h
-                        _qc = _q_i - _q_i.mean(axis=0, keepdims=True)
-                        _terms = _qc[..., None] * _u_i
-                        _a_hat = _terms.mean(axis=0)
-                        _a_norm = jnp.linalg.norm(_a_hat, axis=-1)
-
-                        _M = jnp.float32(n_estep)
-                        # de-attenuate the known (1 - 1/M) shrinkage before comparing
-                        _a_deatt = _a_hat * (_M / (_M - 1.0))
-                        _den = jnp.maximum(_h_norm, 1e-12)
-                        _cos = jnp.sum(_a_hat * _h, axis=-1) / jnp.maximum(
-                            _a_norm * _h_norm, 1e-12
+                        # reduce="broadcast" pins the op order this arm was baselined
+                        # with; probe2 contracts by einsum. See src/jaxrl/estimators.py.
+                        _a_hat, _terms = centred_zo(
+                            _q_i, _u_i, axis=0, return_terms=True, reduce="broadcast"
                         )
-                        _err2 = jnp.square(
-                            jnp.linalg.norm(_a_deatt - _h, axis=-1)
-                        )
-                        _rel_l2 = jnp.linalg.norm(_a_deatt - _h, axis=-1) / _den
-                        # sampling-noise energy of the mean over M: tr(Cov)/M
-                        _var = _terms.var(axis=0).sum(axis=-1) / _M
-                        # squared bias with the sampling-noise energy removed
-                        _bias2 = _err2 - _var * jnp.square(_M / (_M - 1.0))
-
-                        _est = dict(
-                            # M differs by arm: the pathwise branch draws 16
-                            # samples, weighted_mle draws estep_num_samples. Logged so
-                            # the decomposition stays checkable without inferring it.
-                            est_M=jnp.float32(n_estep),
-                            est_h_norm=_h_norm.mean(),
-                            est_a_norm=_a_norm.mean(),
-                            est_cos=_cos.mean(),
-                            est_rel_l2=_rel_l2.mean(),
-                            # Self-check: est_rel_l2_sq must equal
-                            #   est_bias2_proxy + est_var_proxy * (M/(M-1))^2
-                            # state by state. est_rel_l2 is a mean OF A RATIO and by
-                            # Jensen sits below sqrt(est_rel_l2_sq); do not mix them.
-                            est_rel_l2_sq=(_err2 / jnp.square(_den)).mean(),
-                            est_var_proxy=(_var / jnp.square(_den)).mean(),
-                            est_bias2_proxy=(_bias2 / jnp.square(_den)).mean(),
-                            est_nonfinite=(
-                                1.0 - jnp.isfinite(_cos).astype(jnp.float32)
-                            ).mean(),
-                        )
+                        # M differs by arm: the pathwise branch draws 16 samples,
+                        # weighted_mle draws estep_num_samples. est_M is logged so the
+                        # decomposition stays checkable without inferring it.
+                        _est = zo_diagnostics(_h, _a_hat, _terms, n_estep, axis=0)
                         if cfg.actor_update_mode == "weighted_mle":
                             # what the E-step ACTUALLY moves the mean by, in the same
                             # whitened metric: argmax_mu sum_i w_i log N(u_i; mu, I).
-                            _d = jnp.sum(w_i[..., None] * _u_i, axis=0)
+                            _d = softmax_displacement(w_i, _u_i, axis=0)
                             _d_norm = jnp.linalg.norm(_d, axis=-1)
+                            _h_norm = jnp.linalg.norm(_h, axis=-1)
                             _est["est_wdisp_norm"] = _d_norm.mean()
                             _est["est_wdisp_cos"] = (
                                 jnp.sum(_d * _h, axis=-1)
@@ -1008,6 +1088,36 @@ def make_train_fn(
                         pi_sigma_mean=pi_sigma.mean(),
                         pi_sigma_min=pi_sigma.min(),
                         pi_sigma_max=pi_sigma.max(),
+                        # --- covariance-correction arm diagnostics (gated) ---
+                        # per-coordinate sigma, averaged over the minibatch: the
+                        # scalar mean hides a policy that is narrow on some joints
+                        # and pinned at min_std on others.
+                        pi_sigma_percoord=(
+                            pi_sigma.reshape(-1, pi_sigma.shape[-1]).mean(axis=0)
+                            if cfg.log_cov_diag
+                            else jnp.zeros(pi_sigma.shape[-1])
+                        ),
+                        # min_std is an ADDITIVE floor (std = exp(log_std) + min_std),
+                        # so sigma approaches it from above and never reaches it; 1%
+                        # above the floor is the practical "pinned" test.
+                        frac_sigma_at_min=(
+                            jnp.mean(
+                                (pi_sigma <= actor_model.min_std * 1.01).astype(
+                                    jnp.float32
+                                )
+                            )
+                            if cfg.log_cov_diag
+                            else jnp.zeros(())
+                        ),
+                        estep_clamp_rate=estep_clamp,
+                        tilde_clamp_rate=tilde_clamp,
+                        # the gate branch actually taken, per state: "clipped" mode
+                        # drops the WML objective entirely when kl >= kl_bound.
+                        kl_gate_fire=(
+                            jnp.mean((kl >= cfg.kl_bound).astype(jnp.float32))
+                            if cfg.log_cov_diag
+                            else jnp.zeros(())
+                        ),
                         ess=ess.mean(),
                         # ESS DISTRIBUTION: the mean hides a population of states
                         # running at ESS ~2, which by the shrinkage law lose ~50% of
