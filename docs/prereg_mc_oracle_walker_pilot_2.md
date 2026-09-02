@@ -298,3 +298,68 @@ count, rollout count, checkpoints, estimands, estimators, finite-difference step
 horizons, doubling subset, bootstrap scheme, decision thresholds, stop rule,
 follow-up trigger and interpretation rules are all settled before any pilot-2 oracle
 value exists.
+
+---
+
+## Execution status — appended 2026-09-02. Everything above the design lock is unchanged.
+
+**THIS PREREGISTRATION WAS NOT EXECUTED. No pilot-2 oracle value was ever computed.**
+
+This entry exists so that a committed preregistration with no corresponding result
+cannot be mistaken for a file-drawer omission. The plan above was registered in good
+faith, the infrastructure was built and validated, and then the run was stopped
+deliberately before it started.
+
+**Decision.** Stopped by the principal on 2026-09-02, after a cost and benefit review
+and before any pilot-2 job began computing. Every submitted job was cancelled while
+still `PENDING`; none ever reached a compute node.
+
+**What exists, and what does not.**
+
+| Exists | Does not exist |
+|---|---|
+| `reports/artifacts/mc_oracle_state_bank_p2.npz` (256 states, sha256 `a200b74bb364c8f9...`) | any `pilot_PW.npz` / `pilot_WML.npz` |
+| `reports/artifacts/mc_oracle_state_bank_p2_manifest.json` | any `horizon_PW.npz` / `horizon_WML.npz` |
+| the pilot registry `PILOTS["p2"]` and the sharding machinery | any shard file |
+| `reports/artifacts/mc_oracle_power.json` (the sizing evidence) | any `D`, `N`, `r_RMS` or verdict for pilot 2 |
+
+The validation suite was run on the pilot-2 configuration and passed 18/18 on both an
+H100 (CLAIX) and an RTX PRO 4500 Blackwell (a second machine), so the failure to
+execute is a resourcing decision and not a technical blocker.
+
+**Reasons recorded at the time of the decision.**
+
+1. The planted-error experiment (commit `7663d03`) had already shown that the
+   `r_RMS = 1` boundary does **not** predict actual WML update quality — the
+   zeroth-order estimator beat pathwise on update MSE in 43 of 240 cells and the
+   actual WML operator in 38 of 240, against a fitted error-channel boundary of
+   `r* = 1.0085`. Neither possible outcome of pilot 2 could therefore connect the
+   boundary to the `+135.58` WalkerRun return gap.
+2. Section 12 of this document had already registered the expectation that pilot 2
+   would fail criterion C regardless.
+3. Pilot 1 established that 87.3% of WML base actions carry a saturated coordinate,
+   with pre-squash `sigma` reaching 1575.9, so the WML `r_RMS` substantially measures
+   `tanh` saturation rather than critic roughness. Additional sampling does not
+   address that.
+4. Pilot 1 had already produced two standalone findings that do not depend on pilot 2:
+   that `Q_phi` is fit to a **clipped** target `E[clip(G, 0, 150)]`
+   (`src/jaxrl/utils.py:45`), and that the WML policy width has grown abnormally
+   (training-logged entropy `-33.34` against PW's `-2.62`).
+
+**Consequence for the conditional follow-up.** Section 11 made the covariance-freeze
+ablation conditional on **pilot-2** evidence, with the trigger *"the WML checkpoint's
+per-state RMS `sigma` has a p95 exceeding five times its median **and** the base action
+clip rate exceeds 50%"*. Pilot 2 will not supply that evidence.
+
+Pilot-1 evidence meets the trigger by a wide margin — p95 `90.05` against median
+`4.26`, a ratio of **21.1** against a threshold of 5, and a clip rate of **87.3%**
+against a threshold of 50% — but it comes from the 64-state pilot-1 bank, not the
+independent 256-state bank this document specified. **Any covariance-freeze ablation
+must therefore state explicitly that its trigger was evaluated on pilot-1 data**, and
+must be preregistered separately. It is not preregistered here.
+
+**Status of pilot 1.** Unaffected. `reports/mc_oracle_walker_pilot.md` (commit
+`fd57fda`) stands as the reported result, with its verdict
+`NOT YET PRECISE ENOUGH TO SCALE`. Its conclusions do not depend on pilot 2 having run.
+
+**The all-16-checkpoint WalkerRun study remains not launched.**
