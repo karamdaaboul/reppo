@@ -157,6 +157,10 @@ class ReppoConfig(struct.PyTreeNode):
     # drives alpha d times harder. At d=21 that is 3.5x the d=6 pressure. Setting this
     # divides the error by d, making it a MEAN over dims.
     ent_loss_per_dim: bool = False
+    # Covariance-freeze intervention (docs/covariance_freeze_design_note.md).
+    # null  -> learned state-dependent sigma, exactly the corrected replication.
+    # scalar or length-d vector -> that EFFECTIVE pre-squash sigma everywhere.
+    freeze_sigma: float | list[float] | None = None
 
 
 def estep_weights(q_i, eta):
@@ -373,6 +377,7 @@ def make_init(
             use_skip=cfg.use_actor_skip,
             with_eta=cfg.actor_update_mode == "weighted_mle",
             with_betas=cfg.mstep_decoupled,
+            freeze_sigma=cfg.freeze_sigma,
             rngs=nnx.Rngs(model_key),
         )
         actor_target_networks = SACActorNetworks(
@@ -386,6 +391,7 @@ def make_init(
             use_skip=cfg.use_actor_skip,
             with_eta=cfg.actor_update_mode == "weighted_mle",
             with_betas=cfg.mstep_decoupled,
+            freeze_sigma=cfg.freeze_sigma,
             rngs=nnx.Rngs(model_key),
         )
 
@@ -509,6 +515,15 @@ def make_train_fn(
     action_dim_f = jnp.prod(jnp.array(env.action_space(env_params).shape)).astype(
         jnp.float32
     )
+
+    if cfg.freeze_sigma is not None and not (
+        cfg.exploration_noise_min == 1.0 and cfg.exploration_noise_max == 1.0
+    ):
+        raise ValueError(
+            "freeze_sigma requires exploration_noise_min == exploration_noise_max == 1.0: "
+            "the rollout `scale` multiplies sigma, so any other value would make the "
+            "effective width differ from the frozen value it is declared to be."
+        )
 
     def collect_rollout(
         key: PRNGKey, train_state: SACTrainState

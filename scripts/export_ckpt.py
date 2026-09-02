@@ -103,6 +103,9 @@ def _meta_dict(
                 getattr(hp, "actor_update_mode", "pathwise") == "weighted_mle"
             ),
             "with_betas": bool(getattr(hp, "mstep_decoupled", False)),
+            # absent from checkpoints exported before the covariance-freeze
+            # mechanism existed, where the loader default None is correct
+            "freeze_sigma": getattr(hp, "freeze_sigma", None),
         },
         "critic_kwargs": {
             "obs_dim": int(critic_obs_dim),

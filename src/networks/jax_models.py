@@ -342,6 +342,7 @@ class SACActorNetworks(nnx.Module):
         with_betas: bool = False,
         beta_init: float = 1.0,
         beta_max: float = 1000.0,
+        freeze_sigma: float | tuple[float, ...] | list[float] | None = None,
         *,
         rngs: nnx.Rngs,
     ):
@@ -363,6 +364,24 @@ class SACActorNetworks(nnx.Module):
         self.temperature_log_param = nnx.Param(jnp.ones(1) * start_value)
         self.lagrangian_log_param = nnx.Param(jnp.ones(1) * kl_start_value)
         self.min_std = min_std
+
+        # Covariance freeze. Stored as a plain Python tuple, NOT an nnx.Param: it must
+        # stay out of the parameter tree so that checkpoints, optimizer state and the
+        # flag-off parameter layout are byte-identical to the corrected replication.
+        if freeze_sigma is None:
+            self.freeze_sigma = None
+        else:
+            vals = (list(freeze_sigma) if hasattr(freeze_sigma, "__len__")
+                    else [freeze_sigma])
+            if len(vals) not in (1, action_dim):
+                raise ValueError(
+                    "freeze_sigma must be a scalar or a length-%d vector, got %d"
+                    % (action_dim, len(vals))
+                )
+            vals = [float(v) for v in vals]
+            if not all(v > 0.0 and math.isfinite(v) for v in vals):
+                raise ValueError("freeze_sigma must be finite and strictly positive")
+            self.freeze_sigma = tuple(vals)
 
         # E-step temperature. Created ONLY for the weighted_mle arm: adding a leaf to
         # the param tree would otherwise change the pathwise arm's tree and break both
@@ -386,12 +405,35 @@ class SACActorNetworks(nnx.Module):
             self.beta_mu_param = nnx.Param(jnp.ones(1) * inv_b)
             self.beta_sigma_param = nnx.Param(jnp.ones(1) * inv_b)
 
+    def effective_std(self, log_std: jax.Array) -> jax.Array:
+        """The pre-squash sigma the policy actually uses.
+
+        freeze_sigma is None  ->  exp(log_std) + min_std, i.e. exactly the learned
+        width. This branch is byte-identical to the corrected replication.
+
+        freeze_sigma set      ->  the configured value broadcast over every state and
+        every action coordinate. The intervention is applied at the EFFECTIVE sigma
+        rather than at log_std, so `freeze_sigma = x` means `sigma = x` with no
+        min_std ambiguity.
+
+        In the frozen branch `log_std` is used only for its static `.shape` and
+        `.dtype`, so no gradient reaches the scale half of the output layer. That is
+        intentional: the intervention removes both the varying covariance and its
+        gradient pathway through the shared actor trunk.
+        """
+        if self.freeze_sigma is None:
+            return jnp.exp(log_std) + self.min_std
+        frozen = jnp.asarray(self.freeze_sigma, dtype=log_std.dtype)
+        if frozen.size == 1:
+            frozen = jnp.reshape(frozen, ())
+        return jnp.broadcast_to(frozen, log_std.shape)
+
     def actor(
         self, obs: jax.Array, scale: float | jax.Array = 1.0
     ) -> distrax.Distribution:
         loc = self.actor_module(obs)
         loc, log_std = jnp.split(loc, 2, axis=-1)
-        std = (jnp.exp(log_std) + self.min_std) * scale
+        std = self.effective_std(log_std) * scale
         pi = distrax.Transformed(distrax.Normal(loc=loc, scale=std), distrax.Tanh())
         return pi
 
@@ -424,7 +466,7 @@ class SACActorNetworks(nnx.Module):
         """Pre-squash Normal parameters (loc, scale) -- what MPO's KLs are defined on."""
         loc = self.actor_module(obs)
         loc, log_std = jnp.split(loc, 2, axis=-1)
-        return loc, jnp.exp(log_std) + self.min_std
+        return loc, self.effective_std(log_std)
 
     def __call__(self, obs: jax.Array) -> jax.Array:
         loc = self.actor_module(obs)

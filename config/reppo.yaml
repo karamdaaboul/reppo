@@ -78,6 +78,7 @@ hyperparameters:
   eps_sigma: 5.0e-5              # four orders below eps_mu -- deliberate
   ent_loss_per_dim: false        # divide the SAC entropy error by d (mean, not sum)
   beta_sigma_fixed: null         # hold beta_sigma constant (null = learn via dual)
+  freeze_sigma: null             # null = learned sigma; scalar/len-d vector = frozen effective sigma
   log_q_spread: false            # pathwise-arm diagnostic; breaks bit-identity if on
   log_estimator_diag: false      # Phase 3/4 estimator diagnostics; breaks bit-identity if on
   log_eval_iqm: false            # per-checkpoint eval IQM (ladder U_t anchor); off by default
