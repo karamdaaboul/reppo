@@ -354,11 +354,24 @@ def run_pilot(ckpt: str, bank: str, out: str, subset: bool = False):
     st_tiled_src = gather_states(state_sel, np.repeat(np.arange(n_state), k_take))
 
     tag = os.path.basename(ckpt)
-    qh = np.zeros((2, N_REP, B))
-    nd = np.zeros((2, N_REP, B))
-    qh_pre = np.zeros((2, N_REP, B))
+    # Optional replicate shard, e.g. MCO_REPS=0:24. Sharding changes nothing about
+    # the result: every rollout key is fold("roll", tag, group, r, phase) on the
+    # ABSOLUTE replicate index r, so a shard reproduces exactly the slice it would
+    # have produced inside a single long run. It exists only so a 6-hour job can be
+    # split into pieces the scheduler will backfill.
+    rep_lo, rep_hi = 0, N_REP
+    if os.environ.get("MCO_REPS"):
+        rep_lo, rep_hi = (int(v) for v in os.environ["MCO_REPS"].split(":"))
+        if not (0 <= rep_lo < rep_hi <= N_REP):
+            raise SystemExit("MCO_REPS=%s outside 0:%d" % (os.environ["MCO_REPS"], N_REP))
+        print("replicate shard %d:%d of %d" % (rep_lo, rep_hi, N_REP), flush=True)
+    n_rep_here = rep_hi - rep_lo
+
+    qh = np.zeros((2, n_rep_here, B))
+    nd = np.zeros((2, n_rep_here, B))
+    qh_pre = np.zeros((2, n_rep_here, B))
     for gi, grp in enumerate(("A", "B")):
-        for r in range(N_REP):
+        for r in range(rep_lo, rep_hi):
             key = fold("roll", tag, grp, r, "sub" if subset else "main")
             for b0 in range(0, n_base, chunk_base):
                 sl = slice(b0, b0 + chunk_base)
@@ -370,9 +383,9 @@ def run_pilot(ckpt: str, bank: str, out: str, subset: bool = False):
                 acc, pre, dn = orc.run(stc, jnp.asarray(obc), jnp.asarray(fac),
                                        jax.random.fold_in(key, b0), horizon)
                 s2 = slice(b0 * n_branch, (b0 + chunk_base) * n_branch)
-                qh[gi, r, s2] = np.asarray(acc, np.float64)
-                qh_pre[gi, r, s2] = np.asarray(pre, np.float64)
-                nd[gi, r, s2] = np.asarray(dn, np.float64)
+                qh[gi, r - rep_lo, s2] = np.asarray(acc, np.float64)
+                qh_pre[gi, r - rep_lo, s2] = np.asarray(pre, np.float64)
+                nd[gi, r - rep_lo, s2] = np.asarray(dn, np.float64)
             print("  %s rep %d done" % (grp, r), flush=True)
 
     shape = (n_state, k_take, n_branch)
@@ -389,10 +402,11 @@ def run_pilot(ckpt: str, bank: str, out: str, subset: bool = False):
         branch_j=np.array([m[2] for m in bmeta]),
         branch_sign=np.array([m[3] for m in bmeta]),
         q_phi=q_phi.reshape(shape),
-        q_oracle=qh.reshape(2, N_REP, *shape),
-        q_oracle_prefix=qh_pre.reshape(2, N_REP, *shape),
-        n_done=nd.reshape(2, N_REP, *shape),
+        q_oracle=qh.reshape(2, n_rep_here, *shape),
+        q_oracle_prefix=qh_pre.reshape(2, n_rep_here, *shape),
+        n_done=nd.reshape(2, n_rep_here, *shape),
         n_rep=np.array(N_REP), n_state=np.array(n_state), k=np.array(k_take),
+        rep_lo=np.array(rep_lo), rep_hi=np.array(rep_hi),
     )
     print("wrote", out, "shape", shape)
 
