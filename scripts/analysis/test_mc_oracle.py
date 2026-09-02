@@ -214,8 +214,12 @@ def t6_t7(ckpt):
 def t8_t9(ckpt):
     orc = M.Oracle(ckpt, 1, 4)
     h = orc.h
-    _, _, st1 = h.reset(M.fold("t8"))
-    obs = np.asarray(st1.env_state.obs)
+    _, _, st4 = h.reset(M.fold("t8"))
+    # Harness.reset gives every batch entry its own initial state; the branches of a
+    # base point must share ONE state, exactly as run_pilot tiles them. Without this
+    # the test measures state heterogeneity rather than common random numbers.
+    st1 = jax.tree.map(lambda x: jnp.repeat(x[0:1], 4, axis=0), st4)
+    obs = np.repeat(np.asarray(st4.env_state.obs)[0:1], 4, axis=0)
     d = orc.d
     key = M.fold("t8", "roll")
 

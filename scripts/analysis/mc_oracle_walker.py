@@ -316,6 +316,10 @@ def run_pilot(ckpt: str, bank: str, out: str, subset: bool = False):
     # ---- rollouts --------------------------------------------------------
     chunk_base = int(os.environ.get("MCO_CHUNK", 256 if not subset else 128))
     chunk_base = min(chunk_base, n_base)
+    # Oracle fixes its batch at chunk_base * n_branch, so a ragged final chunk would
+    # silently feed the wrong shape. Require an exact division rather than pad.
+    while n_base % chunk_base:
+        chunk_base -= 1
     orc = Oracle(ckpt, chunk_base, n_branch)
     st_tiled_src = gather_states(state_sel, np.repeat(np.arange(n_state), k_take))
 
