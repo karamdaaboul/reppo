@@ -280,3 +280,30 @@ its normalisation, the statistic `I` and which operators enter it, the reference
 control, the tier separation, the state-bank rule and collection protocol, `R`,
 `S_eval`, `M`, the RNG seeds, the checkpoint lists, the `eta` convention, the clip
 convention, P1-P4, and the interpretation constraints.
+
+---
+
+## Addendum A1 — 2026-09-02 — bank scope per evidence tier
+
+Append-only. No text above this line is altered.
+
+Section 7 specifies **one bank per task**; section 10 separates the corrected
+tier (seeds `301-308`) from the legacy 64 (seeds `101-108`) and forbids pooling.
+WalkerRun is the one task that appears in **both** tiers, so those two clauses
+under-determine which sixteen `(arm, seed)` policies collect the WalkerRun bank.
+
+Resolved, prospectively, before any bank exists:
+
+* The rule is **one bank per task x evidence tier**, not one bank per task.
+* The reference-law gate reported in
+  `reports/crossed_dispersion_walkerrun_gate.md` uses the **corrected-tier**
+  WalkerRun bank: 16 policies = 2 arms x seeds `301-308`, 128 states each,
+  2048 states total. This is what P1 already restricts the primary analysis to,
+  so the gate's scope is unchanged by this addendum.
+* A legacy-tier WalkerRun bank, if one is ever needed for P4, is a **separate**
+  bank with its own collection, its own hash and its own tables. The two are
+  never merged and never compared state-for-state.
+
+Nothing else is amended. Section 7 already fixes the collection protocol used
+here: burn-in `50` stochastic-policy steps from `env.reset` (line 167), `2048`
+states per task as 16 x 128 (line 166), no post-hoc filtering or replacement.
