@@ -416,12 +416,24 @@ with* the bounds' ratio, not that the claim predicts it.
 ## 5. The figure
 
 `reports/artifacts/fig_planted_mechanism.{pdf,png}`, source data
-`fig_planted_mechanism_data.csv`. Panel A carries two operators because the contrast is
-the result: the manuscript's `g_ZO`, one amplitude-invariant curve crossing 1 at
-`r = 0.99`; and the E-step, three amplitude-ordered curves already below 1 at the left
-edge. Panel B shows the operational gap, three separated curves approaching zero at
-different rates. Bands are 95% bootstrap intervals over direction blocks; marker shape
-encodes `d`, so identity is never carried by colour alone.
+`fig_planted_mechanism_data.csv`.
+
+**Panel A carries two operators, because the contrast between them is the result.** It
+plots the dimensionless error-channel measure of Sec. 2 — each operator's error-channel
+variance relative to its own clean signal — so that where a curve crosses zero is
+meaningful rather than a unit artifact. The manuscript's `g_ZO` is **one** curve, because
+its ratio is exactly amplitude-invariant, and it crosses at `r = 1.02`, on the theory
+line. The actual E-step is three amplitude-ordered curves crossing at 1.40 (`A_0/4`),
+0.86 (`A_0`) and off the left edge (`4A_0`).
+
+**Panel B** shows the operational gap `Err[E-step] - Err[PW]`: three separated curves,
+none of which reaches zero inside the sampled range, approaching it at rates ordered by
+amplitude.
+
+That pairing is the paper's claim in one image — a common boundary at `r = 1` on the
+error channel for the estimator the theory is about, and no common boundary at all on the
+update. Bands are 95% bootstrap intervals over direction blocks; marker shape encodes
+`d`, so series identity is never carried by colour alone.
 
 ---
 

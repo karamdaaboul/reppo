@@ -76,11 +76,20 @@ def main():
     rep = rep[rep.sigma == 0.4]                      # primary configs
     amps = sorted(rep.amplitude.unique())
 
-    pa = boot_cells(rep, "var_wml_e", "var_pw_e", "logratio")
-    pz = boot_cells(rep, "var_zo_e", "var_pw_e", "logratio")
+    # Panel A uses the DIMENSIONLESS error-channel measure: each operator's
+    # error-channel variance divided by its own clean-signal magnitude.  The raw
+    # ratio Var_e[WML]/Var_e[PW] compares a displacement variance with a gradient
+    # variance, so where it crosses 1 carries an arbitrary unit scale (~sigma^2);
+    # dividing each by its own signal removes it and makes the crossing mean
+    # something.  See reports/planted_error_mechanism.md Sec. 2.
+    for nm in ("wml", "zo", "pw"):
+        rep[f"nsr_{nm}"] = rep[f"var_{nm}_e"] / rep[f"pre_{nm}_clean_meannorm"] ** 2
+
+    pa = boot_cells(rep, "nsr_wml", "nsr_pw", "logratio")
+    pz = boot_cells(rep, "nsr_zo", "nsr_pw", "logratio")
     pb = boot_cells(rep, "mse_wml", "mse_pw", "diff")
-    pa["panel"] = "A_var_ratio_log10_WML_over_PW"
-    pz["panel"] = "A_var_ratio_log10_ZO_over_PW"
+    pa["panel"] = "A_dimensionless_err_channel_log10_WML_over_PW"
+    pz["panel"] = "A_dimensionless_err_channel_log10_ZO_over_PW"
     pb["panel"] = "B_update_err_WML_minus_PW"
     src = pd.concat([pa, pz, pb], ignore_index=True)
     src.to_csv(f"{ART}/fig_planted_mechanism_data.csv", index=False)
@@ -99,7 +108,8 @@ def main():
 
     for ax, sub, ylab, title in (
             (axes[0], pa,
-             r"$\log_{10}\ \mathrm{Var}_e[\mathrm{E\text{-}step}]\,/\,\mathrm{Var}_e[\mathrm{PW}]$",
+             "$\\log_{10}$  error-channel variance rel. to own signal,\n"
+             r"$\mathrm{E\text{-}step}$ vs $\mathrm{PW}$",
              "A  Estimator level: the critic-error channel"),
             (axes[1], pb,
              r"$\mathrm{Err}[\mathrm{E\text{-}step}] - \mathrm{Err}[\mathrm{PW}]$",
@@ -124,8 +134,9 @@ def main():
                 ax.plot([x0], [0], "v", color=c, ms=7, zorder=6,
                         markeredgecolor=SURFACE, markeredgewidth=0.8, clip_on=False)
                 ax.annotate(f"{x0:.2f}", (x0, 0), textcoords="offset points",
-                            xytext=(0, 9), ha="center", fontsize=7.4,
-                            color=c, fontweight="bold", zorder=7)
+                            xytext=(0, 10 + 12 * amps.index(A)), ha="center",
+                            fontsize=7.4, color=c, fontweight="bold", zorder=7,
+                            bbox=dict(fc=SURFACE, ec="none", pad=0.8))
         if ax is axes[0]:
             # the manuscript's g_ZO: linear in Q, so this ratio is EXACTLY
             # amplitude-invariant -- one curve, not three.
@@ -140,8 +151,9 @@ def main():
                 ax.plot([xz], [0], "v", color=ZO_COLOR, ms=7, zorder=6,
                         markeredgecolor=SURFACE, markeredgewidth=0.8)
                 ax.annotate(f"{xz:.2f}", (xz, 0), textcoords="offset points",
-                            xytext=(0, 9), ha="center", fontsize=7.4,
-                            color=ZO_COLOR, fontweight="bold", zorder=7)
+                            xytext=(0, -15), ha="center", fontsize=7.4,
+                            color=ZO_COLOR, fontweight="bold", zorder=7,
+                            bbox=dict(fc=SURFACE, ec="none", pad=0.8))
             ax.annotate(r"manuscript $\hat g_{ZO}$ (amplitude-invariant)",
                         (mz.r.iloc[4], mz.value.iloc[4]), textcoords="offset points",
                         xytext=(2, 13), fontsize=7.4, color=ZO_COLOR,
