@@ -531,3 +531,81 @@ three-part CONFIRMED rule, REFUTED, INCONCLUSIVE, the terminal-status definition
 the seed-to-partition pairing and the `M = 512` exception to it with its
 disclosed condition-(iii) mismatch, the budget-invariance quantities, and the
 interpretation constraints.
+
+---
+
+## Addendum A2 — 2026-09-03T11:37:29+02:00 — placement of the M=128 odd seeds
+
+Append-only. No text above this line is altered. **This addendum changes run
+placement only.** The primary statistic, `T = 100`, the bootstrap and its RNG, the
+decision rule and the NaN and terminal-status policies are **unchanged**.
+
+**Written after the four even-seed `M = 128` results and all eight `M = 512`
+results were observed.** It is therefore not blind with respect to those twelve
+runs. It is written before any `M = 128` result exists for seeds 301, 303, 305 or
+307, which are the four runs it places.
+
+### A2.1 What was already decided, and by whom
+
+`M = 512` was placed on `c23g` for all eight seeds **by author decision, for queue
+reasons**, recorded in Section 2 before launch. That was not forced by a measured
+out-of-memory: the `c23g` probe fitted at 9,175 MiB of 95,830, and the `c25g` probe
+was cancelled unrun for want of capacity. The Section 8 infeasibility clause was
+therefore never triggered, and Section 2 already states this.
+
+### A2.2 What has happened since
+
+The `c25g` jobs for the `M = 128` odd seeds, array **`3519010`** with its gating
+smoke **`3519008`**, **have not started since submission**. The partition has shown
+19 nodes in `MIXED+PLANNED`, four reserved and six down or drained, with zero
+running jobs and only our two pending. The scheduler's estimated start moved
+*further away* over six and a half hours of waiting -- from 15:12 to 22:50 on the
+same day -- so it was not converging.
+
+### A2.3 The placement decision
+
+Seeds **301, 303, 305, 307** for `M = 128` are **now submitted to `c23g` by author
+decision.** **Primary adjudication uses those runs.** The queued `c25g` array
+`3519010` is left in the queue and is not cancelled.
+
+### A2.4 The disclosure this forces
+
+The four odd pairs are **flagged hardware-mismatched**: the `M = 32` control was run
+on `c25g` while its `M = 128` counterpart is now run on `c23g`.
+
+| Seed | `M = 32` control | `M = 128` | Pair |
+|---|---|---|---|
+| 301 | `c25g` | `c23g` | **MISMATCHED** |
+| 302 | `c23g` | `c23g` | matched |
+| 303 | `c25g` | `c23g` | **MISMATCHED** |
+| 304 | `c23g` | `c23g` | matched |
+| 305 | `c25g` | `c23g` | **MISMATCHED** |
+| 306 | `c23g` | `c23g` | matched |
+| 307 | `c25g` | `c23g` | **MISMATCHED** |
+| 308 | `c23g` | `c23g` | matched |
+
+This is a real weakening of the primary statistic and is stated as such. Section 2
+argued that a per-seed difference `R_{WML32,s} - R_{WML128,s}` should be
+within-hardware precisely so that no machine difference enters it. For four of the
+eight seeds that no longer holds, and `Delta_128` on those four now contains a
+machine difference as well as an `M` difference. **The verdict is computed on all
+eight seeds regardless**, because the rule is fixed and is not being changed here.
+
+### A2.5 Descriptive check, no rule attached
+
+As a descriptive check, `Delta_128` on the **four matched even seeds** (302, 304,
+306, 308) is reported **next to** the four odd seeds (301, 303, 305, 307), so a
+reader can see whether the mismatched half behaves differently from the matched
+half. **No rule attaches to this comparison.** It does not gate, modify or
+override the classification, it is not a subgroup test, and neither half is
+adjudicated on its own. It exists so the mismatch can be inspected rather than
+merely declared.
+
+### A2.6 What is not changed
+
+The primary statistic and its reduction, the `score_window3` estimator, the paired
+percentile bootstrap with 10,000 resamples and `np.random.default_rng(20260902)`,
+`T = 100`, the three-part CONFIRMED rule, REFUTED, INCONCLUSIVE, the terminal-status
+definition, the no-replacement-seeds rule, the minimum of 6 pairs, the `UNSTABLE`
+threshold, and the Section 4.2 budget invariants are all **unchanged**. This
+addendum is placement only.
