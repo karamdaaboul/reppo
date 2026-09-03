@@ -1,0 +1,118 @@
+test,quantity,value,bound,ok,note
+A,d=1 ||alpha_Q H||_2 - 1,0.0,1e-12,True,
+A,d=4 ||alpha_Q H||_2 - 1,0.0,1e-12,True,
+A,d=16 ||alpha_Q H||_2 - 1,0.0,1e-12,True,
+A,"FD vs grad_a_q_pi, max rel",3.898261457802276e-08,1e-06,True,
+A,"reduced form vs alpha_Q grad at scaled state, max rel",7.26561685885608e-16,1e-12,True,
+A,"kernel qq/ql form vs Q(mu+su)-Q(mu), max rel",2.811786722153802e-13,1e-10,True,
+B,rank1 d=4 rank == 1,1.0,1.0,True,
+B,rank1 d=4 ||V V^T - I||_max,3.3306690738754696e-16,1e-13,True,
+B,rank_r2 d=8 rank == 2,2.0,2.0,True,
+B,rank_r d=8 ||V V^T - I||_max,4.440892098500626e-16,1e-13,True,
+B,rank_r2 d=1 rank == 1,1.0,1.0,True,
+B,rank_r d=1 ||V V^T - I||_max,0.0,1e-13,True,
+B,full d=6 rank == 6,6.0,6.0,True,
+B,full d=6 ||V V^T - I||_max,0.0,1e-13,True,
+B,"e_value/e_grad vs independent sine field, max rel",2.6645352591003757e-15,1e-12,True,
+B,"FD of e vs e_grad, max rel",2.90780043708871e-10,1e-06,True,
+B,"q_spread closed form vs MC (sigma=0.05), max rel",0.001987453752225976,0.005,True,
+B,"q_spread closed form vs MC (sigma=0.4), max rel",0.0020284922801170335,0.005,True,
+B,"saved eps == 0.05 * q_spread (replayed states), max rel",0.0,1e-12,True,
+B,"saved phi == replayed phi, max abs",0.0,0.0,True,
+B,"saved vtmu == v^T mu (replayed), max abs",0.0,1e-12,True,
+B,EF.theta == omega v^T mu + phi,7.105427357601002e-15,1e-12,True,
+B,|omega v^T mu| median at omega=5 (0 would make theta=phi exact),13.537314396627796,0.0,True,phi-only convention is NOT exact
+C/D,linearity / agreement: pw_core,4.023927035857167e-14,1e-12,True,
+C/D,linearity / agreement: zo_core,3.90227981421216e-14,1e-12,True,
+C/D,linearity / agreement: pw_mine,4.2760567176550464e-14,1e-12,True,
+C/D,linearity / agreement: zo_mine,4.2466586164541103e-14,1e-12,True,
+C/D,linearity / agreement: core_vs_mine,1.0473667311701001e-14,1e-12,True,
+E,|E[plain]/h - (1-1/M)| max (SE-scaled),0.43974718672150664,4.0,True,
+E,|E[deatt]/h - 1| max (SE-scaled),0.4397471867214545,4.0,True,
+J,core deatt / core plain == M/(M-1),2.220446049250313e-16,1e-12,True,
+J,core plain == my plain,8.881784197001252e-16,1e-12,True,
+J,deattenuation_factor(32) == 32/31,0.0,1e-15,True,
+J,trCov(deatt)/trCov(plain) - (M/(M-1))^2,4.218847493575595e-15,1e-12,True,
+4,cell sig=0.201 om=3.67: A==B PW max abs,4.458239333260394e-16,1e-09,True,
+4,cell sig=0.201 om=3.67: A==B ZO max abs,7.719519468096792e-16,1e-09,True,
+4,"cell: my trCov_PW(g(e)) vs saved s3_pw, rel",0.015996752387619217,0.07905694150420947,True,
+4,"cell: my trCov_ZO(g(e)) vs saved s3_zo, rel",0.008466681981775581,0.07905694150420947,True,
+4,cell: mean B_pw == blurred grad (SE-scaled),0.6423634475729785,4.0,True,
+4,cell: mean B_zo == blurred grad (SE-scaled),1.4836641353220053,4.0,True,
+F,"cell: Var_PW closed form vs MC, rel",0.007239431884119796,0.035355339059327376,True,
+F,"cell: Var_ZO closed form (Lambda by MC) vs MC, rel",0.003246209138615397,0.07071067811865475,True,
+4,cell sig=0.669 om=1.1: A==B PW max abs,6.245004513516506e-16,1e-09,True,
+4,cell sig=0.669 om=1.1: A==B ZO max abs,1.2628786905111156e-15,1e-09,True,
+4,"cell: my trCov_PW(g(e)) vs saved s3_pw, rel",0.009695938750316824,0.07905694150420947,True,
+4,"cell: my trCov_ZO(g(e)) vs saved s3_zo, rel",0.0033604829855106155,0.07905694150420947,True,
+4,cell: mean B_pw == blurred grad (SE-scaled),0.24698712466717207,4.0,True,
+4,cell: mean B_zo == blurred grad (SE-scaled),0.9956816720545659,4.0,True,
+F,"cell: Var_PW closed form vs MC, rel",0.003230861623003234,0.035355339059327376,True,
+F,"cell: Var_ZO closed form (Lambda by MC) vs MC, rel",0.0007432653020585933,0.07071067811865475,True,
+4,cell sig=0.0606 om=40.5: A==B PW max abs,4.327050870389648e-16,1e-09,True,
+4,cell sig=0.0606 om=40.5: A==B ZO max abs,8.287641406479196e-16,1e-09,True,
+4,"cell: my trCov_PW(g(e)) vs saved s3_pw, rel",0.0013787910448150864,0.07905694150420947,True,
+4,"cell: my trCov_ZO(g(e)) vs saved s3_zo, rel",0.013003924783936971,0.07905694150420947,True,
+4,cell: mean B_pw == blurred grad (SE-scaled),0.5278678836218516,4.0,True,
+4,cell: mean B_zo == blurred grad (SE-scaled),0.7634857941189922,4.0,True,
+F,"cell: Var_PW closed form vs MC, rel",0.010190049129073064,0.035355339059327376,True,
+F,"cell: Var_ZO closed form (Lambda by MC) vs MC, rel",0.006324593010469282,0.07071067811865475,True,
+G,"closed-form moments vs MC (2e5 draws), max rel",0.00486892562277752,0.02,True,
+G,"omega_RMS/omega: my closed form vs lqr_audit_rms.csv, max rel",1.1102230246251565e-16,1e-12,True,
+7,d=1 sign changes of state-avg ratio,1.0,1.0,True,
+7,"d=1 PCHIP root vs linear-interp root, rel",0.0009927877716535694,0.002,True,
+7,"d=1 root of mean vs median of per-state roots, rel",8.721209053930146e-05,0.01,True,"mean-of-roots 1.2027, no-bracket 0.000"
+7,"d=1 my c* vs lqr_audit_summary (report.py path), rel",2.220446049250313e-16,1e-09,True,
+7,d=2 sign changes of state-avg ratio,1.0,1.0,True,
+7,"d=2 PCHIP root vs linear-interp root, rel",0.002514061196790207,0.002,False,
+7,"d=2 root of mean vs median of per-state roots, rel",0.0007203761649792195,0.01,True,"mean-of-roots 1.5185, no-bracket 0.000"
+7,"d=2 my c* vs lqr_audit_summary (report.py path), rel",2.220446049250313e-16,1e-09,True,
+7,d=4 sign changes of state-avg ratio,1.0,1.0,True,
+7,"d=4 PCHIP root vs linear-interp root, rel",0.0015869961507474217,0.002,True,
+7,"d=4 root of mean vs median of per-state roots, rel",0.000629447885496015,0.01,True,"mean-of-roots 2.0496, no-bracket 0.000"
+7,"d=4 my c* vs lqr_audit_summary (report.py path), rel",0.0,1e-09,True,
+7,d=8 sign changes of state-avg ratio,1.0,1.0,True,
+7,"d=8 PCHIP root vs linear-interp root, rel",0.0003736292955175413,0.002,True,
+7,"d=8 root of mean vs median of per-state roots, rel",0.0003220476827219265,0.01,True,"mean-of-roots 2.8747, no-bracket 0.000"
+7,"d=8 my c* vs lqr_audit_summary (report.py path), rel",0.0,1e-09,True,
+7,d=16 sign changes of state-avg ratio,1.0,1.0,True,
+7,"d=16 PCHIP root vs linear-interp root, rel",0.00012643670675704932,0.002,True,
+7,"d=16 root of mean vs median of per-state roots, rel",3.710174367133057e-05,0.01,True,"mean-of-roots 4.0605, no-bracket 0.000"
+7,"d=16 my c* vs lqr_audit_summary (report.py path), rel",2.220446049250313e-16,1e-09,True,
+7,d=32 sign changes of state-avg ratio,1.0,1.0,True,
+7,"d=32 PCHIP root vs linear-interp root, rel",5.4556225337232256e-05,0.002,True,
+7,"d=32 root of mean vs median of per-state roots, rel",0.0004946416821400845,0.01,True,"mean-of-roots 5.7468, no-bracket 0.000"
+7,"d=32 my c* vs lqr_audit_summary (report.py path), rel",0.0,1e-09,True,
+7,d=64 sign changes of state-avg ratio,1.0,1.0,True,
+7,"d=64 PCHIP root vs linear-interp root, rel",1.6717578952274437e-06,0.002,True,
+7,"d=64 root of mean vs median of per-state roots, rel",0.000399583587441632,0.01,True,"mean-of-roots 8.1307, no-bracket 0.000"
+7,"d=64 my c* vs lqr_audit_summary (report.py path), rel",0.0,1e-09,True,
+8,"rank1: p (registered d-set, root-of-mean) vs report",0.0,1e-09,True,p=0.4876
+8,rank1: p with per-state-median roots,6.123899452820103e-05,0.005,True,p_med=0.4875
+8,rank1: p including d=1,0.01962067325373834,1.0,True,p_all=0.4680
+8,"rank_r2: p (registered d-set, root-of-mean) vs report",0.0,1e-09,True,p=0.4870
+8,rank_r2: p with per-state-median roots,0.00010379086074813193,0.005,True,p_med=0.4869
+8,rank_r2: p including d=1,0.019274573421694974,1.0,True,p_all=0.4677
+8,"full: p (registered d-set, root-of-mean) vs report",5.551115123125783e-17,1e-09,True,p=0.4871
+8,full: p with per-state-median roots,0.00023712836675954252,0.005,True,p_med=0.4874
+8,full: p including d=1,0.018856770825244118,1.0,True,p_all=0.4683
+8,full: p_omega_inf == p_nominal - 0.5 exactly (relabelling),0.0,1e-12,True,
+8,full: refit of log(c*/sqrt d) gives the same shift,2.688821387764051e-16,1e-12,True,
+6,full d=8 product median vs 32/31,0.0007067221165191206,0.01,True,
+6,full d=16 product median vs 32/31,0.00016480512949357262,0.01,True,
+6,full d=32 product median vs 32/31,0.0001479850480587963,0.01,True,
+6,full d=64 product median vs 32/31,0.0005180472138128778,0.01,True,
+6,rank1 d=8 product median vs 32/31,0.0008318783489047465,0.01,True,
+6,rank1 d=16 product median vs 32/31,0.000263926422219285,0.01,True,
+6,rank1 d=32 product median vs 32/31,0.0008824580439819041,0.01,True,
+6,rank1 d=64 product median vs 32/31,9.584930985351292e-06,0.01,True,
+6,rank_r2 d=8 product median vs 32/31,0.0038991827593830575,0.01,True,
+6,rank_r2 d=16 product median vs 32/31,0.0014125960366908608,0.01,True,
+6,rank_r2 d=32 product median vs 32/31,0.0008983726722724406,0.01,True,
+6,rank_r2 d=64 product median vs 32/31,0.0002786107636851831,0.01,True,
+10,pw: d log(|2Cov|/Var_e)/d log c at small c (sigma=0.01),-2.0490873933867366,0.0,True,"analytic: PW ~ c^-3, ZO ~ c^-1 (see report)"
+10,zo: d log(|2Cov|/Var_e)/d log c at small c (sigma=0.01),-0.9239992937310016,0.0,True,"analytic: PW ~ c^-3, ZO ~ c^-1 (see report)"
+13,eta=1000: |d_ES - (ubar + zo_plain*sigma/eta)| rel,0.0007133957640953575,1.0,True,"cos(d_ES, g_ZO)=-0.085, ESS/M=1.000"
+13,eta=10: |d_ES - (ubar + zo_plain*sigma/eta)| rel,0.06784443894640883,1.0,True,"cos(d_ES, g_ZO)=+0.018, ESS/M=0.998"
+13,eta=1: |d_ES - (ubar + zo_plain*sigma/eta)| rel,0.4173329425357625,1.0,True,"cos(d_ES, g_ZO)=+0.622, ESS/M=0.878"
+13,eta=0.1: |d_ES - (ubar + zo_plain*sigma/eta)| rel,0.7673923739226409,1.0,True,"cos(d_ES, g_ZO)=+0.868, ESS/M=0.159"
