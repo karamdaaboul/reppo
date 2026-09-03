@@ -40,3 +40,5 @@
 {"name": "estep_d16_rank1_M32.npz", "arm": "estep", "d": 16, "M": 32, "kind": "rank1", "git_sha": "33c76325a566d30d78a5cabc5107dac64256d022", "seconds": 12.61}
 {"name": "estep_d32_rank1_M32.npz", "arm": "estep", "d": 32, "M": 32, "kind": "rank1", "git_sha": "33c76325a566d30d78a5cabc5107dac64256d022", "seconds": 20.86}
 {"name": "estep_d64_rank1_M32.npz", "arm": "estep", "d": 64, "M": 32, "kind": "rank1", "git_sha": "33c76325a566d30d78a5cabc5107dac64256d022", "seconds": 37.24}
+{"name": "estep_d64_rank1_M32.npz", "arm": "estep", "d": 64, "M": 32, "kind": "rank1", "git_sha": "98da377f88550d0dc76ee780a74128d36bdf51d8", "seconds": 17.33}
+{"name": "estep_d64_rank1_M32.npz", "arm": "estep", "d": 64, "M": 32, "kind": "rank1", "git_sha": "98da377f88550d0dc76ee780a74128d36bdf51d8", "seconds": 39.48}
