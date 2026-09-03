@@ -24,7 +24,11 @@ SEEDS = tuple(range(301, 309))
 # c23g for every seed, with the odd-seed mismatch disclosed in Sec. 7 (iii).
 CONTROL_PARTITION = {s: ("c25g" if s % 2 == 1 else "c23g") for s in SEEDS}
 def partition_for(M, seed):
-    return "c23g" if M == 512 else CONTROL_PARTITION[seed]
+    # Addendum A2 (66539c2): the M=128 odd seeds moved from c25g to c23g after the
+    # c25g array 3519010 failed to start. Every run in this study is now on c23g,
+    # and seeds 301/303/305/307 are hardware-mismatched against their c25g controls
+    # at BOTH M. CONTROL_PARTITION still records where the controls actually ran.
+    return "c23g"
 
 BASE = ["env=mjx_dmc", "env.name=WalkerRun",
         "experiment_overrides=mjx_dmc_large_data",
