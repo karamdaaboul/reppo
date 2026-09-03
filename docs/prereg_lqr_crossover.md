@@ -304,3 +304,35 @@ out of the abstract, and the paper reframes around `omega` alone -- while statin
 Sec. 5.1, that `omega` itself is not well-posed for a full-rank error field until the
 norm in Claim 4 is fixed. That statement is a contribution whether Rule B confirms or
 refutes.
+
+---
+
+## Addendum A1 (2026-09-03): post-hoc d = 6 arm
+
+**Appended after all Sec. 5 results were seen; nothing above this line is altered.**
+
+**Why.** The Sec. 5.4 cross-term flag, as reported in `reports/lqr_crossover.md` Sec. 5,
+trips at `d in {1, 2, 4}` and clears at `d >= 8`. Walker's action dimension is 6, which
+sits inside that gap and was never run. A single `d = 6` rank-one arm is added to
+resolve it. It is a post-hoc addition and is labelled as such wherever it appears.
+
+**Design, identical to the registered rank-one arm.** `kind = rank1`, `M = 32`,
+`eps_frac = 0.05`, `normalize = unit_H`, `cost = identity`, the registered
+`sigma` x `omega` grid (20 x 34, common log ratio `300^(1/19)`), `n_states = 64`,
+`n_batch = 40`, `r_batch = 250` (`N = 10^4`), seeds by the registered convention
+(`SEED_ROOT + d` for the system, `+ 2000 + d` for states, `+ 3000 + d` for the kernel
+key), CPU only. Command: `python scripts/lqr_crossover/sweep.py --d 6`.
+
+**What is computed and reported for d = 6, fixed here.**
+
+- The cross term with **both denominators**: `|2 Cov| / Var_e` and `|2 Cov| / MSE_total`.
+- Under **both** evaluation rules: the registered Sec. 5.4 rule (maximum **anywhere on
+  the swept grid**, `|2 Cov| > 0.25 Var_e`) **and** the report's at-crossover variant.
+- Each **unrestricted** and **restricted to `sigma >= 0.1`** (the DMC-reachable band,
+  Sec. 6).
+- `c*(6)` by the same estimator as Sec. 5.4, for completeness only.
+
+**What d = 6 does not do.** It does not enter the registered primary `d`-set
+`{2, 4, 8, 16, 32, 64}` of Sec. 5.4, does not change Rule A or Rule B, and is not
+evidence about DMC. Its single purpose is to say on which side of the cross-term flag
+`d = 6` falls under each rule.
