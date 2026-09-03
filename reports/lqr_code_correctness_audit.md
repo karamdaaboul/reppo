@@ -1,5 +1,25 @@
 # LQR crossover experiment: forensic correctness audit
 
+**Gate order.** Parts 2 and 3 (the two estimators and their linearity) were run and
+passed before any downstream number was interpreted; had either failed, this audit would
+have stopped there with verdict D, because every later part is computed on those
+objects. A precision check (TEST K, below) was run first of all, since a float32 sweep
+would have invalidated every small-`sigma` cell before any rule could be read.
+
+**Independence.** The test suite derives every quantity from first principles in numpy
+and compares it to the production core, the sweep kernel's arithmetic, the saved `.npz`,
+and the report. The first audit's artifacts (`lqr_audit_rms.csv`,
+`lqr_audit_summary.json`) are used **only as comparison targets**, never as inputs or as
+sources of expected values; where the two agree it is because both reach the same number
+from different code. Both audits were written by the same hand, which is a residual
+blind-spot risk this document cannot remove; it is why every check is committed and
+rerunnable rather than asserted.
+
+**Rerun.** `JAX_PLATFORMS=cpu python scripts/lqr_crossover/audit_correctness_tests.py`
+regenerates `reports/artifacts/lqr_code_correctness_checks.csv` (132 checks) and
+`lqr_code_correctness_part6.csv` from the committed script and the manifest-hashed
+`.npz` in ~6 minutes on CPU.
+
 ## Verdict
 
 **C. PARTIALLY CORRECT.** The central estimator computation — pathwise, centred
@@ -18,7 +38,7 @@ No error touches the primary error-channel comparison.
 Everything below was recomputed by `scripts/lqr_crossover/audit_correctness_tests.py`
 (temporary audit code; numpy re-implementations compared against the production core
 `src/jaxrl/estimators.py`, the sweep kernel, the saved `.npz`, and the report). Results:
-`reports/artifacts/lqr_code_correctness_checks.csv` (117 checks) and
+`reports/artifacts/lqr_code_correctness_checks.csv` (132 checks) and
 `lqr_code_correctness_part6.csv`. Nothing in production was modified; no GPU; no new
 sweep.
 
@@ -28,6 +48,7 @@ sweep.
 
 | component | intended math | implemented math | independent test | verdict | scientific consequence |
 |---|---|---|---|---|---|
+| dtype / precision | float64 throughout; `jax_enable_x64` set before any array exists | `scripts/lqr_crossover/__init__.py` sets `JAX_PLATFORMS=cpu`, `jax_enable_x64=True`, and **asserts** `jnp.zeros(1).dtype == float64` at import; `sweep.py` imports it before `jax`; kernel inputs are `jnp.asarray` of float64; no `float32`/`astype` anywhere in the harness | TEST K: x64 on, `jax.random.normal` → float64, platform cpu; **all statistics in all 28 cited sweep `.npz` are float64**; independent recompute of the `sigma=0.01, omega=0.1` corner vs saved `s3`: PW 4.4 %, ZO 0.2 % (MC bound 8.7 %); corner power laws `s3_pw ∝ c^4.09`, `s3_zo ∝ c^1.92`, `s2_pw ∝ c^2.05`, `s2_zo ∝ c^0.96` (analytic 4, 2, 2, 1) | correct; corner is signal | the registered cross-term ratios of 1e5–1e6 are a mathematical property of that rule (`∝ c^-2`), not a precision artifact; no cell needs to be marked unreliable |
 | LQR `Q^pi` | `Q = -a^T H a + b^T a + c(s)`, `H = Rc + gamma B^T P B`, `P` from the discounted Lyapunov equation; normalised critic `alpha_Q Q^pi` at states `alpha_s s` with `\|\|alpha_Q H\|\|_2 = 1` | `lqr.py`: as intended; sweep uses the reduced form `Q(mu+sigma u) - Q(mu) = -sigma^2 u^T H u + sigma u^T g*` | FD vs `grad_a_q_pi` **3.9e-8**; reduced form vs `alpha_Q grad_a Q^pi(alpha_s s, a)` **7.3e-16**; kernel `qq/ql` form vs `Q(mu+su)-Q(mu)` **2.8e-13**; `\|\|alpha_Q H\|\|_2 - 1` ≤ 1e-12 | correct | none |
 | PW estimator | `(1/M) sum_i grad_a Q(mu + sigma u_i)` | kernel: `-2 sigma H ubar` (smooth, exact) and `(c/sqrt r)(mean cos - damp cos theta) V` (error); production core: `vjp` mean `/ sigma` | my numpy PW vs core **1.0e-14**; linearity in `Q` **4.0e-14** | correct | none |
 | centred ZO | `(1/(sigma M)) sum_i (Q_i - Qbar) u_i`, `Qbar` = same batch's mean, centred **before** multiplying by `u` | kernel: `(qc[...,None]*u).mean(1) * M/(M-1) / sig`; core `centred_zo(..., deattenuate=True) / sigma` | my numpy ZO vs core **8.9e-16**; linearity **3.9e-14** | correct | none |
@@ -63,6 +84,47 @@ sweep.
 | 13 | `rank_r2` "componentwise" `omega_inf` assumes `V = I`; exact only for the full arm | COSMETIC (unused: fixed rank gets shift 0) |
 
 ---
+
+## TEST K — dtype and the small-`sigma` corner
+
+**Why it matters.** The registered cross-term rule reaches `7e5` at `sigma = 0.01,
+omega = 0.1`, where `Var_PW_e ∝ c^4` with `c = 10^-3`. If the kernel had run in float32
+those cells would be rounding noise and the registered rule's verdict would be
+uninterpretable.
+
+**Configuration path.** `scripts/lqr_crossover/__init__.py:29–41` sets
+`JAX_PLATFORMS=cpu` and `jax_enable_x64=True` and **asserts** at import that
+`jnp.zeros(1).dtype == float64` and the platform is CPU; `sweep.py` imports that package
+before `jax` (line 14 vs 16); `src/jaxrl/__init__.py` sets only
+`jax_default_matmul_precision="highest"`; the estimator core sets nothing; the kernel's
+inputs are `jnp.asarray` of float64 numpy and `u = jax.random.normal(...)` (float64 under
+x64); no `float32` or `astype` occurs in the harness.
+
+**Realised precision.** In the audit process, after the same import: x64 on,
+`jax.random.normal` emits float64, `jnp.asarray(np.float64)` stays float64, platform cpu.
+Every one of `s1_pw, s1_zo, s2_pw, s2_zo, s3_pw, s3_zo, eps, sigmas, omegas` in all 28
+cited sweep `.npz` is stored as float64 (numpy preserves the JAX dtype, so float32
+arithmetic would have left float32 files).
+
+**Is the corner real?** The kernel never forms the physical variance; it stores `s3` in
+units of `(eps/sigma)^2` with the amplitude factored out, so at the corner the stored
+`s3_pw = 1.4e-14` and `s3_zo = 9.1e-8` (state-averaged; physical `Var_PW_e = 4.5e-17`,
+`Var_ZO_e = 2.9e-10` after the `3.3e-3` prefactor). The delicate operation is
+`mean_i cos(theta + c t_i) − e^{−c²/2} cos theta`, an O(1)−O(1) subtraction that leaves
+~2e-4, i.e. a loss of ~4 digits — negligible in float64's 16 and survivable even in
+float32's 7. Independent recomputation of that cell (`d=4`, state 0, 2e4 fresh batches):
+float64 reproduces the saved `s3_pw` to 4.4 % and `s3_zo` to 0.2 % (MC bound 8.7 %);
+a float32 recompute reproduces them equally (4.4 %, 0.2 %). Along the `sigma = 0.01`
+column the saved statistics follow the analytic power laws — `s3_pw ∝ c^{4.09}`,
+`s3_zo ∝ c^{1.92}`, `|s2_pw| ∝ c^{2.05}`, `|s2_zo| ∝ c^{0.96}` against 4, 2, 2, 1 — which
+rounding noise cannot do.
+
+**Consequence.** No small-`sigma` cell is unreliable. The registered rule's ratios of
+`1e5–1e6` are what the mathematics gives (`|2Cov|/Var_e ∝ c^{-2}` for PW, `c^{-1}` for
+ZO), so the rule is unbounded *by construction*, not by precision — which is exactly why
+its verdict ("every `d` flagged") and the report's post-hoc replacement must both be
+stated rather than either being silently adopted.
+
 
 ## Part 0 — map
 

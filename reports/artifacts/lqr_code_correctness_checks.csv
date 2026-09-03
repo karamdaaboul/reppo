@@ -1,4 +1,19 @@
 test,quantity,value,bound,ok,note
+K,jax_enable_x64 after `import scripts.lqr_crossover`,1.0,1.0,True,
+K,jax.random.normal dtype is float64,1.0,1.0,True,
+K,jnp.asarray(np.float64) stays float64,1.0,1.0,True,
+K,platform is cpu,1.0,1.0,True,
+K,every stored statistic in the 28 cited sweep .npz is float64,0.0,0.0,True,[]
+K,"float64 recompute of corner (sigma=0.01, omega=0.1) s3_pw vs saved, rel",0.044111341955323846,0.08660254037844387,True,saved 5.164e-15
+K,"float64 recompute of corner s3_zo vs saved, rel",0.0021423882357674007,0.08660254037844387,True,saved 1.361e-07
+K,"float32 recompute of corner (sigma=0.01, omega=0.1) s3_pw vs saved, rel",0.044121590854717674,0.08660254037844387,True,saved 5.164e-15
+K,"float32 recompute of corner s3_zo vs saved, rel",0.002142306713381781,0.08660254037844387,True,saved 1.361e-07
+K,pw: slope of log s3 vs log c at sigma=0.01 (analytic 4),4.092212129638159,0.15,True,
+K,pw: slope of log |s2| vs log c at sigma=0.01 (analytic 2),2.04542178318747,0.15,True,
+K,zo: slope of log s3 vs log c at sigma=0.01 (analytic 2),1.919628519765231,0.15,True,
+K,zo: slope of log |s2| vs log c at sigma=0.01 (analytic 1),0.9590107883522296,0.15,True,
+K,corner s3_pw (units (eps/sigma)^2),1.3728366263685783e-14,0.0,True,physical Var_PW_e = 4.463e-17; (eps/sigma)^2 = 3.251e-03
+K,corner s3_zo (units (eps/sigma)^2),9.058916553887693e-08,0.0,True,physical Var_ZO_e = 2.945e-10
 A,d=1 ||alpha_Q H||_2 - 1,0.0,1e-12,True,
 A,d=4 ||alpha_Q H||_2 - 1,0.0,1e-12,True,
 A,d=16 ||alpha_Q H||_2 - 1,0.0,1e-12,True,
@@ -110,8 +125,8 @@ G,"omega_RMS/omega: my closed form vs lqr_audit_rms.csv, max rel",1.110223024625
 6,rank_r2 d=16 product median vs 32/31,0.0014125960366908608,0.01,True,
 6,rank_r2 d=32 product median vs 32/31,0.0008983726722724406,0.01,True,
 6,rank_r2 d=64 product median vs 32/31,0.0002786107636851831,0.01,True,
-10,pw: d log(|2Cov|/Var_e)/d log c at small c (sigma=0.01),-2.0490873933867366,0.0,True,"analytic: PW ~ c^-3, ZO ~ c^-1 (see report)"
-10,zo: d log(|2Cov|/Var_e)/d log c at small c (sigma=0.01),-0.9239992937310016,0.0,True,"analytic: PW ~ c^-3, ZO ~ c^-1 (see report)"
+10,pw: d log(|2Cov|/Var_e)/d log c at small c (sigma=0.01),-2.0490873933867366,0.0,True,"analytic: PW ~ c^-2, ZO ~ c^-1 (derived in the report)"
+10,zo: d log(|2Cov|/Var_e)/d log c at small c (sigma=0.01),-0.9239992937310016,0.0,True,"analytic: PW ~ c^-2, ZO ~ c^-1 (derived in the report)"
 13,eta=1000: |d_ES - (ubar + zo_plain*sigma/eta)| rel,0.0007133957640953575,1.0,True,"cos(d_ES, g_ZO)=-0.085, ESS/M=1.000"
 13,eta=10: |d_ES - (ubar + zo_plain*sigma/eta)| rel,0.06784443894640883,1.0,True,"cos(d_ES, g_ZO)=+0.018, ESS/M=0.998"
 13,eta=1: |d_ES - (ubar + zo_plain*sigma/eta)| rel,0.4173329425357625,1.0,True,"cos(d_ES, g_ZO)=+0.622, ESS/M=0.878"

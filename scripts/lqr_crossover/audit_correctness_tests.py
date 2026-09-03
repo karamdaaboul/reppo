@@ -460,8 +460,77 @@ def part13():
         rec("13", f"eta={eta:g}: |d_ES - (ubar + zo_plain*sigma/eta)| rel", rel, 1, True, f"cos(d_ES, g_ZO)={cosz:+.3f}, ESS/M={float((1/(w**2).sum(-1)).mean())/M:.3f}")
 
 
+# ===================================================================== TEST K (dtype)
+def test_K():
+    """Precision.  The sweep's small-sigma corner (sigma = 0.01) is where the registered
+    cross-term ratio reaches 7e5; if the kernel ran in float32 those cells are noise.
+    Evidence gathered: (i) what jax emits in this process after the package import,
+    (ii) the dtype of every array in every cited .npz, (iii) an independent float64 AND
+    float32 recomputation of the corner cell against the saved s3, (iv) whether the saved
+    corner follows the analytic power laws s3_pw ~ c^4, s3_zo ~ c^2, s2_pw ~ c^2,
+    s2_zo ~ c (noise would not)."""
+    print("\nTEST K  dtype: is the sweep float64, and is the sigma = 0.01 corner numerically real?")
+    x64 = bool(jax.config.jax_enable_x64)
+    rec("K", "jax_enable_x64 after `import scripts.lqr_crossover`", float(x64), 1, x64)
+    k = jax.random.PRNGKey(0)
+    rec("K", "jax.random.normal dtype is float64", float(jax.random.normal(k, (2,)).dtype == jnp.float64), 1, jax.random.normal(k, (2,)).dtype == jnp.float64)
+    rec("K", "jnp.asarray(np.float64) stays float64", float(jnp.asarray(np.zeros(2)).dtype == jnp.float64), 1, jnp.asarray(np.zeros(2)).dtype == jnp.float64)
+    rec("K", "platform is cpu", float(jax.devices()[0].platform == "cpu"), 1, jax.devices()[0].platform == "cpu")
+    man = pd.read_csv(os.path.join(ART, "lqr_npz_manifest.csv"))
+    bad = []
+    for f in man[man.cited_by_report & ~man.file.str.startswith("estep")].file:
+        z = np.load(os.path.join(OUT, f), allow_pickle=True)
+        for key in ("s1_pw", "s1_zo", "s2_pw", "s2_zo", "s3_pw", "s3_zo", "eps", "sigmas", "omegas"):
+            if z[key].dtype != np.float64:
+                bad.append((f, key, str(z[key].dtype)))
+    rec("K", "every stored statistic in the 28 cited sweep .npz is float64", float(len(bad)), 0, len(bad) == 0, str(bad[:3]))
+    # (iii) corner recomputation, float64 and float32, vs saved s3 (d = 4, state 0)
+    d = 4
+    z = np.load(os.path.join(OUT, "d4_rank1_M32_unit_H_identity.npz"), allow_pickle=True)
+    s, st, H, g, mu, pe = regen(d)
+    i_state, si, oi = 0, 0, 0
+    sig, om = float(z["sigmas"][si]), float(z["omegas"][oi]); c = sig * om
+    V, phi = pe.V[i_state], pe.phi[i_state]
+    th = om * (V @ mu[i_state]) + phi
+    rng = np.random.default_rng(11)
+    R = 20000
+    u64 = rng.normal(size=(R, M, d))
+    for dt, lbl in ((np.float64, "float64"), (np.float32, "float32")):
+        u = u64.astype(dt); a = (mu[i_state].astype(dt) + dt(sig) * u)
+        T = u @ V.T.astype(dt)                                             # (R, M, 1)
+        arg = th.astype(dt) + dt(c) * T
+        damp = dt(np.exp(-0.5 * c * c))
+        a_pw = np.cos(arg).mean(1) - damp * np.cos(th).astype(dt)         # (R, 1)
+        de_pw = dt(c) * (a_pw @ V.astype(dt))                             # (R, d)
+        f = np.sin(arg).sum(-1); fc = f - f.mean(1, keepdims=True)
+        b = (fc[..., None] * u).mean(1) * dt(M / (M - 1.0))
+        tgt = dt(c) * damp * (np.cos(th).astype(dt) @ V.astype(dt))
+        de_zo = b - tgt
+        v_pw = float((de_pw.astype(np.float64) ** 2).sum(-1).mean())
+        v_zo = float((de_zo.astype(np.float64) ** 2).sum(-1).mean())
+        s3p = float(z["s3_pw"][i_state, :, si, oi].mean()); s3z = float(z["s3_zo"][i_state, :, si, oi].mean())
+        tol = 5 * np.sqrt(2 / R + 2 / 10000)
+        rec("K", f"{lbl} recompute of corner (sigma=0.01, omega=0.1) s3_pw vs saved, rel", abs(v_pw / s3p - 1), tol, abs(v_pw / s3p - 1) < tol, f"saved {s3p:.3e}")
+        rec("K", f"{lbl} recompute of corner s3_zo vs saved, rel", abs(v_zo / s3z - 1), tol, abs(v_zo / s3z - 1) < tol, f"saved {s3z:.3e}")
+    # (iv) power laws along the sigma = 0.01 column, 6 smallest omega, state-averaged
+    cc = z["sigmas"][0] * z["omegas"][:6]
+    r_ = (z["eps"] / z["sigmas"][None, :])[:, :, None]
+    for nm, pw_exp, s2_exp in (("pw", 4.0, 2.0), ("zo", 2.0, 1.0)):
+        s3 = z[f"s3_{nm}"].mean(1).mean(0)[0, :6]
+        s2 = z[f"s2_{nm}"]; s2d = np.stack([s2[:, :, i, i, :] for i in range(s2.shape[2])], axis=2)
+        s2c = np.abs(s2d.mean(1)).mean(0)[0, :6]
+        sl3 = np.polyfit(np.log(cc), np.log(s3), 1)[0]; sl2 = np.polyfit(np.log(cc), np.log(s2c), 1)[0]
+        rec("K", f"{nm}: slope of log s3 vs log c at sigma=0.01 (analytic {pw_exp:g})", sl3, 0.15, abs(sl3 - pw_exp) < 0.15)
+        rec("K", f"{nm}: slope of log |s2| vs log c at sigma=0.01 (analytic {s2_exp:g})", sl2, 0.15, abs(sl2 - s2_exp) < 0.15)
+    # magnitudes actually stored in the corner, and the physical variance they imply
+    s3p = float(z["s3_pw"].mean(1).mean(0)[0, 0]); s3z = float(z["s3_zo"].mean(1).mean(0)[0, 0])
+    pref = float(((z["eps"][:, 0] / z["sigmas"][0]) ** 2).mean())
+    rec("K", "corner s3_pw (units (eps/sigma)^2)", s3p, 0, True, f"physical Var_PW_e = {s3p*pref:.3e}; (eps/sigma)^2 = {pref:.3e}")
+    rec("K", "corner s3_zo (units (eps/sigma)^2)", s3z, 0, True, f"physical Var_ZO_e = {s3z*pref:.3e}")
+
+
 def main():
-    test_A(); test_B(); test_CD(); test_EJ(); test_F_part4(); test_G_part5(); parts_678(); part13()
+    test_K(); test_A(); test_B(); test_CD(); test_EJ(); test_F_part4(); test_G_part5(); parts_678(); part13()
     df = pd.DataFrame(ROWS)
     df.to_csv(os.path.join(ART, "lqr_code_correctness_checks.csv"), index=False)
     print(f"\n{df.ok.sum()}/{len(df)} checks pass; wrote {ART}/lqr_code_correctness_checks.csv")
