@@ -1,0 +1,98 @@
+{
+ "rank_r2_both": {
+  "p_mean": 0.48705376400017275,
+  "p_sd": 0.0008204313582417083,
+  "ci": [
+   0.4854232331243319,
+   0.48867422182426423
+  ],
+  "nboot": 10000,
+  "arm": "rank_r2",
+  "level": "states+batches",
+  "d_fit": [
+   2,
+   4,
+   8,
+   16,
+   32,
+   64
+  ],
+  "n_states": 32,
+  "n_batch": 20,
+  "r_batch": 100,
+  "seconds": 69.78786706924438,
+  "provenance": "computed during post-hoc audit from preregistered saved experimental data"
+ },
+ "full_both": {
+  "p_mean": 0.4871381772141275,
+  "p_sd": 0.0005250870783581557,
+  "ci": [
+   0.4860999145585702,
+   0.4881756616749768
+  ],
+  "nboot": 10000,
+  "arm": "full",
+  "level": "states+batches",
+  "d_fit": [
+   2,
+   4,
+   8,
+   16,
+   32,
+   64
+  ],
+  "n_states": 32,
+  "n_batch": 20,
+  "r_batch": 100,
+  "seconds": 68.75418972969055,
+  "provenance": "computed during post-hoc audit from preregistered saved experimental data"
+ },
+ "rank1_states_only": {
+  "p_mean": 0.48757664850553245,
+  "p_sd": 0.0002629719332229158,
+  "ci": [
+   0.4870665684906226,
+   0.4880908677383534
+  ],
+  "nboot": 10000,
+  "arm": "rank1",
+  "level": "states-only",
+  "d_fit": [
+   2,
+   4,
+   8,
+   16,
+   32,
+   64
+  ],
+  "n_states": 64,
+  "n_batch": 40,
+  "r_batch": 250,
+  "seconds": 340.64806723594666,
+  "provenance": "rerun at the registered 10 000 during post-hoc audit; out/bootstrap_p.json holds the 3 000-resample original"
+ },
+ "rank1_batches_only": {
+  "p_mean": 0.48758993675787876,
+  "p_sd": 0.00022376086681428939,
+  "ci": [
+   0.4871507075222528,
+   0.488031906711113
+  ],
+  "nboot": 10000,
+  "arm": "rank1",
+  "level": "batches-only",
+  "d_fit": [
+   2,
+   4,
+   8,
+   16,
+   32,
+   64
+  ],
+  "n_states": 64,
+  "n_batch": 40,
+  "r_batch": 250,
+  "seconds": 294.3019504547119,
+  "provenance": "rerun at the registered 10 000 during post-hoc audit; out/bootstrap_p.json holds the 3 000-resample original"
+ }
+}
