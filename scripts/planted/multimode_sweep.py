@@ -151,30 +151,36 @@ def measure_block(u, sig, astar, V, ph, c, om):
 
 
 # ------------------------------------------------------------- sweep
-def main():
-    outdir = sys.argv[1] if len(sys.argv) > 1 else "reports/artifacts"
+def main(outdir=None, prefix="planted_multimode", seed=SEED, js=None, ds=None):
+    """Defaults reproduce the registered J=1/J=4 run bit-identically.  The J=4
+    replication and the J=8 arm (docs/prereg_planted_j4_replication_j8.md) pass
+    `seed`, `js` and `ds` explicitly; nothing else differs."""
+    outdir = outdir or (sys.argv[1] if len(sys.argv) > 1 else "reports/artifacts")
+    js = list(js) if js else list(JS)
+    ds = list(ds) if ds else list(DS)
+    jmax = max(js)
     os.makedirs(outdir, exist_ok=True)
-    rng = np.random.default_rng(SEED)
-    chk = np.random.default_rng(SEED + 1)
+    rng = np.random.default_rng(seed)
+    chk = np.random.default_rng(seed + 1)
 
     reps, cells = [], []
-    n_cfg = len(DS) * len(R_GRID)
-    for ci, d in enumerate(DS):
+    n_cfg = len(ds) * len(R_GRID)
+    for ci, d in enumerate(ds):
         for r_eff in R_GRID:
-            acc = {J: [] for J in JS}
-            dsum = {J: np.zeros(d) for J in JS}
-            om_of = {J: r_eff * np.sqrt(J * d) / SIGMA for J in JS}
+            acc = {J: [] for J in js}
+            dsum = {J: np.zeros(d) for J in js}
+            om_of = {J: r_eff * np.sqrt(J * d) / SIGMA for J in js}
             frame0 = {}
             for k in range(N_DIR):
                 # one draw per block, shared by both arms (prereg Sec. 3.1)
                 v_sig = rng.normal(size=d); v_sig /= np.linalg.norm(v_sig)
-                V = np.linalg.qr(rng.normal(size=(d, JMAX)))[0].T   # (JMAX, d)
-                ph = rng.uniform(0, 2 * np.pi, size=JMAX)
+                V = np.linalg.qr(rng.normal(size=(d, jmax)))[0].T   # (jmax, d)
+                ph = rng.uniform(0, 2 * np.pi, size=jmax)
                 astar = P.G_SIG * v_sig
                 u = rng.normal(size=(N_BATCH, M, d))
-                orth = float(np.abs(V @ V.T - np.eye(JMAX)).max())
+                orth = float(np.abs(V @ V.T - np.eye(jmax)).max())
 
-                for J in JS:
+                for J in js:
                     c = np.full(J, AMP / J)
                     om = om_of[J]
                     b, delta = measure_block(u, SIGMA, astar, V[:J], ph[:J], c, om)
@@ -188,7 +194,7 @@ def main():
                     if k == 0:
                         frame0[J] = (V[:J].copy(), ph[:J].copy(), c.copy(), om)
 
-            for J in JS:
+            for J in js:
                 row = dict(d=d, sigma=SIGMA, r_eff=r_eff, J=J, omega_nominal=om_of[J])
                 for key in acc[J][0]:
                     if key not in ("d", "sigma", "r_eff", "J", "omega_nominal",
@@ -207,14 +213,14 @@ def main():
                 row["L_eff_numeric_ratio"] = ng / L_an
                 cells.append(row)
             print(f"  [{ci * len(R_GRID) + R_GRID.index(r_eff) + 1}/{n_cfg}] "
-                  f"d={d} r_eff={r_eff}  omega J1={om_of[1]:.4g} J4={om_of[4]:.4g}",
+                  f"d={d} r_eff={r_eff}  omega " + " ".join(f"J{J}={om_of[J]:.4g}" for J in js),
                   flush=True)
 
     import pandas as pd
     rep = pd.DataFrame(reps)
     cell = pd.DataFrame(cells)
-    rp = f"{outdir}/planted_multimode_replicates.csv"
-    cp = f"{outdir}/planted_multimode.csv"
+    rp = f"{outdir}/{prefix}_replicates.csv"
+    cp = f"{outdir}/{prefix}.csv"
     rep.to_csv(rp, index=False)
     cell.to_csv(cp, index=False)
     print(f"\nwrote {rp}  ({len(rep)} rows)")
@@ -224,8 +230,8 @@ def main():
     print("\n=== validation ===")
     key = ["d", "r_eff", "direction"]
     piv = rep.pivot_table(index=key, columns="J", values="wml0_checksum")
-    crn = float(np.abs(piv[1] - piv[4]).max())
-    print(f"  CRN: max |wml0 checksum J1 - J4| = {crn:.3e}  "
+    crn = float(np.abs(piv[js[0]] - piv[js[-1]]).max())
+    print(f"  CRN: max |wml0 checksum J{js[0]} - J{js[-1]}| = {crn:.3e}  "
           f"{'OK (clean channel identical across arms)' if crn == 0 else 'FAILED'}")
     print(f"  frame orthonormality: max ||V V^T - I|| = {rep.orth_resid.max():.3e}")
     print(f"  sup-norm numeric/analytic: A_eff in "
