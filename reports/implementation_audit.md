@@ -99,9 +99,11 @@ Runtime behaviour, from existing logs:
 | g1 | PW-1 | 52.4% | 47.6% | 0.0934 | 0.0057 |
 | g1 | WML-32 | 47.2% | 52.8% | 0.1161 | 0.235 |
 
-For LEAP `kl_gate_fire` is gated behind `log_cov_diag=false`, so the LEAP fire
-fraction is **not directly observed**; mean `train/kl` is 0.1097 (PW) and 0.1219
-(WML), above the bound in both arms.
+LEAP, from `train/fr_gate_operator` (recorded under `log_faithful_diag=true`):
+objective used 50.93% (PW) and 47.26% (WML); objective replaced 49.07% and
+52.74%. An earlier draft stated the LEAP fire fraction was unobserved; that was
+wrong — it read `train/kl_gate_fire`, which sits behind `log_cov_diag=false`,
+rather than `train/fr_gate_operator`, which LEAP does record.
 
 ## E. Covariance handling
 
@@ -199,17 +201,23 @@ is essentially unbiased in both arms, so the hypothesis did not survive. Residua
 unknown, stated rather than assumed: per-update KL variance is not logged, so
 differential gate flipping cannot be excluded from these artifacts.
 
-**K.4 — S2.** The gate routes 45–53% of updates away from the improvement
-objective, at different rates per arm, and λ_eff differs by roughly an order of
-magnitude between arms. Both are endogenous responses of a shared mechanism to each
+**K.4 — S2.** Approximately 45–53% of per-state actor-loss terms were routed
+from the policy-improvement objective to KL reduction under the KL gate, at
+different rates per arm, and λ_eff differs by roughly an order of magnitude
+between arms. Shapes verified: `kl`, both objectives and the `jnp.where` output
+are all `(B,)`, and `jnp.mean(actor_loss)` reduces to a scalar afterwards, so a
+single optimizer step mixes improvement gradients from gated-open states with
+KL-reduction gradients from gated-closed states. Whether any entire optimizer
+step received no improvement contribution is NOT determinable from the stored
+logs, which record only the per-minibatch mean of the gate indicator. Both are endogenous responses of a shared mechanism to each
 operator's own KL trajectory rather than external confounds, but they mean the arms
 do not receive equal amounts of improvement signal, which no fairness claim may
 assume.
 
-**K.5 — S1.** LEAP's gate fire fraction is unobserved because `kl_gate_fire` sits
-behind `log_cov_diag=false`. Runtime constraint satisfaction is therefore not
-directly observed for LEAP; the KL level is observed and exceeds the bound in both
-arms.
+**K.5 — resolved, was S1, now S0.** LEAP's gate fire fraction IS observed, via
+`train/fr_gate_operator`: 49.07% (PW) and 52.74% (WML) of per-state terms routed
+to KL reduction. The earlier claim that it was unobserved was an error of mine,
+reading the wrong logged field.
 
 Nothing was found at S3 or S4. The E-step, the eta dual, the weighting, the KL
 direction, the coordinate system, covariance handling, alpha and value support are
@@ -225,3 +233,152 @@ difference. What is wrong is the description: the M-step enforcement is not a tr
 region, the bound is per state and dimension-summed, and a large fraction of actor
 updates carry no improvement signal. Those facts change how the results must be
 worded, not whether they stand.
+
+---
+
+## Addendum A1 — 2026-09-04T16:30:53+02:00 — targeted follow-ups, and three corrections
+
+Append-only below this line. Three statements **above** were corrected in place at
+the same commit and are itemised in A1.6.
+
+### A1.1 `actor_target_model` is a hard copy, and `polyak` is dead config
+
+```
+source: src/jaxrl/reppo.py:693-697
+update: actor_target.params <- actor.params      (assignment, no interpolation)
+interval: once per learn_step, i.e. once per training iteration
+coefficient: none
+```
+
+`polyak` is declared at `reppo.py:79` and **appears nowhere else in `src/`**. It
+does not participate in the actor-target update.
+
+Order within one iteration (`train_step`, `:1395-1405`): `collect_rollout` ->
+lambda-returns -> **hard copy actor_target <- actor** (`:693`) -> `update`, i.e.
+`num_epochs x num_mini_batches = 512` inner minibatch updates. `actor_target_model`
+is merged once at `:698`, outside `update`, and the four downstream references
+(`:806, :824, :864, :995`) are reads only. It is therefore **frozen across all 512
+inner updates**.
+
+1. Policy generating the WML candidates? **Yes** (`:864`).
+2. Reference distribution for the M-step KL gate? **Yes**, the same object.
+3. Equal to the policy before the current actor optimisation phase? **Yes, exactly** --
+   copied immediately before it and never refreshed during it.
+4. Necessarily the policy that generated the rollout? **Yes**, in this call order:
+   the rollout precedes the copy and the actor is not updated in between. Condition:
+   the rollout applies an exploration scale, which equals 1.0 here because
+   `exploration_noise_min = exploration_noise_max = 1.0`.
+
+**`pi_old` is exact notation**, with one precision worth stating in the paper: it
+denotes the **iteration-start** policy, held fixed for all 512 inner updates, not a
+Polyak/EMA target and not the previous minibatch's policy.
+
+### A1.2 Statewise gate-flip rate: not identifiable
+
+Every logged diagnostic is shape **`(21, 1)`** -- one value per evaluation, already
+reduced over states, over the 512 inner updates per iteration, and over the
+iterations between evaluations. `fr_gate_operator` is `_gate_open.mean()` over the
+minibatch; `fr_kl_analytic_med` is a median over states; the sampled-minus-analytic
+fields are a median and a mean over states. **No statewise pairing survives.**
+
+```
+STATEWISE GATE-FLIP RATE NOT IDENTIFIABLE FROM STORED LOGS
+```
+
+Not computable: statewise disagreement count, disagreement fraction, gate
+false-positive and false-negative rates, `std(delta_KL)`, median absolute error,
+95th-percentile absolute error. These need per-state values that were never stored.
+
+What is recoverable is the paired error already reduced over states, averaged over
+each run (median over the 8 seeds):
+
+| task | arm | KL samples | gate open | gate KL-only | delta_KL med-over-states | delta_KL mean-over-states |
+|---|---|---|---|---|---|---|
+| walker | PW | 16 | 0.5490 | 0.4510 | −4.70e-05 | −1.03e-05 |
+| walker | WML | 32 | 0.5530 | 0.4470 | −2.83e-04 | −4.16e-06 |
+| g1 | PW | 16 | 0.5240 | 0.4760 | −1.64e-04 | +3.38e-05 |
+| g1 | WML | 32 | 0.4722 | 0.5278 | −1.18e-04 | +6.64e-05 |
+| leap | PW | 16 | 0.5093 | 0.4907 | −1.71e-04 | −5.12e-05 |
+| leap | WML | 32 | 0.4726 | 0.5274 | −1.68e-04 | +1.53e-05 |
+
+These bound the **bias** of the gate statistic at <= 0.3% of the 0.1 bound in every
+cell. They say nothing about its **variance**, which is what would flip a
+per-state gate decision, and the variance was not stored.
+
+**Classification of the 16-vs-32 asymmetry: `UNRESOLVED`.** Not `NEGLIGIBLE`: the
+quantity that would establish that -- the statewise flip rate -- cannot be computed
+from these artifacts. This supersedes the S2 reasoning in K.3, which rested on the
+bias check alone.
+
+### A1.3 Eta never saturates
+
+`eta = clip(softplus(eta_param), 1e-4, 10)`. Across all 24 WML runs:
+
+| task | eta min | eta max | fraction at 1e-4 | fraction at 10 |
+|---|---|---|---|---|
+| walker | 0.015395 | 0.132002 | 0.0000 | 0.0000 |
+| g1 | 0.003154 | 0.055624 | 0.0000 | 0.0000 |
+| leap | 0.004292 | 0.017125 | 0.0000 | 0.0000 |
+
+**No boundary saturation occurs in any run.** The smallest value seen anywhere is
+0.00315, a factor of 31 above the lower clip; the largest is 0.132, a factor of 76
+below the upper clip. Granularity caveat: `train/eta` is `(21,1)`, already averaged
+over the 512 inner updates, so a brief per-update excursion to a bound could be
+averaged away.
+
+### A1.4 Realised finite-M particle E-step KL: not recoverable
+
+```
+REALISED PARTICLE E-STEP KL NOT RECOVERABLE FROM STORED LOGS
+```
+
+`D_particle = sum_i w_i log(M w_i)` needs the per-candidate weights `w_i`. Only
+`ESS = 1/sum_i w_i^2` and `w_max` were stored, both already reduced, and neither
+determines `D_particle`. The conclusion is therefore restricted to what was
+established: **the MPO eta-dual objective is mathematically and numerically correct
+(Section C), and no claim of runtime satisfaction of the E-step constraint is made.**
+
+### A1.5 ESS trajectories, final 20% by training iteration
+
+Final window defined by iteration (> 319 of 399), which is 5 of the 21 logged
+points. `M = 32`.
+
+| task | full mean | /M | last-20% mean | /M | final | min | min/M | seeds with last20 < full |
+|---|---|---|---|---|---|---|---|---|
+| walker | 20.491 | 0.6403 | 20.793 | 0.6498 | 20.524 | 16.046 | 0.5014 | 4/8 |
+| g1 | 20.221 | 0.6319 | 19.421 | 0.6069 | 19.481 | 17.814 | 0.5567 | **8/8** |
+| leap | 18.524 | 0.5789 | 19.898 | 0.6218 | 20.118 | 14.770 | 0.4616 | 0/8 |
+
+* Does ESS stay near its full-run level? **Yes**, everywhere.
+* Systematic late concentration? **Only on G1**, in 8/8 seeds, and small: −0.31 to
+  −1.10 ESS units, about −4% relative. Walker is mixed (4/8) and LEAP rises in 8/8.
+* Consistent across seeds? Within each task, yes; the direction differs by task.
+* Does any task approach one or few effective samples late? **No.** The smallest
+  value anywhere, over all 24 runs and all logged points, is 14.77 of 32.
+
+**The statement "the near-one E-step concentration observed in the legacy defective
+runs is absent from the corrected runs" is NOT supported by these artifacts and
+must not be made.** The legacy 1.07/32 figure in `reports/ubar_ratio.md` is a
+post-hoc probe on frozen checkpoints, not a training-log aggregate. The two are not
+like-for-like, and the size of that gap is demonstrated on the corrected runs
+themselves: on the same corrected Walker WML checkpoint the checkpoint-style probe
+gives `ESS_Qphi_pilot_K16 = 1.58/16 = 0.099` while the training log gives
+`ESS_training_M32 = 20.5/32 = 0.64`, a factor of 6.4 between measurement modes. A
+legacy-versus-corrected comparison requires the same measurement mode on both.
+
+The three ESS quantities remain strictly separate:
+`ESS_training_M32`, `ESS_Qphi_pilot_K16`, `ESS_MC_oracle_K16`.
+
+### A1.6 Corrections made in place above
+
+1. **K.4** -- "45–53% of updates" replaced by "45–53% of per-state actor-loss terms
+   routed ... under the KL gate", with the shape trace. The original wording implied
+   whole optimizer steps received no improvement signal; the routing is per state and
+   the mean over states is taken afterwards, so a step mixes both gradient types.
+2. **Section D** -- the LEAP note claiming the fire fraction was unobserved was
+   wrong; it read `train/kl_gate_fire` (behind `log_cov_diag=false`) instead of
+   `train/fr_gate_operator`, which LEAP records.
+3. **K.5** -- resolved from S1 to S0 for the same reason.
+
+K.3's classification changes from **S2 to UNRESOLVED** per A1.2. No other severity
+changes; nothing reaches S3 or S4, and the Section L verdict is unchanged.
