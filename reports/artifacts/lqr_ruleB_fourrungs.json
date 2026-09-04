@@ -1,0 +1,38 @@
+{
+ "rung_ceilsqrt": {
+  "p_nominal": 0.48731050067789733,
+  "p_rms": 0.49350337354961876,
+  "p_omega_inf": 0.2705972863715786,
+  "shift": -0.21671321430631882,
+  "bootstrap": {
+   "p_mean": 0.4873099366717232,
+   "p_sd": 0.0006728609601430453,
+   "ci": [
+    0.48598479097796626,
+    0.48862420934469286
+   ],
+   "nboot": 10000
+  },
+  "ci_omega_inf": [
+   0.2692715766716475,
+   0.271910995038374
+  ],
+  "fit_d": [
+   2,
+   4,
+   8,
+   16,
+   32,
+   64
+  ],
+  "n_states": 32,
+  "n_batch": 20,
+  "r_batch": 100
+ },
+ "verdict": "REFUTED",
+ "all_in_confirm_band": false,
+ "all_in_linear_band": false,
+ "some_rung_outside_both": true,
+ "p_differs_across_rungs_beyond_cis": true,
+ "any_nonmonotone": false
+}

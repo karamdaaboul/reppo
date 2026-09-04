@@ -4,37 +4,44 @@ d16_rank1_M32_unit_H_identity.npz,564122588,c0f98c0d76f7bd5c88fbdc0f02dd6eab1504
 d16_rank1_M32_unit_H_identity_coarse.npz,28225798,89bd87f9c69d53775de0c6e7ab0d58f23b27cdd0938a799aceaf349ed8f42c61,33c76325a5,33c76325a5,False,coarse gate M6,2026-09-01T17:55:48Z
 d16_rank1_M32_unit_H_identity_eps20.npz,140990937,ecf7d28ee2f70f029706f3655ea39e88181c015e5bb91e7375ed6f2e22c37c9d,33c76325a5,33c76325a5,True,report,2026-09-01T19:18:00Z
 d16_rank_r2_M32_unit_H_identity.npz,141037286,30808dc61d95de08ad50906d951d1e49af75c057e0880fd1ee8ca681963a1c4d,33c76325a5,33c76325a5,True,report,2026-09-01T19:10:20Z
+d16_rank_r4_M32_unit_H_identity_csd.npz,141031728,b43a02726ddd111a37821b05cf706d31093f903af1943fd27397f57c253367c9,5cb384db9b,d2cb9f60c6,False,Rule B rung r = ceil(sqrt d) (prereg 5.3; run note 5cb384d; cited by reports/lqr_final_closeout.md),2026-09-04T07:30:43Z
 d1_full_M32_unit_H_identity.npz,141131270,4ce10b9749bd1b8f1f80858c75c969c823d1e5f1e1bb3d3986c5183b2eccdaee,33c76325a5,33c76325a5,True,report,2026-09-01T18:40:57Z
 d1_rank1_M32_unit_H_identity.npz,564523115,2b04efefc862eeb4ea550c5e1ac70eccdf61c90aa76bdb7cfaf7d7128944dd14,33c76325a5,33c76325a5,True,report,2026-09-01T18:00:51Z
 d1_rank1_M32_unit_H_identity_coarse.npz,28243143,785988f33a938603f38d8034b93f10120cdbc068d2a2fafbf0c2e84e1cee3dba,33c76325a5,33c76325a5,False,coarse gate M6,2026-09-01T17:55:23Z
 d1_rank1_M32_unit_H_identity_eps20.npz,141120062,3f6bb92cf47ebbfb2ad749f26fce9338f39e8b9bbe334521f789e18cc6552d78,33c76325a5,33c76325a5,True,report,2026-09-01T19:14:31Z
+d1_rank_r1_M32_unit_H_identity_csd.npz,141120052,b223478b3605ae0d8382aeb36766ab6bd1c1562093d3efb8805b9b8448566fe1,5cb384db9b,d2cb9f60c6,False,Rule B rung r = ceil(sqrt d) (prereg 5.3; run note 5cb384d; cited by reports/lqr_final_closeout.md),2026-09-04T07:26:13Z
 d1_rank_r2_M32_unit_H_identity.npz,141120046,87a660aacce6ee9b41a9f6577184a19d782c28f53c3d41f1c891d806a4865e58,33c76325a5,33c76325a5,True,report,2026-09-01T19:06:09Z
 d2_full_M32_unit_H_identity.npz,141136510,6f96d029bcfb20fb1ac2a64669c4482f473a905ac83cb268b6b8a8ba41e08ad4,33c76325a5,33c76325a5,True,report,2026-09-01T18:41:51Z
 d2_rank1_M32_unit_H_identity.npz,564687487,093ab758a4ca29b46c63efd0cf2e6401a0517a0a638831b5a054a8663d8f35e8,33c76325a5,33c76325a5,True,report,2026-09-01T18:05:11Z
 d2_rank1_M32_unit_H_identity_coarse.npz,28255095,72051026a62cefeadbc24a534f3c0d67b88f8671b2a9082db604d69b890b5260,33c76325a5,33c76325a5,False,coarse gate M6,2026-09-01T17:55:28Z
 d2_rank1_M32_unit_H_identity_eps20.npz,141170585,d76cb4dc91cf08c00aa37c4d57edc5b000f6bc66bfe32143c4faf45c96575f28,33c76325a5,33c76325a5,True,report,2026-09-01T19:15:21Z
 d2_rank_r2_M32_unit_H_identity.npz,141107086,a62972af49e76a5993ac6fd0ccfae1c82d4497a5ae8d809dd366c237232872d7,33c76325a5,33c76325a5,True,report,2026-09-01T19:07:04Z
+d2_rank_r2_M32_unit_H_identity_csd.npz,141107092,e40d497aec2fe0787ae3250fa2eeeec91f6f01f9a513e16d75a63121fc46dd07,5cb384db9b,d2cb9f60c6,False,Rule B rung r = ceil(sqrt d) (prereg 5.3; run note 5cb384d; cited by reports/lqr_final_closeout.md),2026-09-04T07:27:08Z
 d32_full_M32_unit_H_identity.npz,141014359,dfe3ee772bbe7faf523e5621d9b3c816b7cb0b4f1d595f47450ef78d246cce0c,33c76325a5,33c76325a5,True,report,2026-09-01T18:50:58Z
 d32_rank1_M32_unit_H_identity.npz,564078897,0fa545bfd6dc03d8db7461420cc969d49122c721de19bd9d2760a2d71b629265,33c76325a5,33c76325a5,True,report,2026-09-01T18:26:34Z
 d32_rank1_M32_unit_H_identity_coarse.npz,28214336,c9ccc446767158722428fe661dd9486469361439b37daf840097640f011bc708,33c76325a5,33c76325a5,False,coarse gate M6,2026-09-01T17:55:56Z
 d32_rank1_M32_unit_H_identity_eps20.npz,141030556,e504dae4d7bc28d7698065af291fe06481b963fbc02d9bcb7de627fcb385b645,33c76325a5,33c76325a5,True,report,2026-09-01T19:19:03Z
 d32_rank_r2_M32_unit_H_identity.npz,141020574,657d3afa312455e9309aab4d8eec158f09fc2c50198d7633380097810c0b88b9,33c76325a5,33c76325a5,True,report,2026-09-01T19:11:47Z
+d32_rank_r6_M32_unit_H_identity_csd.npz,141040981,597de1e1a802eca2b3b19d1d7e9e88fb318908e221ec90a6ef5b6961811c0fbd,5cb384db9b,d2cb9f60c6,False,Rule B rung r = ceil(sqrt d) (prereg 5.3; run note 5cb384d; cited by reports/lqr_final_closeout.md),2026-09-04T07:32:26Z
 d4_full_M32_unit_H_identity.npz,141105840,8cfe8eaf4be14ef1a742adb22e04ee5620ecb55b45622746dc315107a41d12c6,33c76325a5,33c76325a5,True,report,2026-09-01T18:42:42Z
 d4_rank1_M32_unit_H_identity.npz,564381363,b2f0936fc8e28f8ababc4746e15e7348099e52d0469603018fcb21d5fdc3e3ae,33c76325a5,33c76325a5,True,report,2026-09-01T18:10:03Z
 d4_rank1_M32_unit_H_identity_coarse.npz,28233229,548367e888c93ae9dff921e969685cc4ccf0318aecaf4ead12981fc7124996e8,33c76325a5,33c76325a5,False,coarse gate M6,2026-09-01T17:55:34Z
 d4_rank1_M32_unit_H_identity_eps20.npz,141105815,84b8e65117bbeb2eda5744fe081edced3625d0bce66f6e2f6107eb77327662b9,33c76325a5,33c76325a5,True,report,2026-09-01T19:16:10Z
 d4_rank_r2_M32_unit_H_identity.npz,141106549,512cd98f76b0d89cfc8438565bc3444066fcd771de6508ac1a29d58f490b88dc,33c76325a5,33c76325a5,True,report,2026-09-01T19:08:01Z
+d4_rank_r2_M32_unit_H_identity_csd.npz,141106555,a21443bc7b319fd6d18122792c5043205b69b87fd9bc3f434bfeb3a693e7f93f,5cb384db9b,d2cb9f60c6,False,Rule B rung r = ceil(sqrt d) (prereg 5.3; run note 5cb384d; cited by reports/lqr_final_closeout.md),2026-09-04T07:28:07Z
 d64_full_M32_unit_H_identity.npz,141020817,a9490e40f58037da3e7e96bfa845b75cfa046f51b4af09db51ea6f012e64a2b4,33c76325a5,33c76325a5,True,report,2026-09-01T19:05:12Z
 d64_rank1_M32_unit_H_identity.npz,564018604,12844a11a9427d95806c4ff4dc667aa7dbb0e09a072391ac509b6f04da353a9c,33c76325a5,33c76325a5,True,report,2026-09-01T18:39:53Z
 d64_rank1_M32_unit_H_identity_coarse.npz,28210614,4a56debe2bd9faf622b7303bb045fecc2937e574f3d234e90034f68a6d796581,33c76325a5,33c76325a5,False,coarse gate M6,2026-09-01T17:56:06Z
 d64_rank1_M32_unit_H_identity_eps20.npz,140968215,fce2d117ea878b8b644a50c9d5929a2d07226a6ed01e38a026826647d8a226cb,33c76325a5,33c76325a5,True,report,2026-09-01T19:20:29Z
 d64_rank_r2_M32_unit_H_identity.npz,141001782,f2d83e7bf680425067d2cf151d34209f72bc309fc9213d099a823d3f8100a95d,33c76325a5,33c76325a5,True,report,2026-09-01T19:13:34Z
+d64_rank_r8_M32_unit_H_identity_csd.npz,141020316,b54f6314f9dfa8d6abc214b46154b87dce52a0748aa93511e577cbf2fd8dbc4c,5cb384db9b,d2cb9f60c6,False,Rule B rung r = ceil(sqrt d) (prereg 5.3; run note 5cb384d; cited by reports/lqr_final_closeout.md),2026-09-04T07:35:03Z
 d6_rank1_M32_unit_H_identity.npz,564457419,f4258099de792ec570b3b7a36d38fd66f4d5708a2f3aee59ce7cc5deb5864678,d2cb9f60c6,d2cb9f60c6,False,post-hoc d=6 (prereg addendum A1; cited by reports/lqr_crossover_audit.md),2026-09-03T17:50:24Z
 d8_full_M32_unit_H_identity.npz,141093459,0e74426738d15fb844617ec4acf127d9ba4879cd17ed35b2fd8e97a3d877a40f,33c76325a5,33c76325a5,True,report,2026-09-01T18:44:10Z
 d8_rank1_M32_unit_H_identity.npz,564369504,c80048cf354c2d83ace4bf0d0f0f488671f6d323c894c83d6baeeb97841fb7e9,33c76325a5,33c76325a5,True,report,2026-09-01T18:15:08Z
 d8_rank1_M32_unit_H_identity_coarse.npz,28243209,85aa721d7d3ae6e560d4d5492054a90b6f70abb3a93fffbdcb5cd1e43a519bfa,33c76325a5,33c76325a5,False,coarse gate M6,2026-09-01T17:55:41Z
 d8_rank1_M32_unit_H_identity_eps20.npz,141096454,b68d680ffc5182676149976347613c61d18b3e76a8f8e6d94cf92a52974f3c03,33c76325a5,33c76325a5,True,report,2026-09-01T19:17:04Z
 d8_rank_r2_M32_unit_H_identity.npz,141087478,a1ca3f1560ded4ac385a64b1b156f07de89815f7897a88ebc888596dbf5f4080,33c76325a5,33c76325a5,True,report,2026-09-01T19:09:06Z
+d8_rank_r3_M32_unit_H_identity_csd.npz,141093276,cd6e7272c1409222400276dba150f89aea8714448b0c63e085b8caa23048c45f,5cb384db9b,d2cb9f60c6,False,Rule B rung r = ceil(sqrt d) (prereg 5.3; run note 5cb384d; cited by reports/lqr_final_closeout.md),2026-09-04T07:29:32Z
 estep_d16_rank1_M32.npz,27349,96395cdd59d0821f52d20c404749ccc182525c8e41083e08248eab6ba0e70402,33c76325a5,,True,report,2026-09-01T19:21:08Z
 estep_d1_rank1_M32.npz,15521,2f04dd72ff125fea06fa5d02333a7116c02c2b7c1329bfb9f031f91e64fdaac5,33c76325a5,,True,report,2026-09-01T19:20:36Z
 estep_d2_rank1_M32.npz,27141,96b29748cbff4314c48175cce8548d938d6e8e34e4763f913dbbd0408d497791,33c76325a5,,True,report,2026-09-01T19:20:41Z
