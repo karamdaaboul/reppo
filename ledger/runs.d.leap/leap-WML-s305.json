@@ -1,0 +1,16 @@
+{
+ "run_id": "leap-WML-s305",
+ "status": "completed",
+ "wall_clock_s": 1692,
+ "start": "2026-09-04T15:00:00+02:00",
+ "git_sha": "918f82c82a81935af905ef8f7d64fce1bfcf021e",
+ "prereg_commit": "82916804351d150805fd42811a196cdbccc0c342",
+ "config_hash": "7890bf72389b1c1b06375b6ed1686199d59de32dcb2c1c1852e233e9f8c27b94",
+ "tier": "confirmatory",
+ "slurm_job": "3597493_12",
+ "partition": "c23g",
+ "gpu": "NVIDIA H100",
+ "export_path": "exports/LeapCubeRotateZAxis_weighted_mle_s305_final",
+ "export_present": true,
+ "checkpoint_sha256": "07d7929128060208222f1777f6fe9af9712145b448de492049156a5df5238e3c"
+}

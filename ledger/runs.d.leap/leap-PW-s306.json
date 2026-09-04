@@ -1,0 +1,16 @@
+{
+ "run_id": "leap-PW-s306",
+ "status": "completed",
+ "wall_clock_s": 1263,
+ "start": "2026-09-04T14:51:14+02:00",
+ "git_sha": "918f82c82a81935af905ef8f7d64fce1bfcf021e",
+ "prereg_commit": "82916804351d150805fd42811a196cdbccc0c342",
+ "config_hash": "605efbf07b77dbb2cd6756a678b6d9a87223920af5e0782d2419ff8b6ae46ffb",
+ "tier": "confirmatory",
+ "slurm_job": "3597493_5",
+ "partition": "c23g",
+ "gpu": "NVIDIA H100",
+ "export_path": "exports/LeapCubeRotateZAxis_pathwise_fa_s306_final",
+ "export_present": true,
+ "checkpoint_sha256": "b4129e1876d5c7a21a1090136ba982c17e79bbe84e1da599aa2f9d08ef009124"
+}
