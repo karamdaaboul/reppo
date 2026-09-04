@@ -23,6 +23,14 @@ ARMS = {"PW": "pathwise", "WML": "weighted_mle"}
 PINNED = [
     "env=mjx_dmc", "env.name=LeapCubeRotateZAxis",
     "experiment_overrides=mjx_dmc_large_data",
+    # --- LEAP-SPECIFIC pins, recovered from the single legacy LEAP launch
+    # command in ledger/runs.jsonl. Without these the run silently takes the
+    # mjx_dmc group defaults (vmin 0, vmax 150, 1000 steps), which are
+    # Walker's values and NOT what every legacy LEAP run used. Addendum L1.
+    "env.asymmetric_obs=false",
+    "env.vmin=-10", "env.vmax=60",
+    "env.max_episode_steps=500",
+    "hyperparameters.max_episode_steps=500",
     "num_trials=1", "num_seeds=1", "wandb.mode=disabled",
     # --- optimization protocol, pinned to the EXECUTED corrected Walker/G1 values
     "hyperparameters.num_envs=1024",

@@ -129,3 +129,102 @@ Everything above is fixed at the commit that adds this file: the task, arms,
 seeds, the `128/4` protocol and its justification, alpha, the estimator, the
 bootstrap and its RNG, the primary statistic, the three-way decision rule, and the
 completion policy.
+
+---
+
+## Addendum L1 — 2026-09-04T11:56:55+00:00 — LEAP-specific environment pins, task wording, hash status
+
+Append-only. No text above this line is altered. Written **before any corrected
+LEAP run exists** and before any corrected LEAP outcome has been observed.
+
+### L1.1 Five pins were missing, and the omission was material
+
+The canonical configuration as first rendered omitted every LEAP-specific
+environment setting, and would therefore have taken the `mjx_dmc` **group
+defaults** — which are Walker's values, not LEAP's. Recovered from the single
+distinct LEAP launch command in `ledger/runs.jsonl`, now pinned:
+
+```
+env.asymmetric_obs=false
+env.vmin=-10
+env.vmax=60
+env.max_episode_steps=500
+hyperparameters.max_episode_steps=500
+```
+
+| parameter | legacy LEAP | corrected LEAP, as first rendered | corrected LEAP, now |
+|---|---|---|---|
+| `gamma` | 0.99 | 0.99 | **0.99** |
+| `lmbda` | 0.95 | 0.95 | **0.95** |
+| `vmin` | **-10** | 0 | **-10** |
+| `vmax` | **60** | 150 | **60** |
+| `max_episode_steps` | **500** | 1000 | **500** |
+
+`gamma` and `lmbda` always matched. **`vmin`, `vmax` and `max_episode_steps` did
+not.** Answering the three required questions:
+
+1. **Prospectively intended? No.** This was an omission on my part, not a design
+   choice. It is corrected here, before any LEAP job runs.
+2. **Does it come from the common corrected Walker/G1 protocol? No.** Walker's
+   natural support is `[0, 150]` at 1000 steps and G1 runs under `mjx_humanoid`
+   with its own bounds. These three values are **task properties of LEAP**, not
+   optimization-protocol choices, and they sit outside the `128/4` decision, which
+   is unchanged.
+3. **Does it change LEAP as a corrected replication? It would have.** Running LEAP
+   with critic support `[0, 150]` instead of `[-10, 60]` and with double the
+   episode length would not have been a corrected replication of the legacy result
+   at all. The Walker audit already showed critic representational support can
+   materially shape the critic-error field: 34.94% of Walker WML oracle values fell
+   below that critic's floor. Leaving this unpinned would have confounded the one
+   comparison LEAP exists to make.
+
+**No value was chosen to favour any outcome, and none was selected after seeing a
+LEAP return — no corrected LEAP return exists.** The optimization protocol
+(`128/4`), `alpha`, seeds, arms, estimator, bootstrap and decision rule are all
+unchanged from the body of this document.
+
+### L1.2 Superseded configuration hashes
+
+The hashes in section 5 were rendered before these pins and are **superseded**:
+
+```
+superseded:  combined c28b607725aa045d45811cdf2ca6d57047bb910f59ab5a06b97c7521b52b4d07
+CANONICAL:   PW       605efbf07b77dbb2cd6756a678b6d9a87223920af5e0782d2419ff8b6ae46ffb
+             WML      7890bf72389b1c1b06375b6ed1686199d59de32dcb2c1c1852e233e9f8c27b94
+             combined a1e015ced93d99962479a789881170c51f60fb305dfe4ebf931794c4e735397c
+```
+
+Each arm's hash is identical across all eight seeds.
+
+### L1.3 Task wording
+
+**`LeapCubeRotateZAxis` is a mujoco_playground dexterous-manipulation task** — a
+16-DoF hand rotating a cube about the z axis, `action_dim = 16`, `obs_dim = 32`,
+500-step episodes. **It is not a DMC locomotion task.** It is routed through this
+project's `mjx_dmc` **configuration group** purely because that group carries the
+`type: mjx` plumbing; the group name does not describe the task. Every
+LEAP-specific value that differs from the group default is pinned in L1.1.
+
+### L1.4 Critic-support bounds are per task
+
+`docs/critic_reference_convention.md` writes its secondary reference as
+`clip(Q, 0, 150)`. Those are **Walker's** bounds. The convention is unchanged; its
+bounds are read from the task's resolved `env.vmin`/`env.vmax`, which for LEAP are
+**`[-10, 60]`**. No decision is reopened.
+
+### L1.5 Hash status
+
+```
+CURRENT_LEAP_CONFIG_HASH_STATUS = PROVISIONAL UNTIL FINAL CANONICAL SHA
+```
+
+The hashes above are valid for the configuration rendered at the workstation SHA
+recorded with this addendum. Preserving and integrating the three cluster-only
+commits may produce a new canonical SHA. If it does, the resolved LEAP
+configuration must be **re-rendered at that SHA on both machines**, the hashes
+recompared, and an exact match required before launch. If the re-rendered
+scientific configuration is identical, that fact is recorded in a further dated
+execution note carrying: original prereg SHA, original config hash, final
+execution SHA, final config hash, scientific config changed YES/NO, and the reason
+for the update. **The old hash is not assumed valid merely because the intended
+hyperparameters are unchanged.**

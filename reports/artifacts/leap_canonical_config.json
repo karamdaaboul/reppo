@@ -1,13 +1,18 @@
 {
- "combined": "c28b607725aa045d45811cdf2ca6d57047bb910f59ab5a06b97c7521b52b4d07",
+ "combined": "a1e015ced93d99962479a789881170c51f60fb305dfe4ebf931794c4e735397c",
  "per_arm": {
-  "PW": "d4eb715180afb32fe981026aaa693acfc289d95237a209e514b6c9cc4238fe6e",
-  "WML": "221dc60824d0aab4769037048547bb653059f008c02cf47817676c05d550280d"
+  "PW": "605efbf07b77dbb2cd6756a678b6d9a87223920af5e0782d2419ff8b6ae46ffb",
+  "WML": "7890bf72389b1c1b06375b6ed1686199d59de32dcb2c1c1852e233e9f8c27b94"
  },
  "pinned": [
   "env=mjx_dmc",
   "env.name=LeapCubeRotateZAxis",
   "experiment_overrides=mjx_dmc_large_data",
+  "env.asymmetric_obs=false",
+  "env.vmin=-10",
+  "env.vmax=60",
+  "env.max_episode_steps=500",
+  "hyperparameters.max_episode_steps=500",
   "num_trials=1",
   "num_seeds=1",
   "wandb.mode=disabled",
@@ -34,7 +39,7 @@
   {
    "arm": "PW",
    "seed": 301,
-   "hash": "d4eb715180afb32fe981026aaa693acfc289d95237a209e514b6c9cc4238fe6e",
+   "hash": "605efbf07b77dbb2cd6756a678b6d9a87223920af5e0782d2419ff8b6ae46ffb",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -65,16 +70,16 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   },
   {
    "arm": "PW",
    "seed": 302,
-   "hash": "d4eb715180afb32fe981026aaa693acfc289d95237a209e514b6c9cc4238fe6e",
+   "hash": "605efbf07b77dbb2cd6756a678b6d9a87223920af5e0782d2419ff8b6ae46ffb",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -105,16 +110,16 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   },
   {
    "arm": "PW",
    "seed": 303,
-   "hash": "d4eb715180afb32fe981026aaa693acfc289d95237a209e514b6c9cc4238fe6e",
+   "hash": "605efbf07b77dbb2cd6756a678b6d9a87223920af5e0782d2419ff8b6ae46ffb",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -145,16 +150,16 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   },
   {
    "arm": "PW",
    "seed": 304,
-   "hash": "d4eb715180afb32fe981026aaa693acfc289d95237a209e514b6c9cc4238fe6e",
+   "hash": "605efbf07b77dbb2cd6756a678b6d9a87223920af5e0782d2419ff8b6ae46ffb",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -185,16 +190,16 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   },
   {
    "arm": "PW",
    "seed": 305,
-   "hash": "d4eb715180afb32fe981026aaa693acfc289d95237a209e514b6c9cc4238fe6e",
+   "hash": "605efbf07b77dbb2cd6756a678b6d9a87223920af5e0782d2419ff8b6ae46ffb",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -225,16 +230,16 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   },
   {
    "arm": "PW",
    "seed": 306,
-   "hash": "d4eb715180afb32fe981026aaa693acfc289d95237a209e514b6c9cc4238fe6e",
+   "hash": "605efbf07b77dbb2cd6756a678b6d9a87223920af5e0782d2419ff8b6ae46ffb",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -265,16 +270,16 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   },
   {
    "arm": "PW",
    "seed": 307,
-   "hash": "d4eb715180afb32fe981026aaa693acfc289d95237a209e514b6c9cc4238fe6e",
+   "hash": "605efbf07b77dbb2cd6756a678b6d9a87223920af5e0782d2419ff8b6ae46ffb",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -305,16 +310,16 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   },
   {
    "arm": "PW",
    "seed": 308,
-   "hash": "d4eb715180afb32fe981026aaa693acfc289d95237a209e514b6c9cc4238fe6e",
+   "hash": "605efbf07b77dbb2cd6756a678b6d9a87223920af5e0782d2419ff8b6ae46ffb",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -345,16 +350,16 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   },
   {
    "arm": "WML",
    "seed": 301,
-   "hash": "221dc60824d0aab4769037048547bb653059f008c02cf47817676c05d550280d",
+   "hash": "7890bf72389b1c1b06375b6ed1686199d59de32dcb2c1c1852e233e9f8c27b94",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -385,16 +390,16 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   },
   {
    "arm": "WML",
    "seed": 302,
-   "hash": "221dc60824d0aab4769037048547bb653059f008c02cf47817676c05d550280d",
+   "hash": "7890bf72389b1c1b06375b6ed1686199d59de32dcb2c1c1852e233e9f8c27b94",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -425,16 +430,16 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   },
   {
    "arm": "WML",
    "seed": 303,
-   "hash": "221dc60824d0aab4769037048547bb653059f008c02cf47817676c05d550280d",
+   "hash": "7890bf72389b1c1b06375b6ed1686199d59de32dcb2c1c1852e233e9f8c27b94",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -465,16 +470,16 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   },
   {
    "arm": "WML",
    "seed": 304,
-   "hash": "221dc60824d0aab4769037048547bb653059f008c02cf47817676c05d550280d",
+   "hash": "7890bf72389b1c1b06375b6ed1686199d59de32dcb2c1c1852e233e9f8c27b94",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -505,16 +510,16 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   },
   {
    "arm": "WML",
    "seed": 305,
-   "hash": "221dc60824d0aab4769037048547bb653059f008c02cf47817676c05d550280d",
+   "hash": "7890bf72389b1c1b06375b6ed1686199d59de32dcb2c1c1852e233e9f8c27b94",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -545,16 +550,16 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   },
   {
    "arm": "WML",
    "seed": 306,
-   "hash": "221dc60824d0aab4769037048547bb653059f008c02cf47817676c05d550280d",
+   "hash": "7890bf72389b1c1b06375b6ed1686199d59de32dcb2c1c1852e233e9f8c27b94",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -585,16 +590,16 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   },
   {
    "arm": "WML",
    "seed": 307,
-   "hash": "221dc60824d0aab4769037048547bb653059f008c02cf47817676c05d550280d",
+   "hash": "7890bf72389b1c1b06375b6ed1686199d59de32dcb2c1c1852e233e9f8c27b94",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -625,16 +630,16 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   },
   {
    "arm": "WML",
    "seed": 308,
-   "hash": "221dc60824d0aab4769037048547bb653059f008c02cf47817676c05d550280d",
+   "hash": "7890bf72389b1c1b06375b6ed1686199d59de32dcb2c1c1852e233e9f8c27b94",
    "sci": {
     "num_envs": 1024.0,
     "num_steps": 128.0,
@@ -665,10 +670,10 @@
     "exploration_noise_max": 1.0,
     "exploration_noise_min": 1.0,
     "normalize_env": true,
-    "max_episode_steps": 1000.0,
+    "max_episode_steps": 500.0,
     "min_std": null,
-    "vmin": 0.0,
-    "vmax": 150.0
+    "vmin": -10.0,
+    "vmax": 60.0
    }
   }
  ]
