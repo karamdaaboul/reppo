@@ -1,0 +1,143 @@
+{
+ "checkpoint": "exports/WalkerRun_weighted_mle_s301_final",
+ "bank": "reports/artifacts/cd_bank_walker_corrected.npz",
+ "n_states": 16,
+ "n_reps": 8000,
+ "bound": 0.1,
+ "mean_frac": 0.5,
+ "rows": [
+  {
+   "exact_kl": 0.01999999999999419,
+   "side": "below",
+   "flip16": 0.039875,
+   "flip32": 0.005671875,
+   "ratio": 7.03030303030303,
+   "false_open16": 0.0,
+   "false_open32": 0.0,
+   "false_closed16": 0.039875,
+   "false_closed32": 0.005671875
+  },
+  {
+   "exact_kl": 0.04999999999999618,
+   "side": "below",
+   "flip16": 0.26096875,
+   "flip32": 0.173296875,
+   "ratio": 1.5059056892976288,
+   "false_open16": 0.0,
+   "false_open32": 0.0,
+   "false_closed16": 0.26096875,
+   "false_closed32": 0.173296875
+  },
+  {
+   "exact_kl": 0.0800000000001632,
+   "side": "below",
+   "flip16": 0.429625,
+   "flip32": 0.390109375,
+   "ratio": 1.1012937076941562,
+   "false_open16": 0.0,
+   "false_open32": 0.0,
+   "false_closed16": 0.429625,
+   "false_closed32": 0.390109375
+  },
+  {
+   "exact_kl": 0.09000000000001793,
+   "side": "below",
+   "flip16": 0.4746015625,
+   "flip32": 0.4543359375,
+   "ratio": 1.0446049350872668,
+   "false_open16": 0.0,
+   "false_open32": 0.0,
+   "false_closed16": 0.4746015625,
+   "false_closed32": 0.4543359375
+  },
+  {
+   "exact_kl": 0.09500000000000622,
+   "side": "below",
+   "flip16": 0.4987890625,
+   "flip32": 0.484296875,
+   "ratio": 1.0299241813195676,
+   "false_open16": 0.0,
+   "false_open32": 0.0,
+   "false_closed16": 0.4987890625,
+   "false_closed32": 0.484296875
+  },
+  {
+   "exact_kl": 0.09900000000000246,
+   "side": "below",
+   "flip16": 0.5131328125,
+   "flip32": 0.5061015625,
+   "ratio": 1.0138929624426916,
+   "false_open16": 0.0,
+   "false_open32": 0.0,
+   "false_closed16": 0.5131328125,
+   "false_closed32": 0.5061015625
+  },
+  {
+   "exact_kl": 0.1010000000000013,
+   "side": "above",
+   "flip16": 0.4774453125,
+   "flip32": 0.48371875,
+   "ratio": 0.9870308159441824,
+   "false_open16": 0.4774453125,
+   "false_open32": 0.48371875,
+   "false_closed16": 0.0,
+   "false_closed32": 0.0
+  },
+  {
+   "exact_kl": 0.10500000000000068,
+   "side": "above",
+   "flip16": 0.4650234375,
+   "flip32": 0.4610859375,
+   "ratio": 1.0085396228333248,
+   "false_open16": 0.4650234375,
+   "false_open32": 0.4610859375,
+   "false_closed16": 0.0,
+   "false_closed32": 0.0
+  },
+  {
+   "exact_kl": 0.1100000000000004,
+   "side": "above",
+   "flip16": 0.4442578125,
+   "flip32": 0.4341328125,
+   "ratio": 1.0233223559898506,
+   "false_open16": 0.4442578125,
+   "false_open32": 0.4341328125,
+   "false_closed16": 0.0,
+   "false_closed32": 0.0
+  },
+  {
+   "exact_kl": 0.11999999999999991,
+   "side": "above",
+   "flip16": 0.4155859375,
+   "flip32": 0.38984375,
+   "ratio": 1.0660320641282566,
+   "false_open16": 0.4155859375,
+   "false_open32": 0.38984375,
+   "false_closed16": 0.0,
+   "false_closed32": 0.0
+  },
+  {
+   "exact_kl": 0.15,
+   "side": "above",
+   "flip16": 0.33065625,
+   "flip32": 0.276921875,
+   "ratio": 1.1940416408057326,
+   "false_open16": 0.33065625,
+   "false_open32": 0.276921875,
+   "false_closed16": 0.0,
+   "false_closed32": 0.0
+  },
+  {
+   "exact_kl": 0.30000000000000004,
+   "side": "above",
+   "flip16": 0.118890625,
+   "flip32": 0.0518828125,
+   "ratio": 2.2915223610901974,
+   "false_open16": 0.118890625,
+   "false_open32": 0.0518828125,
+   "false_closed16": 0.0,
+   "false_closed32": 0.0
+  }
+ ],
+ "disclaimer": "counterfactual estimator characterisation; NOT the historical gate-flip rate, which is not identifiable from the reduced (21,1) logs"
+}

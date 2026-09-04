@@ -1,0 +1,29 @@
+{
+ "d": 21,
+ "d_source": "mujoco_playground registry, HumanoidRun.action_size",
+ "kl_bound": 0.1,
+ "sigma_before": 0.279,
+ "sigma_after": 0.85,
+ "c_observed": 3.0465949820788527,
+ "kl_sigma_at_c_observed": 14.025769208120154,
+ "c_max_exact": 1.0731851972516357,
+ "y_max_exact": 0.07318519725163575,
+ "applications_exact": 15.772448869927498,
+ "applications_exact_ceil": 16,
+ "y_small_y_approximation": 0.06900655593423542,
+ "applications_small_y": 16.694567574932467,
+ "applications_small_y_ceil": 17,
+ "outer_iterations_for_this_experiment": "NOT RECOVERABLE",
+ "outer_iterations_source": "reports/corrected_replication_code_trace.md:129,133",
+ "conditional_if_shipped_mjx_dmc": {
+  "num_envs": 1024,
+  "num_steps": 128,
+  "total_time_steps": 50000000,
+  "num_eval": 20,
+  "outer_iterations": 399,
+  "outer_iterations_per_eval": 19,
+  "inner_updates_per_outer_iteration": 512
+ },
+ "budget_scope": "per OUTER iteration; actor_target is a hard copy held fixed for all inner updates (src/jaxrl/reppo.py:693-697)",
+ "caveat": "best-case width-only bound; mean movement and anisotropy also consume budget"
+}
