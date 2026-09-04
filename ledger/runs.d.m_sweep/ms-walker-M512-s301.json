@@ -1,0 +1,14 @@
+{
+ "run_id": "ms-walker-M512-s301",
+ "status": "completed",
+ "wall_clock_s": 8978,
+ "start": "2026-09-03T04:59:23+02:00",
+ "git_sha": "6284d9232ee316ad200a97da8977344ec6970e02",
+ "prereg_commit": "4ab51691833bcdb16c97a333302854fdb4e82c3e",
+ "tier": "confirmatory",
+ "slurm_job": "3519007_8",
+ "partition": "c23g",
+ "gpu": "NVIDIA H100",
+ "export_path": "env=mjx_dmc env.name=WalkerRun experiment_overrides=mjx_dmc_large_data seed=301 num_trials=1 num_seeds=1 wandb.mode=disabled hyperparameters.actor_update_mode=weighted_mle hyperparameters.update_entropy_lagrangian=false hyperparameters.ent_start=0.014509912580251694 hyperparameters.faithful_same_point=true hyperparameters.fresh_minibatch_key=true hyperparameters.log_faithful_diag=true hyperparameters.estep_num_samples=512 hydra.run.dir=outputs/m_sweep_confirmatory/walker_M512_s301@@ outputs/m_sweep_confirmatory/walker_M512_s301 exports/WalkerRun_weighted_mle_m512_s301_final",
+ "export_present": false
+}

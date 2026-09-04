@@ -1,0 +1,14 @@
+{
+ "run_id": "ms-walker-M128-s303",
+ "status": "completed",
+ "wall_clock_s": 2741,
+ "start": "2026-09-04T11:01:33+02:00",
+ "git_sha": "1d4b65bb53e3bcc360975ba70277cc6495a4f80e",
+ "prereg_commit": "66539c235859d79fb4e93a4e2e6dca21cbe1d059",
+ "tier": "confirmatory",
+ "slurm_job": "3519010_2",
+ "partition": "c25g",
+ "gpu": "NVIDIA H100 80GB HBM3",
+ "export_path": "env=mjx_dmc env.name=WalkerRun experiment_overrides=mjx_dmc_large_data seed=303 num_trials=1 num_seeds=1 wandb.mode=disabled hyperparameters.actor_update_mode=weighted_mle hyperparameters.update_entropy_lagrangian=false hyperparameters.ent_start=0.014509912580251694 hyperparameters.faithful_same_point=true hyperparameters.fresh_minibatch_key=true hyperparameters.log_faithful_diag=true hyperparameters.estep_num_samples=128 hydra.run.dir=outputs/m_sweep_confirmatory/walker_M128_s303@@ outputs/m_sweep_confirmatory/walker_M128_s303 exports/WalkerRun_weighted_mle_m128_s303_final",
+ "export_present": false
+}
