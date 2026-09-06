@@ -169,6 +169,18 @@ class ReppoConfig(struct.PyTreeNode):
     # sqrt_rho == 1.0 is an EXACT no-op: the branch is taken in Python, so no op is
     # emitted and the arm stays bit-identical to the shipped weighted_mle arm.
     sqrt_rho: float = 1.0
+    # Walker entropy factorial. Both default False and both branch in PYTHON, so
+    # with the defaults no op is emitted and the baseline is bit-identical.
+    #
+    # pw_drop_actor_entropy: remove the actor entropy GRADIENT from the pathwise
+    # objective only. alpha keeps its value everywhere else -- the critic soft
+    # target, the weighted_mle q_spread diagnostic and the logged value are all
+    # untouched. This is NOT alpha = 0.
+    #
+    # wml_add_actor_entropy: add that same entropy term to the weighted_mle
+    # objective. HYBRID ABLATION: neither standard MPO nor standard REPPO.
+    pw_drop_actor_entropy: bool = False
+    wml_add_actor_entropy: bool = False
     # Diagnostics for that arm: per-coordinate sigma, fraction of coordinates pinned
     # at min_std, tanh clamp rates, KL gate fire rate. Same bit-identity caveat as
     # log_q_spread -- adding ops perturbs XLA fusion -- so default OFF.
@@ -983,6 +995,25 @@ def make_train_fn(
                                 else jnp.zeros(())
                             )
                         objective = -jnp.sum(w_i * logp_fit_i, axis=0)
+                        if cfg.wml_add_actor_entropy:
+                            # WML+H, HYBRID ABLATION: neither standard MPO nor
+                            # standard REPPO. Adds exactly the term the pathwise arm
+                            # carries, reusing `log_prob` from the single fresh
+                            # reparameterised sample of the CURRENT policy drawn
+                            # above -- the same tensor, same RNG key, same squashed
+                            # log-prob implementation the pathwise arm uses.
+                            #
+                            # It is deliberately NOT the E-step candidates a_i and
+                            # NOT their weights w_i: weighting the candidates'
+                            # log-probs would be a different objective entirely.
+                            # Reusing the already-drawn sample also consumes no new
+                            # randomness, so the RNG stream is unchanged.
+                            #
+                            # Sign matches the repository's minimisation convention:
+                            # the pathwise objective is `+log_prob*alpha - value`.
+                            objective = objective + log_prob * jax.lax.stop_gradient(
+                                actor_model.temperature()
+                            )
                         ess = effective_sample_size(w_i, axis=0)
                         w_max = w_i.max(axis=0)
                         # the actual E-step signal: spread of the softmax exponent
@@ -1037,10 +1068,16 @@ def make_train_fn(
                                     cfg.beta_sigma_fixed, dtype=jnp.float32
                                 )
                     else:
-                        objective = (
-                            log_prob * jax.lax.stop_gradient(actor_model.temperature())
-                            - value
-                        )
+                        if cfg.pw_drop_actor_entropy:
+                            # PW-H. The pathwise value term only. alpha is NOT set to
+                            # zero and is not touched anywhere else in the loss.
+                            objective = -value
+                        else:
+                            objective = (
+                                log_prob
+                                * jax.lax.stop_gradient(actor_model.temperature())
+                                - value
+                            )
                         # 0 is out of range for a real ESS (min is 1), so it reads
                         # unambiguously as "not applicable to this arm"
                         ess = jnp.zeros_like(kl)

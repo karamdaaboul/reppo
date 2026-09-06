@@ -84,6 +84,9 @@ hyperparameters:
   log_eval_iqm: false            # per-checkpoint eval IQM (ladder U_t anchor); off by default
   kl_num_samples: null           # DEV ONLY: KL MC samples; null = tied to the operator switch
   sqrt_rho: 1.0                  # M32 + fixed covariance correction; 1.0 = exact no-op
+  # Walker entropy factorial; both default false = exact no-op
+  pw_drop_actor_entropy: false   # PW-H: drop the actor entropy gradient only
+  wml_add_actor_entropy: false   # WML+H: add PW's entropy term (HYBRID ABLATION)
   log_cov_diag: false            # per-coord sigma / clamp / gate diagnostics; breaks bit-identity if on
   ## entropy settings
   ent_start: 0.01
