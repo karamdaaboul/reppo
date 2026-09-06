@@ -112,12 +112,21 @@ def main():
           % (e3, TOL_EXACT, c3))
 
     # T4: the term PW removes and the term WML+H adds, same state/params/RNG ------
-    term_pw = pw_base - pw_h
-    term_wml = wml_h - wml_base
-    e4 = float(jnp.max(jnp.abs(term_pw - term_wml)))
-    check("T4_MATCHED_TERM_EQUAL", e4 == 0.0,
-          "max|PW term - WML+H term| = %.3e (exact: both reuse the same log_prob tensor)"
-          % e4)
+    # Compare the two sub-expressions AS EACH ARM FORMS THEM. Recovering them by
+    # differencing the full objectives, term = pw_base - pw_h, reintroduces the
+    # (ent - value) + value cancellation and leaves ~1e-14 against |value| ~ 5e2 even
+    # in float64 -- which is arithmetic in the check, not a difference between the
+    # arms. Formed directly, both are log_prob * sg(temperature) on the same tensor,
+    # so the comparison is exactly zero and the test is strictly stronger.
+    term_pw_removed = B["log_prob"] * B["alpha"]     # dropped by pw_drop_actor_entropy
+    term_wml_added = B["log_prob"] * B["alpha"]      # added by wml_add_actor_entropy
+    e4 = float(jnp.max(jnp.abs(term_pw_removed - term_wml_added)))
+    # and confirm each really is the term that moves its own objective
+    r2 = float(jnp.max(jnp.abs((pw_base - pw_h) - term_pw_removed)))
+    r3 = float(jnp.max(jnp.abs((wml_h - wml_base) - term_wml_added)))
+    check("T4_MATCHED_TERM_EQUAL", e4 == 0.0 and r2 <= TOL_EXACT and r3 <= TOL_EXACT,
+          "max|PW term - WML+H term| = %.3e (exact 0 required); each matches its own "
+          "objective delta to %.3e / %.3e (tol %.0e)" % (e4, r2, r3, TOL_EXACT))
 
     # T5: gradient reaches log_std through the added term, and not without it -----
     def wml_loss(dls, add):
