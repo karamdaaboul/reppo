@@ -233,6 +233,15 @@ def main(cfg: DictConfig) -> None:
     _sqrt_rho = float(cfg.hyperparameters.get("sqrt_rho", 1.0))
     if _sqrt_rho != 1.0:
         variant += f"_rho{_sqrt_rho:g}"
+    # Same hazard class as the estep_num_samples note above, and it has already bitten
+    # once: the entropy-factorial arms share actor_update_mode with their baselines, so
+    # without a suffix PW-H would overwrite WalkerRun_pathwise_fa_s*_final and WML+H
+    # would overwrite WalkerRun_weighted_mle_s*_final. Appended only when the flag is
+    # set, so every tag already on disk stays byte-stable.
+    if cfg.hyperparameters.get("pw_drop_actor_entropy", False):
+        variant += "_noent"
+    if cfg.hyperparameters.get("wml_add_actor_entropy", False):
+        variant += "_ent"
     tag = f"{cfg.env.name}_{mode}{variant}_s{cfg.seed}"
     duals = summarize(state)
 

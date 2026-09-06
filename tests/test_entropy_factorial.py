@@ -16,6 +16,11 @@ Run: .venv/bin/python tests/test_entropy_factorial.py
 import os, sys
 import numpy as np
 import jax, jax.numpy as jnp
+# The identity under test is loss ALGEBRA. In float32 the check itself
+# forms (ent - value) + value, and with |value| ~ 5e2 that cancellation
+# costs ~6e-5, which is a property of the test's arithmetic and not of the
+# intervention. x64 removes it so the algebra is tested, not the rounding.
+jax.config.update("jax_enable_x64", True)
 
 sys.path.insert(0, os.getcwd())
 from scripts.load_ckpt import load
@@ -24,7 +29,7 @@ CKPT = "exports/WalkerRun_weighted_mle_s301_final"
 CKPT_PW = "exports/WalkerRun_pathwise_fa_s301_final"
 BANK = "reports/artifacts/walker_fixed_state_bank.npz"
 M, KL_BOUND, REDUCE_KL, CLIP_A = 32, 0.1, 1.0, 1.0 - 1e-4
-TOL_EXACT, TOL_GRAD = 1e-6, 0.0
+TOL_EXACT, TOL_GRAD = 1e-12, 0.0
 fails = []
 
 def logp_tanh(y, mu, sg):
@@ -56,8 +61,9 @@ def build(ck, bank, key):
     q_i = jax.vmap(lambda aa: ck.q_scalar(bank, aa))(a_i)
     w_i = jax.nn.softmax(q_i / eta, axis=0)
     kl = jnp.zeros(mu.shape[0])                             # placeholder, set per test
-    return dict(mu=mu, sg=sg, alpha=alpha, log_prob=log_prob, value=value,
-                w_i=w_i, logp_i=logp_i, kl=kl)
+    f64 = lambda x: jnp.asarray(x, jnp.float64)
+    return dict(mu=f64(mu), sg=f64(sg), alpha=float(alpha), log_prob=f64(log_prob),
+                value=f64(value), w_i=f64(w_i), logp_i=f64(logp_i), kl=f64(kl))
 
 def objectives(B):
     ent = B["log_prob"] * B["alpha"]
@@ -93,7 +99,7 @@ def main():
     e2 = float(jnp.max(jnp.abs(d_open - ent[open_])))
     c2 = float(jnp.max(jnp.abs(d_closed)))
     check("T2_PW_MINUS_H", e2 <= TOL_EXACT and c2 == 0.0,
-          "gate-open max|diff - entropy| = %.3e (tol %.0e); gate-closed max|diff| = %.3e"
+          "float64 gate-open max|diff - entropy| = %.3e (tol %.0e); gate-closed max|diff| = %.3e"
           % (e2, TOL_EXACT, c2))
 
     # T3 -----------------------------------------------------------------
@@ -102,7 +108,7 @@ def main():
     e3 = float(jnp.max(jnp.abs(d_open - ent[open_])))
     c3 = float(jnp.max(jnp.abs(d_closed)))
     check("T3_WML_PLUS_H", e3 <= TOL_EXACT and c3 == 0.0,
-          "gate-open max|diff - entropy| = %.3e (tol %.0e); gate-closed max|diff| = %.3e"
+          "float64 gate-open max|diff - entropy| = %.3e (tol %.0e); gate-closed max|diff| = %.3e"
           % (e3, TOL_EXACT, c3))
 
     # T4: the term PW removes and the term WML+H adds, same state/params/RNG ------
