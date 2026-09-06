@@ -25,9 +25,13 @@ jax.config.update("jax_enable_x64", True)
 sys.path.insert(0, os.getcwd())
 from scripts.load_ckpt import load
 
-CKPT = "exports/WalkerRun_weighted_mle_s301_final"
-CKPT_PW = "exports/WalkerRun_pathwise_fa_s301_final"
-BANK = "reports/artifacts/walker_fixed_state_bank.npz"
+# Parameterised so the same validated tests run at another action dimension.
+# Defaults are the Walker values, so running with no environment set reproduces the
+# previously validated Walker result exactly.
+CKPT = os.environ.get("EF_TEST_CKPT", "exports/WalkerRun_weighted_mle_s301_final")
+CKPT_PW = os.environ.get("EF_TEST_CKPT_PW", "exports/WalkerRun_pathwise_fa_s301_final")
+BANK = os.environ.get("EF_TEST_BANK", "reports/artifacts/walker_fixed_state_bank.npz")
+LABEL = os.environ.get("EF_TEST_LABEL", "Walker d=6")
 M, KL_BOUND, REDUCE_KL, CLIP_A = 32, 0.1, 1.0, 1.0 - 1e-4
 TOL_EXACT, TOL_GRAD = 1e-12, 0.0
 fails = []
@@ -83,7 +87,9 @@ def check(name, ok, detail):
 
 def main():
     z = np.load(BANK)
-    bank = jnp.asarray(z["states" if "states" in z.files else z.files[0]])[:512]
+    key = "obs" if "obs" in z.files else ("states" if "states" in z.files else z.files[0])
+    bank = jnp.asarray(z[key])[:512]
+    print("  config: %s | ckpt %s | bank %s" % (LABEL, CKPT, BANK))
     ck = load(CKPT)
     B = build(ck, bank, jax.random.PRNGKey(0))
     ent, pw_base, pw_h, wml_base, wml_h = objectives(B)

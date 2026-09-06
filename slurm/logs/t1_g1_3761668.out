@@ -1,0 +1,28 @@
+pre-change b130ac7c406b2597188bb8f050614c6eb5af8780   new aa5533d9b6a83390fc5dad847d77cd5d549bc6f4   2026-09-06T21:26:41+02:00
+=== source identity check: each side must load its own tree ===
+Failed to import warp: No module named 'warp'
+Failed to import mujoco_warp: No module named 'warp'
+  /hpcwork/qzi10910/t1_pre_G1JoystickFlatTerrain module=/hpcwork/qzi10910/t1_pre_G1JoystickFlatTerrain/src/jaxrl/reppo.py flags_present=False
+Failed to import warp: No module named 'warp'
+Failed to import mujoco_warp: No module named 'warp'
+  /hpcwork/qzi10910/t1_new_G1JoystickFlatTerrain module=/hpcwork/qzi10910/t1_new_G1JoystickFlatTerrain/src/jaxrl/reppo.py flags_present=True
+=== pathwise pristine ===
+[2026-09-06 21:38:04,932][root][INFO] - Exported /rwthfs/rz/cluster/hpcwork/qzi10910/t1_pre_G1JoystickFlatTerrain/exports/G1JoystickFlatTerrain_pathwise_fa_s301_final | return -2.271 | alpha_ent 0.00021 | alpha_kl 0.01300 | ess 0.00
+=== pathwise new, flags OFF ===
+[2026-09-06 21:47:34,004][root][INFO] - Exported /rwthfs/rz/cluster/hpcwork/qzi10910/t1_new_G1JoystickFlatTerrain/exports/G1JoystickFlatTerrain_pathwise_fa_s301_final | return -2.237 | alpha_ent 0.00021 | alpha_kl 0.01300 | ess 0.00
+=== weighted_mle pristine ===
+[2026-09-06 21:58:17,432][root][INFO] - Exported /rwthfs/rz/cluster/hpcwork/qzi10910/t1_pre_G1JoystickFlatTerrain/exports/G1JoystickFlatTerrain_weighted_mle_s301_final | return -2.309 | alpha_ent 0.00021 | alpha_kl 0.01071 | ess 26.52
+=== weighted_mle new, flags OFF ===
+[2026-09-06 22:09:07,114][root][INFO] - Exported /rwthfs/rz/cluster/hpcwork/qzi10910/t1_new_G1JoystickFlatTerrain/exports/G1JoystickFlatTerrain_weighted_mle_s301_final | return -2.351 | alpha_ent 0.00021 | alpha_kl 0.01072 | ess 26.60
+
+=================== T1 BITWISE COMPARISON
+  pathwise       actor.npz   DIFFERS   max|diff| = 1.414e-01
+  pathwise       critic.npz  DIFFERS   max|diff| = 5.194e-01
+  weighted_mle   actor.npz   DIFFERS   max|diff| = 1.408e-01
+  weighted_mle   critic.npz  DIFFERS   max|diff| = 4.774e-01
+
+  T1_BITWISE_NOOP max abs diff over 4 files = 5.194e-01
+  T1 = FAIL
+=== canonical exports untouched? ===
+-rw-rw---- 1 qzi10910 qzi10910 1390732 2026-09-02T10:27 /home/qzi10910/repos/reppo/exports/G1JoystickFlatTerrain_pathwise_fa_s302_final/actor.npz
+done 2026-09-06T22:09:14+02:00

@@ -1,0 +1,14 @@
+commit aa5533d9b6a83390fc5dad847d77cd5d549bc6f4  node n23g0004.hpc.itc.rwth-aachen.de  2026-09-06T22:30:18+02:00
+=== run in /hpcwork/qzi10910/g1_det_a (identical code, identical config) ===
+[2026-09-06 22:40:08,188][root][INFO] - Exported /rwthfs/rz/cluster/hpcwork/qzi10910/g1_det_a/exports/G1JoystickFlatTerrain_pathwise_fa_s301_final | return -2.236 | alpha_ent 0.00021 | alpha_kl 0.01308 | ess 0.00
+=== run in /hpcwork/qzi10910/g1_det_b (identical code, identical config) ===
+[2026-09-06 22:49:47,417][root][INFO] - Exported /rwthfs/rz/cluster/hpcwork/qzi10910/g1_det_b/exports/G1JoystickFlatTerrain_pathwise_fa_s301_final | return -2.275 | alpha_ent 0.00021 | alpha_kl 0.01298 | ess 0.00
+
+=================== SAME-CODE REPRODUCIBILITY
+  actor.npz   DIFFERS   max|diff| = 1.298e-01
+  critic.npz  DIFFERS   max|diff| = 6.654e-01
+
+  G1_SAME_CODE_REPRODUCIBLE = NO
+  -> if NO, G1 is not run-to-run deterministic and the T1 bitwise premise
+     does not hold for this task; the earlier T1 FAIL is uninformative.
+done 2026-09-06T22:49:53+02:00

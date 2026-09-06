@@ -19,9 +19,16 @@ cd "$HOME/repos/reppo"
 PRE="${PRE_SHA:-b130ac7c406b2597188bb8f050614c6eb5af8780}"
 NEW="$(git rev-parse HEAD)"
 PY="$HOME/repos/reppo/.venv/bin/python"
+# Task is parameterised; the defaults are the Walker values, so running with no
+# environment set reproduces the previously validated Walker T1 exactly.
+ENVNAME="${T1_ENV_NAME:-WalkerRun}"
+ENVCFG="${T1_ENV_CFG:-mjx_dmc}"
+STEPS="${T1_STEPS:-2621440}"
+EXPOVR="${T1_EXP_OVERRIDES:-mjx_dmc_large_data}"
+EXTRA="${T1_EXTRA:-}"
 echo "pre-change $PRE   new $NEW   $(date -Is)"
-WPRE=/hpcwork/qzi10910/t1_pre
-WNEW=/hpcwork/qzi10910/t1_new
+WPRE=/hpcwork/qzi10910/t1_pre_${ENVNAME}
+WNEW=/hpcwork/qzi10910/t1_new_${ENVNAME}
 rm -rf "$WPRE" "$WNEW"
 git worktree add --detach "$WPRE" "$PRE" >/dev/null 2>&1 || exit 1
 git worktree add --detach "$WNEW" "$NEW" >/dev/null 2>&1 || exit 1
@@ -37,7 +44,7 @@ print('  %-26s module=%s flags_present=%s' % ('$W', r.__file__, has))
 "
 done
 
-COMMON="env=mjx_dmc env.name=WalkerRun experiment_overrides=mjx_dmc_large_data seed=301 num_trials=1 num_seeds=1 wandb.mode=disabled hyperparameters.num_mini_batches=128 hyperparameters.num_epochs=4 hyperparameters.num_envs=1024 hyperparameters.num_steps=128 hyperparameters.total_time_steps=2621440 hyperparameters.num_eval=4 hyperparameters.ent_start=0.014509912580251694 hyperparameters.update_entropy_lagrangian=false"
+COMMON="env=$ENVCFG env.name=$ENVNAME experiment_overrides=$EXPOVR $EXTRA seed=301 num_trials=1 num_seeds=1 wandb.mode=disabled hyperparameters.num_mini_batches=128 hyperparameters.num_epochs=4 hyperparameters.num_envs=1024 hyperparameters.num_steps=128 hyperparameters.total_time_steps=$STEPS hyperparameters.num_eval=4 hyperparameters.ent_start=${T1_ENT_START:-0.014509912580251694} hyperparameters.update_entropy_lagrangian=false"
 
 for MODE in pathwise weighted_mle; do
   echo "=== $MODE pristine ==="
@@ -48,14 +55,15 @@ done
 
 echo
 echo "=================== T1 BITWISE COMPARISON"
-WPRE="$WPRE" WNEW="$WNEW" $PY - <<'PYEOF'
+WPRE="$WPRE" WNEW="$WNEW" T1_ENV_NAME="$ENVNAME" $PY - <<'PYEOF'
 import os, numpy as np
 wpre, wnew = os.environ["WPRE"], os.environ["WNEW"]
 worst, nfile, allident = 0.0, 0, True
 for mode, tag in (("pathwise", "pathwise_fa"), ("weighted_mle", "weighted_mle")):
     for base in ("actor.npz", "critic.npz"):
-        a = os.path.join(wpre, "exports", "WalkerRun_%s_s301_final" % tag, base)
-        b = os.path.join(wnew, "exports", "WalkerRun_%s_s301_final" % tag, base)
+        env = os.environ.get("T1_ENV_NAME", "WalkerRun")
+        a = os.path.join(wpre, "exports", "%s_%s_s301_final" % (env, tag), base)
+        b = os.path.join(wnew, "exports", "%s_%s_s301_final" % (env, tag), base)
         if not (os.path.exists(a) and os.path.exists(b)):
             print("  %-14s %-11s MISSING" % (mode, base)); allident = False; continue
         za, zb = np.load(a), np.load(b)
@@ -74,7 +82,7 @@ print("  T1 =", "PASS" if (allident and worst == 0.0 and nfile == 4) else "FAIL"
 PYEOF
 
 echo "=== canonical exports untouched? ==="
-ls -la --time-style=+%Y-%m-%dT%H:%M "$HOME/repos/reppo/exports/WalkerRun_pathwise_fa_s302_final/actor.npz"
+ls -la --time-style=+%Y-%m-%dT%H:%M "$HOME/repos/reppo/exports/${ENVNAME}_pathwise_fa_s302_final/actor.npz"
 git worktree remove --force "$WPRE" 2>/dev/null
 git worktree remove --force "$WNEW" 2>/dev/null
 echo "done $(date -Is)"

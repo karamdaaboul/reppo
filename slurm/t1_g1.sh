@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#SBATCH --account=rwth2182
+#SBATCH --partition=c23g
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=96G
+#SBATCH --time=02:00:00
+#SBATCH --output=slurm/logs/t1_g1_%j.out
+export T1_ENV_NAME=G1JoystickFlatTerrain
+export T1_ENV_CFG=mjx_humanoid
+export T1_EXP_OVERRIDES=mjx_humanoid_large_data
+export T1_EXTRA="env.asymmetric_obs=false"
+export T1_ENT_START=0.00020752247655764222
+bash "$HOME/repos/reppo/slurm/t1_bitwise.sh"

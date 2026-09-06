@@ -1,0 +1,22 @@
+host w23g0004.hpc.itc.rwth-aachen.de  commit aa5533d9b6a83390fc5dad847d77cd5d549bc6f4  2026-09-06T21:23:00+02:00
+########## Walker d=6 (regression: must reproduce the validated result)
+  config: Walker d=6 | ckpt exports/WalkerRun_weighted_mle_s301_final | bank reports/artifacts/walker_fixed_state_bank.npz
+  gate-open states 256 / 512
+  T2_PW_MINUS_H                PASS   float64 gate-open max|diff - entropy| = 3.386e-15 (tol 1e-12); gate-closed max|diff| = 0.000e+00
+  T3_WML_PLUS_H                PASS   float64 gate-open max|diff - entropy| = 1.887e-14 (tol 1e-12); gate-closed max|diff| = 0.000e+00
+  T4_MATCHED_TERM_EQUAL        PASS   max|PW term - WML+H term| = 0.000e+00 (exact 0 required); each matches its own objective delta to 7.105e-15 / 1.887e-14 (tol 1e-12)
+  T5_LOGSTD_GRADIENT           PASS   max|grad_on - grad_off| w.r.t. log_std = 1.013e+00 (must be > 0)
+
+  RESULT: ALL PASS
+rc_walker=0
+
+########## G1 d=29
+  config: G1 d=29 | ckpt exports/G1JoystickFlatTerrain_weighted_mle_s301_final | bank reports/artifacts/g1_fixed_state_bank.npz
+  gate-open states 256 / 512
+  T2_PW_MINUS_H                PASS   float64 gate-open max|diff - entropy| = 2.151e-16 (tol 1e-12); gate-closed max|diff| = 0.000e+00
+  T3_WML_PLUS_H                PASS   float64 gate-open max|diff - entropy| = 7.081e-15 (tol 1e-12); gate-closed max|diff| = 0.000e+00
+  T4_MATCHED_TERM_EQUAL        PASS   max|PW term - WML+H term| = 0.000e+00 (exact 0 required); each matches its own objective delta to 2.151e-16 / 7.081e-15 (tol 1e-12)
+  T5_LOGSTD_GRADIENT           PASS   max|grad_on - grad_off| w.r.t. log_std = 2.302e-04 (must be > 0)
+
+  RESULT: ALL PASS
+rc_g1=0  2026-09-06T21:24:04+02:00

@@ -1,0 +1,23 @@
+pre b130ac7c406b2597188bb8f050614c6eb5af8780  new aa5533d9b6a83390fc5dad847d77cd5d549bc6f4  node r23g0001.hpc.itc.rwth-aachen.de  2026-09-06T23:06:24+02:00
+=== step in /hpcwork/qzi10910/t1b_pre ===
+  flags in this tree: False
+state
+  collect_rollout found: True
+  learn_step found     : True
+  wrote 12 actor + 19 critic leaves to /hpcwork/qzi10910/t1b_pre/t1b_out.npz
+=== step in /hpcwork/qzi10910/t1b_new ===
+  flags in this tree: True
+state
+  collect_rollout found: True
+  learn_step found     : True
+  wrote 12 actor + 19 critic leaves to /hpcwork/qzi10910/t1b_new/t1b_out.npz
+
+=================== T1b FIXED-BATCH COMPARISON
+  initial actor params         IDENTICAL over  12 leaves   max|diff| = 0.000e+00
+  initial critic params        IDENTICAL over  19 leaves   max|diff| = 0.000e+00
+  post-step actor params       IDENTICAL over  12 leaves   max|diff| = 0.000e+00
+  post-step critic params      IDENTICAL over  19 leaves   max|diff| = 0.000e+00
+
+  INITIAL_STATE_IDENTICAL = PASS  (precondition: the two trees must start from the same weights)
+  T1b_FIXED_BATCH_NOOP    = PASS  max abs diff = 0.000e+00
+done 2026-09-06T23:10:17+02:00
