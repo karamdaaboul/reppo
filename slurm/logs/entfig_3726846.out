@@ -1,0 +1,52 @@
+host n23g0007.hpc.itc.rwth-aachen.de  commit 5fc85fe8de41dca77fa773804daebaf38e4eba83  2026-09-06T11:56:09+02:00
+==========================================================================
+4. ENTROPY DERIVATIVE CHECK
+==========================================================================
+  L_H = alpha * E[log pi(a|s)],  a = tanh(y),  y = mu + sigma*u
+  hand:  dL_H/dlog_sigma = alpha * [ -1 + 2*sigma^2*E(sech^2(y)) ]
+  F := -dL/dlog_sigma  so  F > 0 widens, F < 0 contracts
+
+    mu     sigma |   pathwise      autodiff      |err| |   stein-form  |gap|
+   -1.00    0.20 |   -0.965373     -0.965374  1.19e-07 |   -0.965502  1.28e-04
+   -1.00    0.50 |   -0.768489     -0.768489  1.19e-07 |   -0.768601  1.12e-04
+   -1.00    1.50 |   +0.744413     +0.744418  4.77e-06 |   +0.748907  4.49e-03
+    0.00    0.20 |   -0.923079     -0.923079  1.19e-07 |   -0.922965  1.14e-04
+    0.00    0.50 |   -0.587373     -0.587373  5.96e-08 |   -0.586625  7.48e-04
+    0.00    1.50 |   +1.064360     +1.064361  4.77e-07 |   +1.069223  4.86e-03
+    0.70    0.20 |   -0.949335     -0.949335  5.96e-08 |   -0.949127  2.08e-04
+    0.70    0.50 |   -0.691430     -0.691430  5.96e-08 |   -0.690695  7.36e-04
+    0.70    1.50 |   +0.900629     +0.900629  3.58e-07 |   +0.905797  5.17e-03
+
+  ENTROPY_DERIVATIVE_AUTODIFF_MATCH = PASS  (max abs err 4.77e-06, tol 1e-4)
+
+  Stein-form convergence at mu=0, sigma=1.5 (worst cell above):
+    N=10000     pathwise +1.087906  stein +1.052361  |diff| 3.55e-02
+    N=100000    pathwise +1.071433  stein +1.064695  |diff| 6.74e-03
+    N=1000000   pathwise +1.067440  stein +1.066443  |diff| 9.97e-04
+    N=10000000  pathwise +1.067073  stein +1.067072  |diff| 9.54e-07
+
+  On-arm Walker states, final checkpoints, medians over 8 seeds.
+  arm            | alpha      | sigma_op | F_H at sigma_op | sign-change sigma
+  pathwise       | 0.01450992 |   0.4550 |      +1.230e-02 | 1.1488
+  weighted_mle   | 0.01450992 |   6.4271 |      -4.655e-02 | 2.1594
+
+  The sign of F_H depends on mu and the state distribution, so the crossing
+  is reported per arm on that arm's own states. No universal crossover.
+
+=== FIG 1: corrected return comparison ===
+   walker  median boot CI [+108.9707,+200.7559]  frozen [+108.9707,+200.7559] MATCH
+   walker  mean   boot CI [+101.7997,+196.1587]  frozen [+108.9707,+200.7559] 
+   g1      median boot CI [  +2.7810, +15.2774]  frozen [  +2.7810, +15.2774] MATCH
+   g1      mean   boot CI [  +5.3160, +13.0734]  frozen [  +2.7810, +15.2774] 
+   leap    median boot CI [  -1.3388, +10.5281]  frozen [  -1.3388, +10.5281] MATCH
+   leap    mean   boot CI [  -0.7309,  +8.0190]  frozen [  -1.3388, +10.5281] 
+
+=== FIG 2/3: fixed-bank width and saturation ===
+
+=== FIG 4: controlled critic-error phase diagram ===
+   240 cells, d in [2, 4, 8, 16, 32, 64]
+
+  wrote figures to reports/artifacts/figs_package
+  ENTROPY_DERIVATIVE_AUTODIFF_MATCH = PASS
+  fig1 statistic reproducing frozen CI: {'walker': 'median', 'g1': 'median', 'leap': 'median'}
+rc=0  2026-09-06T11:56:43+02:00
