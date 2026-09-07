@@ -1,0 +1,65 @@
+host n23g0009.hpc.itc.rwth-aachen.de  commit 0948dfc87b8ed00b19c12d1cae8161b08e7dd386  2026-09-07T18:50:38+02:00
+script sha256: 255a180526d9e0abab5fc2c2a69f66e73c84f4fec98d1fdfc94bb16f59079d54
+/rwthfs/rz/cluster/hpcwork/qzi10910/estep_wt/scripts/analysis/logsigma_theory.py:141: RuntimeWarning: All-NaN slice encountered
+  md = lambda rr, k: float(np.nanmedian([r[k] for r in rr]))
+/rwthfs/rz/cluster/hpcwork/qzi10910/estep_wt/.venv/lib/python3.12/site-packages/numpy/_core/fromnumeric.py:3862: RuntimeWarning: Mean of empty slice
+  return _methods._mean(a, axis=axis, dtype=dtype,
+/rwthfs/rz/cluster/hpcwork/qzi10910/estep_wt/.venv/lib/python3.12/site-packages/numpy/_core/_methods.py:142: RuntimeWarning: invalid value encountered in divide
+  ret = ret.dtype.type(ret / rcount)
+======================================================================================================================
+STEP 1  DECOMPOSITION   F = -dL/dlog_sigma, F>0 widens
+======================================================================================================================
+
+--- M = 16 ---
+  task    arm        | gate |    A_open     B_open   net_open |   A_pool   net_pool |    curv   |curv|  frac+ |  eta   ESS
+  walker  PW_ent     |0.000 |     0.1241    -0.1848    -0.0104 |   0.6184    -0.1533 |   0.0883  0.1437 0.735 | 0.267 13.14
+  walker  WML_noent  |0.002 |     0.0429     0.0038     0.0695 |   0.4438    -0.3808 |   0.3075  2.3123 0.645 | 0.509 15.87
+  g1      PW_ent     |0.000 |        nan        nan        nan |   3.0776    -0.6142 |   0.0117  0.0130 0.909 | 0.011 10.27
+  g1      WML_noent  |0.000 |        nan        nan        nan |   2.8729    -1.1061 |   0.0301  0.0376 0.894 | 0.033 11.05
+  leap    PW_ent     |0.000 |        nan        nan        nan |   1.9822    -0.4471 |   0.0231  0.0608 0.610 | 0.064  9.80
+  leap    WML_noent  |0.000 |        nan        nan        nan |   1.3731    -0.8079 |   0.2568  3.1640 0.652 | 0.157 11.28
+
+--- M = 32 ---
+  task    arm        | gate |    A_open     B_open   net_open |   A_pool   net_pool |    curv   |curv|  frac+ |  eta   ESS
+  walker  PW_ent     |0.026 |     0.0793     0.0369     0.1187 |   0.3436    -0.0447 |   0.0866  0.1395 0.748 | 0.350 28.04
+  walker  WML_noent  |0.052 |     0.0547     0.1606     0.2354 |   0.2347    -0.1948 |   0.2981  2.1129 0.650 | 0.793 31.82
+  g1      PW_ent     |0.000 |        nan        nan        nan |   1.6220    -0.4089 |   0.0114  0.0122 0.929 | 0.012 21.51
+  g1      WML_noent  |0.000 |        nan        nan        nan |   1.5693    -0.8286 |   0.0308  0.0367 0.908 | 0.037 23.27
+  leap    PW_ent     |0.000 |        nan        nan        nan |   1.2268    -0.2152 |   0.0235  0.0592 0.636 | 0.070 20.39
+  leap    WML_noent  |0.000 |        nan        nan        nan |   0.7929    -0.3548 |   0.2412  3.1540 0.649 | 0.178 23.62
+
+======================================================================================================================
+STEP 2  LINEAR-Q TILTING PREDICTION   A_pred = sigma^2 ||g||^2 / eta^2
+======================================================================================================================
+  task    arm        |   A_meas   A_pred   ratio | slope(A~A_pred) spearman | ||g||   sigma  sigma*
+  walker  PW_ent     |   0.3436   0.2165   1.587 |          0.005     0.747 | 0.3447  0.4503  0.5276
+  walker  WML_noent  |   0.2347   0.9503   0.247 |          0.000     0.383 | 0.0188  7.1942 13.8664
+  g1      PW_ent     |   1.6220   1.9846   0.817 |          0.050     0.740 | 0.0461  0.2890  0.3234
+  g1      WML_noent  |   1.5693   2.6000   0.604 |          0.002     0.726 | 0.0529  0.4764  0.8074
+  leap    PW_ent     |   1.2268   2.2342   0.549 |          0.008     0.522 | 0.0943  0.5956  0.7139
+  leap    WML_noent  |   0.7929 427.7856   0.002 |          0.000     0.340 | 0.0859  3.0904  1.8457
+
+======================================================================================================================
+STEP 2b  SEED-POPULATION TEST   is ||g|| larger on a policy's OWN states?
+======================================================================================================================
+  prediction: sigma ~ 1/||g||, so own states (narrow) should have LARGER ||g||
+  task    arm        | ||g|| own-seed  ||g|| sibling   ratio | sigma own  sigma sibling
+  walker  PW_ent     |       0.05046        0.31714    0.16 |    0.5293        0.5091
+  walker  WML_noent  |       0.14398        0.02178    6.61 |    0.3872       30.9551
+  g1      PW_ent     |       0.01689        0.04245    0.40 |    0.3599        0.3793
+  g1      WML_noent  |       0.01728        0.06293    0.27 |    0.2866        1.0685
+  leap    PW_ent     |       0.04311        0.10027    0.43 |    0.2848        0.9744
+  leap    WML_noent  |       0.03929        0.09748    0.40 |    0.2610       45.4731
+
+======================================================================================================================
+STEP 3  BOOTSTRAP over states, M = 32, 10,000 resamples
+======================================================================================================================
+  walker  A_open median    0.0524  CI [   0.0445,    0.0606]  excl 0: YES
+          A_WML - |curv|_PW =   -0.0895  CI [  -0.1016,   -0.0777]  excl 0: NO
+  g1      A_open median       nan  CI [      nan,       nan]  excl 0: NO
+          A_WML - |curv|_PW =       nan  CI [      nan,       nan]  excl 0: NO
+  leap    A_open median       nan  CI [      nan,       nan]  excl 0: NO
+          A_WML - |curv|_PW =       nan  CI [      nan,       nan]  excl 0: NO
+
+  wrote logsigma_theory_rows.csv, _provenance.json, _bootstrap.json
+rc=0  2026-09-07T18:51:48+02:00
