@@ -50,17 +50,25 @@ def build():
     from src.jaxrl import reppo as R
     from src.env_utils.jax_wrappers import (
         MjxGymnaxWrapper, LogWrapper, ClipAction, NormalizeVec)
+    import os as _os
+    TASK = _os.environ.get("T1B_TASK", "g1")
+    OV = {
+      "g1": ["env=mjx_humanoid", "env.name=G1JoystickFlatTerrain",
+             "env.asymmetric_obs=false", "experiment_overrides=mjx_humanoid_large_data",
+             "hyperparameters.ent_start=0.00020752247655764222"],
+      "leap": ["env=mjx_dmc", "env.name=LeapCubeRotateZAxis",
+               "env.asymmetric_obs=false", "experiment_overrides=mjx_dmc_large_data",
+               "env.vmin=-10", "env.vmax=60", "env.max_episode_steps=500",
+               "hyperparameters.max_episode_steps=500",
+               "hyperparameters.ent_start=0.000782382907345891"],
+    }[TASK]
     with hydra.initialize(version_base=None, config_path="../../config"):
-        cfg = hydra.compose(config_name="reppo", overrides=[
-            "env=mjx_humanoid", "env.name=G1JoystickFlatTerrain",
-            "env.asymmetric_obs=false",
-            "experiment_overrides=mjx_humanoid_large_data",
+        cfg = hydra.compose(config_name="reppo", overrides=OV + [
             "seed=301", "num_trials=1", "num_seeds=1", "wandb.mode=disabled",
             # tiny but real; only shapes and the executed code path matter here
             "hyperparameters.num_envs=8", "hyperparameters.num_steps=4",
             "hyperparameters.num_mini_batches=2", "hyperparameters.num_epochs=1",
             "hyperparameters.total_time_steps=64", "hyperparameters.num_eval=1",
-            "hyperparameters.ent_start=0.00020752247655764222",
             "hyperparameters.update_entropy_lagrangian=false",
             "hyperparameters.actor_update_mode=weighted_mle",
         ])
