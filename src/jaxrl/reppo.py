@@ -298,6 +298,30 @@ def gaussian_kl_diag(mu0, sg0, mu1, sg1):
     )
 
 
+def gaussian_kl_diag_split(mu0, sg0, mu1, sg1):
+    """Split KL( N(mu0, sg0^2) || N(mu1, sg1^2) ) into its mean and width parts.
+
+        mean_part  = sum_j (mu0_j - mu1_j)^2 / (2 sg1_j^2)
+        width_part = sum_j [ log(sg1_j / sg0_j) + sg0_j^2 / (2 sg1_j^2) - 1/2 ]
+
+    `mean_part + width_part == gaussian_kl_diag(mu0, sg0, mu1, sg1)` identically.
+
+    ORIENTATION. This is the FORWARD decomposition: index 0 is pi_old, index 1 is
+    pi_theta, and the mean term is scaled by the CURRENT policy's variance sg1^2,
+    not by sg0^2. The reverse-KL decomposition (which `decoupled_kls` uses, with
+    the OLD scale in the denominator) is a different quantity and must not be
+    substituted here.
+
+    Both parts are non-negative: `width_part` is itself a KL between two zero-mean
+    Gaussians. Diagnostic only -- this never enters a loss.
+    """
+    mean_part = jnp.sum((mu0 - mu1) ** 2 / (2.0 * sg1**2), axis=-1)
+    width_part = jnp.sum(
+        jnp.log(sg1 / sg0) + sg0**2 / (2.0 * sg1**2) - 0.5, axis=-1
+    )
+    return mean_part, width_part
+
+
 def effective_sample_size(w, axis=0):
     """1 / sum_i w_i^2 for weights summing to 1 along `axis`. Range [1, M]."""
     return 1.0 / jnp.sum(w**2, axis=axis)
@@ -862,6 +886,17 @@ def make_train_fn(
                             kl_analytic = gaussian_kl_diag(
                                 mu_old_f, sg_old_f, mu_new_f, sg_new_f
                             )
+                            # Diagnostic-only split of that SAME analytic KL into
+                            # its mean-displacement and width parts, for BOTH arms.
+                            # Inputs are stop_gradient'd so the split can never carry
+                            # a gradient, and it draws no randomness, so training is
+                            # unchanged and existing runs stay bit-reproducible.
+                            kl_an_mean, kl_an_width = gaussian_kl_diag_split(
+                                jax.lax.stop_gradient(mu_old_f),
+                                jax.lax.stop_gradient(sg_old_f),
+                                jax.lax.stop_gradient(mu_new_f),
+                                jax.lax.stop_gradient(sg_new_f),
+                            )
                         else:
                             # Both feature sets coexist here. The retained pre-tanh
                             # path below is ws/main's; it replaces the plain
@@ -919,6 +954,8 @@ def make_train_fn(
                             logp_old_i = old_pi_act_log_prob.sum(-1)            # (M, B)
                             logp_theta_i = pi.log_prob(old_pi_action).sum(-1)   # (M, B)
                             kl_analytic = jnp.full(logp_old_i.shape[1:], jnp.nan)
+                            kl_an_mean = jnp.full(logp_old_i.shape[1:], jnp.nan)
+                            kl_an_width = jnp.full(logp_old_i.shape[1:], jnp.nan)
 
                         if cfg.kl_num_samples is None:
                             _lo, _lt = logp_old_i, logp_theta_i
@@ -1243,6 +1280,8 @@ def make_train_fn(
                         )
                         _lag_raw = actor_model.lagrangian_log_param.value.squeeze()
                         _kl_an = jax.lax.stop_gradient(kl_analytic)
+                        _kl_an_m = jax.lax.stop_gradient(kl_an_mean)
+                        _kl_an_w = jax.lax.stop_gradient(kl_an_width)
                         _fd = dict(
                             fr_gate_operator=_gate_open.mean(),
                             fr_gate_kl_only=1.0 - _gate_open.mean(),
@@ -1251,6 +1290,12 @@ def make_train_fn(
                             fr_kl_q99=_q[6],
                             fr_kl_min=_kl_d.min(), fr_kl_max=_kl_d.max(),
                             fr_kl_analytic_med=jnp.nanmedian(_kl_an),
+                            fr_kl_mean_part_med=jnp.nanmedian(_kl_an_m),
+                            fr_kl_width_part_med=jnp.nanmedian(_kl_an_w),
+                            # the split identity, checked every logged step
+                            fr_kl_split_resid_max=jnp.nanmax(
+                                jnp.abs(_kl_an_m + _kl_an_w - _kl_an)
+                            ),
                             fr_kl_sampled_minus_analytic_med=jnp.nanmedian(
                                 _kl_d - _kl_an
                             ),
@@ -1279,6 +1324,8 @@ def make_train_fn(
                                 "fr_kl_q90", "fr_kl_q95", "fr_kl_q99",
                                 "fr_kl_min", "fr_kl_max",
                                 "fr_kl_analytic_med",
+                                "fr_kl_mean_part_med", "fr_kl_width_part_med",
+                                "fr_kl_split_resid_max",
                                 "fr_kl_sampled_minus_analytic_med",
                                 "fr_kl_sampled_minus_analytic_mean",
                                 "fr_lag_raw", "fr_lag_eff", "fr_lag_finite",
