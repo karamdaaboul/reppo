@@ -1,0 +1,65 @@
+host w23g0005.hpc.itc.rwth-aachen.de  commit 56e6c8b75b18f3602a3e3a639d21cf456fb1120d  2026-09-07T12:26:53+02:00
+======================================================================================================================
+1. ON-ARM VERSUS NEUTRAL, ALL TASKS, ALL AVAILABLE CELLS  (medians over seeds 301-308)
+======================================================================================================================
+  PROXY = the bank has no states from that policy's own rollouts (it was built from
+  the two baselines), so on-arm uses the same-arm BASELINE states.
+
+  task    cell       proxy  |    on-arm   neutral   ratio |  on s95  on s99 | neu s95 neu s99 | logged sg
+  ------------------------------------------------------------------------------------------------------------------
+  walker  PW_ent     own    |    0.4783    0.4499    0.94 |  0.1450  0.0200 |  0.2242  0.0861 |    0.5297
+  walker  PW_noent   PROXY  |    0.3038    0.3375    1.11 |  0.5668  0.4192 |  0.5697  0.4134 |    0.2958
+  walker  WML_ent    PROXY  |    1.6309    2.0152    1.24 |  0.5907  0.4453 |  0.6332  0.5030 |    0.4779
+  walker  WML_noent  own    |    0.2182    7.3096   33.50 |  0.3978  0.2684 |  0.7895  0.7151 |    2.9005
+  g1      PW_ent     own    |    0.2695    0.2896    1.07 |  0.0703  0.0260 |  0.1585  0.0660 |    0.3068
+  g1      PW_noent   PROXY  |    0.2536    0.2635    1.04 |  0.3929  0.2587 |  0.3846  0.2480 |    0.2562
+  g1      WML_ent    PROXY  |    0.3826    0.5737    1.50 |  0.3346  0.2122 |  0.3646  0.2369 |    0.3910
+  g1      WML_noent  own    |    0.1759    0.4969    2.82 |  0.2040  0.1158 |  0.3510  0.2365 |    0.3920
+  leap    PW_ent     own    |    0.2242    0.5999    2.68 |  0.0870  0.0187 |  0.3079  0.1754 |    0.2713
+  leap    WML_noent  own    |    0.1225    3.2913   26.88 |  0.1773  0.0794 |  0.6810  0.5813 |    0.4901
+
+======================================================================================================================
+2. PAIRED WML/PW WIDTH RATIO, BOTH POPULATIONS
+   convention: median over seeds of per-seed log ratios, exponentiated
+======================================================================================================================
+
+  --- walker ---
+   ent            neutral  ratio   4.533x | per seed  6.383  5.987  3.255  3.467  2.807  5.068  5.135  4.054
+   ent            on_arm   ratio   3.408x | per seed  4.212  3.348  1.776  2.784  3.469  4.362  4.372  2.972
+   ent            SIGN AGREE (both > 1): YES   neutral 4.533x vs on-arm 3.408x
+   noent          neutral  ratio  22.952x | per seed 17.026 33.400 17.517 30.072 32.630 10.274 13.170 50.941
+   noent          on_arm   ratio   0.680x | per seed  0.988  0.796  0.619  0.933  0.746  0.364  0.572  0.371
+   noent          SIGN AGREE (both > 1): NO -- REVERSES   neutral 22.952x vs on-arm 0.680x
+   baseline pair  neutral  ratio  15.702x | per seed 12.142 21.651 12.713 19.393 23.681  9.858  8.779 45.390
+   baseline pair  on_arm   ratio   0.456x | per seed  0.494  0.434  0.514  0.609  0.475  0.438  0.320  0.321
+   baseline pair  SIGN AGREE (both > 1): NO -- REVERSES   neutral 15.702x vs on-arm 0.456x
+
+  --- g1 ---
+   ent            neutral  ratio   1.986x | per seed  1.709  1.288  2.998  1.948  1.998  2.919  1.975  2.072
+   ent            on_arm   ratio   1.404x | per seed  1.067  0.920  2.396  1.650  1.421  1.303  1.386  1.435
+   ent            SIGN AGREE (both > 1): YES   neutral 1.986x vs on-arm 1.404x
+   noent          neutral  ratio   1.999x | per seed  2.066  1.990  2.072  2.009  1.639  3.712  1.409  1.882
+   noent          on_arm   ratio   0.776x | per seed  0.903  0.955  0.635  0.687  0.752  0.852  0.575  0.801
+   noent          SIGN AGREE (both > 1): NO -- REVERSES   neutral 1.999x vs on-arm 0.776x
+   baseline pair  neutral  ratio   1.805x | per seed  1.681  1.444  2.118  2.046  1.317  2.854  1.810  1.800
+   baseline pair  on_arm   ratio   0.647x | per seed  0.620  0.653  0.641  0.622  0.630  0.708  0.706  0.685
+   baseline pair  SIGN AGREE (both > 1): NO -- REVERSES   neutral 1.805x vs on-arm 0.647x
+
+  --- leap ---
+   baseline pair  neutral  ratio   6.376x | per seed  6.166  2.165  6.977  6.757 16.531  2.161  4.883  6.593
+   baseline pair  on_arm   ratio   0.543x | per seed  0.873  0.642  0.428  0.435  0.517  0.570  0.505  0.622
+   baseline pair  SIGN AGREE (both > 1): NO -- REVERSES   neutral 6.376x vs on-arm 0.543x
+
+======================================================================================================================
+3. BANK_HALVES_AGREE, WALKER, ALL FOUR CELLS
+======================================================================================================================
+  cell       |      full   pw_half  wml_half | max half-to-half rel. diff
+  PW_ent     |    0.4499    0.4550    0.4537 | 0.3%  AGREE <=10%
+  PW_noent   |    0.3375    0.3172    0.3540 | 10.4%  DISAGREE >10%
+  WML_ent    |    2.0152    2.2139    1.9063 | 13.9%  DISAGREE >10%
+  WML_noent  |    7.3096    8.8018    6.4271 | 27.0%  DISAGREE >10%
+
+  BANK_HALVES_AGREE (walker, all four within 10%) = NO
+
+  wrote onarm_vs_neutral_cells.csv and onarm_vs_neutral.json
+rc=0  2026-09-07T12:27:54+02:00
