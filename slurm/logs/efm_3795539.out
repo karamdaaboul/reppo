@@ -1,0 +1,99 @@
+host n23g0020.hpc.itc.rwth-aachen.de  commit 56d48fb85e42323c21d9982c4427cc2fc3bda434  measured_at 2026-09-07T11:43:48+02:00
+==============================================================================
+0. VERIFY F_H AGAINST AUTODIFF ON THE REPO'S SQUASHED LOG-PROB
+==============================================================================
+  L_H = alpha * E[log pi(a|s)] with a = tanh(y); F := -dL/dlog_sigma
+  closed form  F_H = alpha * [1 - 2 sigma^2 E(sech^2 y)]
+
+    mu   sigma |   -autodiff        F_H        |err|
+  -1.00   0.20 |   +0.965702   +0.965488  2.13e-04
+  -1.00   0.50 |   +0.769004   +0.768386  6.18e-04
+  -1.00   1.50 |   -0.738898   -0.747884  8.99e-03
+   0.00   0.20 |   +0.922998   +0.922968  2.99e-05
+   0.00   0.50 |   +0.586865   +0.586745  1.20e-04
+   0.00   1.50 |   -1.066970   -1.067130  1.59e-04
+   0.70   0.20 |   +0.949005   +0.949141  1.36e-04
+   0.70   0.50 |   +0.690561   +0.690862  3.01e-04
+   0.70   1.50 |   -0.900432   -0.903539  3.11e-03
+
+  AUTODIFF_MATCH max abs error = 8.986e-03  (alpha factored out; Stein form,
+  so this is MC convergence, not a discrepancy)
+  convergence at mu=0, sigma=1.5:
+    N=10000     |err| = 3.61e-02
+    N=100000    |err| = 6.98e-03
+    N=1000000   |err| = 1.20e-03
+    N=10000000  |err| = 1.96e-04
+
+==============================================================================
+1. F_H ON SIX BASELINE CELLS
+==============================================================================
+  On-arm = the states that cell's own policy visited (bank source label).
+  Neutral = the full 3072-state bank, reported alongside for comparison.
+
+  task    cell       subset   | median F_H mean F_H    frac>0   | med sig  2s2Esech2 | class
+  --------------------------------------------------------------------------------------------------------
+  walker  PW_ent     on_arm   | +1.210e-02  +9.993e-03   0.9489 |   0.4737    0.3113 | WIDENS  (seeds +8/-0)
+  walker  PW_ent     neutral  | +1.230e-02  +1.087e-02   0.9779 |   0.4542    0.2507 | WIDENS  (seeds +8/-0)
+
+  walker  WML_noent  on_arm   | +1.424e-02  -3.997e-02   0.8862 |   0.2182    3.7545 | WIDENS  (seeds +8/-0)
+  walker  WML_noent  neutral  | -1.002e-01  -7.196e+00   0.2828 |   7.1815  496.9071 | CONTRACTS  (seeds +0/-8)
+
+  g1      PW_ent     on_arm   | +1.914e-04  +1.758e-04   0.9982 |   0.2824    0.1527 | WIDENS  (seeds +8/-0)
+  g1      PW_ent     neutral  | +1.962e-04  +1.788e-04   0.9936 |   0.2991    0.1384 | WIDENS  (seeds +8/-0)
+
+  g1      WML_noent  on_arm   | +2.030e-04  +1.575e-04   0.9678 |   0.1887    0.2409 | WIDENS  (seeds +8/-0)
+  g1      WML_noent  neutral  | +1.868e-04  -9.996e-06   0.7844 |   0.5560    1.0482 | WIDENS  (seeds +8/-0)
+
+  leap    PW_ent     on_arm   | +7.472e-04  +7.057e-04   0.9970 |   0.2297    0.0981 | WIDENS  (seeds +8/-0)
+  leap    PW_ent     neutral  | +6.224e-04  -1.691e-04   0.8141 |   0.5584    1.2161 | WIDENS  (seeds +8/-0)
+
+  leap    WML_noent  on_arm   | +7.694e-04  +6.780e-04   0.9797 |   0.1228    0.1334 | WIDENS  (seeds +8/-0)
+  leap    WML_noent  neutral  | -1.749e-03  -1.917e-01   0.3530 |   2.8974  245.9996 | CONTRACTS  (seeds +0/-8)
+
+  per-seed medians of F_H (on-arm), sign stability visible:
+    walker  PW_ent     +1.21e-02 +1.18e-02 +1.17e-02 +1.22e-02 +1.23e-02 +1.18e-02 +1.21e-02 +1.24e-02
+    walker  WML_noent  +1.43e-02 +1.43e-02 +1.42e-02 +1.41e-02 +1.42e-02 +1.43e-02 +1.42e-02 +1.43e-02
+    g1      PW_ent     +1.92e-04 +1.92e-04 +1.93e-04 +1.89e-04 +1.91e-04 +1.89e-04 +1.92e-04 +1.93e-04
+    g1      WML_noent  +2.03e-04 +2.03e-04 +2.03e-04 +2.03e-04 +2.03e-04 +2.03e-04 +2.03e-04 +2.03e-04
+    leap    PW_ent     +7.62e-04 +7.45e-04 +6.74e-04 +7.33e-04 +7.56e-04 +7.52e-04 +7.49e-04 +7.60e-04
+    leap    WML_noent  +7.70e-04 +7.67e-04 +7.67e-04 +7.70e-04 +7.72e-04 +7.68e-04 +7.71e-04 +7.72e-04
+
+==============================================================================
+2. VALIDATION ON FOUR KNOWN OUTCOMES
+==============================================================================
+  F_H measured at the baseline checkpoint predicts the direction the entropy
+  term pushes width. The observed transition must agree.
+
+  --- measured on on_arm states ---
+  task    cell       transition        observed               implies     measured    match
+  walker  PW_ent     removing entropy   0.455 -> 0.340         narrower    WIDENS      MATCH
+  walker  WML_noent  adding entropy     8.687 -> 2.058         narrower    WIDENS      MISS
+  g1      PW_ent     removing entropy   0.300 -> 0.276         narrower    WIDENS      MATCH
+  g1      WML_noent  adding entropy     0.497 -> 0.574         wider       WIDENS      MATCH
+    on_arm: 3/4
+
+  --- measured on neutral states ---
+  task    cell       transition        observed               implies     measured    match
+  walker  PW_ent     removing entropy   0.455 -> 0.340         narrower    WIDENS      MATCH
+  walker  WML_noent  adding entropy     8.687 -> 2.058         narrower    CONTRACTS   MATCH
+  g1      PW_ent     removing entropy   0.300 -> 0.276         narrower    WIDENS      MATCH
+  g1      WML_noent  adding entropy     0.497 -> 0.574         wider       WIDENS      MATCH
+    neutral: 4/4
+
+  NOTE the four observed targets are NEUTRAL-BANK medians, taken from the
+  factorial reports, so the commensurate comparison is the neutral row.
+  The on-arm row predicts the force on a different state population.
+
+  VALIDATION_4_OF_4 (on_arm, the preregistered primary) = NO  (3/4)
+  VALIDATION_4_OF_4 (neutral, recorded for comparison)   = YES  (4/4)
+
+==============================================================================
+3. LEAP PREDICTION
+==============================================================================
+  measured on LEAP PW_ent     : WIDENS  median F_H +7.472e-04  frac>0 0.9970  seeds +8/-0
+    median sigma 0.2297 ; 2 sigma^2 E[sech^2] = 0.0981 (crosses 1 at the sign change)
+  measured on LEAP WML_noent  : WIDENS  median F_H +7.694e-04  frac>0 0.9797  seeds +8/-0
+    median sigma 0.1228 ; 2 sigma^2 E[sech^2] = 0.1334 (crosses 1 at the sign change)
+
+  wrote artifacts and figure under reports/artifacts/figs_entropy_force
+rc=0  2026-09-07T11:44:53+02:00
