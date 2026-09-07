@@ -25,13 +25,13 @@ from scripts.load_ckpt import load
 ART   = "reports/artifacts"
 TASK  = os.environ.get("EF_TASK", "walker")
 _T = {
-    "walker": dict(env="WalkerRun", d=6, figd="figs_entropy_factorial",
+    "walker": dict(env="WalkerRun", d=6, figd="figs_entropy_factorial", prefix="",
                    bank="walker_fixed_state_bank.npz",
                    sha="8adfeb0bf70bddcdbd64a84b972b4dbd62617c64e1c948589a7adc30cf64aa21",
                    pw_run="/walker_PW1_s%d", wml_run="/walker_WML32_s%d",
                    pwn_run="/walker_PW-H_s%d", wmle_run="/walker_WML+H_s%d",
                    ef="/hpcwork/qzi10910/reppo_runs/outputs/entropy_factorial"),
-    "g1": dict(env="G1JoystickFlatTerrain", d=29, figd="figs_g1_entropy_factorial",
+    "g1": dict(env="G1JoystickFlatTerrain", d=29, figd="figs_g1_entropy_factorial", prefix="g1_",
                bank="g1_fixed_state_bank.npz",
                sha="cf6f7880b3a5b59433727f7a245b5ce97749096981f03233fd434ab3371935e9",
                pw_run="/g1_PW1_s%d", wml_run="/g1_WML32_s%d",
@@ -241,14 +241,14 @@ def main():
           % ("PASS" if len(tags) == 4 else "FAIL", len(tags)))
 
     # ---------------- CSVs
-    with open(os.path.join(ART, "%s_entropy_factorial_percoord.csv" % TASK), "w", newline="") as f:
+    with open(os.path.join(ART, _T["prefix"] + "entropy_factorial_percoord.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows_coord[0])); w.writeheader(); w.writerows(rows_coord)
-    with open(os.path.join(ART, "%s_entropy_factorial_cells.csv" % TASK), "w", newline="") as f:
+    with open(os.path.join(ART, _T["prefix"] + "entropy_factorial_cells.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows_cell[0])); w.writeheader(); w.writerows(rows_cell)
     out.update(returns=ret, width={c: {s: width[c][s] for s in SEEDS} for c in ORDER},
                diag=diag, d_ent=d_ent, d_noent=d_noent,
                I_return=dict(point=np.median(d_ent) - np.median(d_noent), lo=lo, hi=hi))
-    with open(os.path.join(ART, "%s_entropy_factorial.json" % TASK), "w") as f:
+    with open(os.path.join(ART, _T["prefix"] + "entropy_factorial.json"), "w") as f:
         json.dump(out, f, indent=1, default=float)
 
     # ---------------- figures
