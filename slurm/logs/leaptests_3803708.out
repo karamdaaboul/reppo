@@ -1,0 +1,34 @@
+host w23g0007.hpc.itc.rwth-aachen.de  commit a926e0da6d2eb0fe4214972ed2b975c781daa13d  2026-09-07T14:11:18+02:00
+########## T2-T5 at d=16 (LEAP)
+  config: LEAP d=16 | ckpt exports/LeapCubeRotateZAxis_weighted_mle_s301_final | bank reports/artifacts/leap_fixed_state_bank.npz
+  gate-open states 256 / 512
+  T2_PW_MINUS_H                PASS   float64 gate-open max|diff - entropy| = 7.105e-15 (tol 1e-12); gate-closed max|diff| = 0.000e+00
+  T3_WML_PLUS_H                PASS   float64 gate-open max|diff - entropy| = 3.553e-15 (tol 1e-12); gate-closed max|diff| = 0.000e+00
+  T4_MATCHED_TERM_EQUAL        PASS   max|PW term - WML+H term| = 0.000e+00 (exact 0 required); each matches its own objective delta to 7.105e-15 / 3.553e-15 (tol 1e-12)
+  T5_LOGSTD_GRADIENT           PASS   max|grad_on - grad_off| w.r.t. log_std = 1.163e+00 (must be > 0)
+
+  RESULT: ALL PASS
+rc_t2t5=0
+
+########## T1b fixed-batch no-op at d=16
+    leaf 3 shape (4, 8) dtype float32
+    leaf 4 shape (4, 8) dtype float32
+    leaf 5 shape (4, 8, 512) dtype float32
+  flags in tree: False
+  collect_rollout found: True
+  learn_step found     : True
+  wrote 12 actor + 19 critic leaves to /hpcwork/qzi10910/t1b_leap_pre/t1b_out.npz
+  flags in tree: True
+  collect_rollout found: True
+  learn_step found     : True
+  wrote 12 actor + 19 critic leaves to /hpcwork/qzi10910/t1b_leap_new/t1b_out.npz
+
+=================== T1b LEAP COMPARISON
+  initial actor params       IDENTICAL over  12 leaves   max|diff| = 0.000e+00
+  initial critic params      IDENTICAL over  19 leaves   max|diff| = 0.000e+00
+  post-step actor params     IDENTICAL over  12 leaves   max|diff| = 0.000e+00
+  post-step critic params    IDENTICAL over  19 leaves   max|diff| = 0.000e+00
+
+  INITIAL_STATE_IDENTICAL = PASS
+  LEAP_T1B = PASS  max abs diff = 0.000e+00
+done 2026-09-07T14:16:41+02:00

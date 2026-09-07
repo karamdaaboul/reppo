@@ -1,0 +1,128 @@
+host n23g0020.hpc.itc.rwth-aachen.de  commit 7be5b05c3fbba374ee3419727bf4a8db44e34bc8  2026-09-07T15:58:31+02:00
+########## regression: walker and g1 must reproduce committed values
+  seed |  Delta_ent  Delta_noent
+  Delta_ent    paired median   +22.939  95% CI [   +3.696,   +36.328]  7/8 positive
+  Delta_noent  paired median  +127.111  95% CI [ +111.937,  +166.093]  8/8 positive
+  full     log_ratio_ent    median log +1.5113 ->    4.533x   95% CI [3.255x, 5.987x]
+  full     log_ratio_noent  median log +3.1334 ->   22.952x   95% CI [13.170x, 33.400x]
+  I_return = Delta_ent - Delta_noent
+  score_window3      |   909.008    894.794    887.775    760.503
+  seed |  Delta_ent  Delta_noent
+  Delta_ent    paired median   +12.277  95% CI [   +6.788,   +18.679]  8/8 positive
+  Delta_noent  paired median    +0.671  95% CI [   -2.942,    +2.212]  4/8 positive
+  full     log_ratio_ent    median log +0.6864 ->    1.986x   95% CI [1.709x, 2.919x]
+  full     log_ratio_noent  median log +0.6927 ->    1.999x   95% CI [1.639x, 2.072x]
+  I_return = Delta_ent - Delta_noent
+  score_window3      |    22.716     13.258     10.821     13.525
+
+########## LEAP d=16
+bank sha256 0053b0f361e45b9227d15b982ff667a5fc665469dd54e673c70c0682bcb158b2  VERIFIED
+bank 3072 states; halves 1536 PW-derived / 1536 WML-derived
+
+==============================================================================
+1. FROZEN RETURN SCALAR  score_window3 = mean of evals 18,19,20 of 21
+==============================================================================
+  seed |    PW_ent   PW_noent    WML_ent  WML_noent
+   301 |    35.340     32.026     32.994     26.597
+   302 |    29.288     26.098     15.556     17.765
+   303 |    16.024     27.087     29.561     15.691
+   304 |    30.046     14.887     25.785     21.787
+   305 |    35.036     27.050     31.744     35.768
+   306 |    33.793     17.824     27.733     23.265
+   307 |    28.920     17.440     29.543     36.039
+   308 |    32.522     15.196     13.584     33.861
+  mean |    30.121     22.201     25.812     26.347
+
+==============================================================================
+3. PAIRED RETURN EFFECTS  (PW minus WML, positive = pathwise higher)
+==============================================================================
+  seed |  Delta_ent  Delta_noent
+   301 |      2.346        5.429
+   302 |     13.733        8.332
+   303 |    -13.537       11.396
+   304 |      4.261       -6.900
+   305 |      3.292       -8.717
+   306 |      6.061       -5.441
+   307 |     -0.623      -18.599
+   308 |     18.938      -18.665
+  Delta_ent    paired median    +3.776  95% CI [   -0.623,   +13.733]  6/8 positive
+  Delta_noent  paired median    -6.171  95% CI [  -18.599,    +8.332]  3/8 positive
+
+==============================================================================
+2. FIXED-BANK WIDTH AND SATURATION
+==============================================================================
+  Saturation: P(|a| > t) per ACTION COORDINATE, computed exactly from the
+  pre-tanh Gaussian (not sampled), averaged over bank states and coordinates.
+  State distribution: the frozen neutral bank. Thresholds t = 0.95, 0.99.
+
+  cell        subset   | med sigma    mean      p95       max |  sat95   sat99
+  PW_ent      full     |    0.5999     0.895    2.500      51.4 | 0.3079  0.1754
+  PW_ent      pw_half  |    0.5398     0.884    2.512      51.4 | 0.3064  0.1694
+  PW_ent      wml_half |    0.6579     0.991    2.724      35.3 | 0.3280  0.1865
+
+  PW_noent    full     |    1.0146     2.297    6.414     396.6 | 0.5812  0.4395
+  PW_noent    pw_half  |    0.9836     2.077    6.604     254.5 | 0.5843  0.4333
+  PW_noent    wml_half |    1.0505     2.317    6.314     186.4 | 0.5893  0.4464
+
+  WML_ent     full     |    3.0262    18.620   59.009   21383.2 | 0.6288  0.5201
+  WML_ent     pw_half  |    2.5744    16.838   48.994    2271.0 | 0.6335  0.5141
+  WML_ent     wml_half |    2.9929    20.699   59.653   15205.8 | 0.6265  0.5100
+
+  WML_noent   full     |    3.2913    68.803  135.085  303204.7 | 0.6810  0.5813
+  WML_noent   pw_half  |    3.8881    44.208  143.804   70357.1 | 0.7015  0.6016
+  WML_noent   wml_half |    2.7911    70.819  131.285   41463.3 | 0.6366  0.5377
+
+==============================================================================
+4. PAIRED WIDTH EFFECTS
+==============================================================================
+  RATIO CONVENTION: median over seeds of per-seed log ratios, exponentiated.
+  (Not a mean of ratios.)
+
+  full     log_ratio_ent    median log +1.6415 ->    5.163x   95% CI [3.695x, 8.390x]
+  full     log_ratio_noent  median log +0.9597 ->    2.611x   95% CI [1.533x, 4.455x]
+
+  pw_half  log_ratio_ent    median log +1.5222 ->    4.582x   95% CI [4.199x, 11.416x]
+  pw_half  log_ratio_noent  median log +1.2385 ->    3.450x   95% CI [1.631x, 5.479x]
+
+  wml_half log_ratio_ent    median log +1.7371 ->    5.681x   95% CI [3.026x, 11.088x]
+  wml_half log_ratio_noent  median log +0.7230 ->    2.061x   95% CI [1.412x, 3.568x]
+
+==============================================================================
+5. FACTORIAL INTERACTIONS  (descriptive; no test was preregistered)
+==============================================================================
+  I_return = Delta_ent - Delta_noent
+    point    +9.947   95% CI [   -5.029,   +22.646]
+  I_width (full) = log_ratio_ent - log_ratio_noent
+    point +0.6818 ->  1.977x   95% CI [1.426x, 3.555x]
+  I_width (pw_half) = log_ratio_ent - log_ratio_noent
+    point +0.2838 ->  1.328x   95% CI [0.892x, 3.204x]
+  I_width (wml_half) = log_ratio_ent - log_ratio_noent
+    point +1.0141 ->  2.757x   95% CI [1.785x, 5.237x]
+
+  Four cell means, read the 2x2 directly:
+  outcome            |    PW_ent   PW_noent    WML_ent  WML_noent
+  score_window3      |    30.121     22.201     25.812     26.347
+  bank median sigma  |    0.5787     1.1348     3.4461     3.4466
+  sat95              |    0.3183     0.6032     0.6328     0.6378
+
+==============================================================================
+6. DIAGNOSTICS
+==============================================================================
+  alpha_kl is actor.lagrangian() (scripts/export_ckpt.py:204). The audit's
+  lambda_eff is that same KL multiplier, so they are the SAME field.
+
+  cell        | alpha_kl(final)      | gate fire | logged sigma | bank median | ratio | eta   ESS
+  PW_ent      | 0.0132  [0.0093,0.0198] |   0.515   |      0.2713 |      0.5999 |  2.21 | 0.000  0.00
+  PW_noent    | 0.0080  [0.0054,0.0147] |   0.517   |      0.2475 |      1.0146 |  4.10 | 0.000  0.00
+  WML_ent     | 0.3520  [0.1624,0.4406] |   0.497   |      0.3405 |      3.0262 |  8.89 | 0.006 19.88
+  WML_noent   | 0.3308  [0.2277,0.4211] |   0.512   |      0.4901 |      3.2913 |  6.72 | 0.009 20.10
+
+==============================================================================
+7. INTEGRITY
+==============================================================================
+  BASELINE_MANIFEST_MATCH   = FAIL  (0/0)
+  NEW_EXPORTS_COMPLETE      = PASS  (16/16)
+  NEW_TAGS_NON_COLLIDING    = PASS  (4 distinct tags)
+
+  wrote CSVs, JSON and figures under reports/artifacts/figs_leap_entropy_factorial
+rc=0  2026-09-07T16:00:36+02:00

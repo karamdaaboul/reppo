@@ -37,6 +37,12 @@ _T = {
                pw_run="/g1_PW1_s%d", wml_run="/g1_WML32_s%d",
                pwn_run="/g1_PW_noent_s%d", wmle_run="/g1_WML_ent_s%d",
                ef="/hpcwork/qzi10910/reppo_runs/outputs/g1_entropy_factorial"),
+    "leap": dict(env="LeapCubeRotateZAxis", d=16, figd="figs_leap_entropy_factorial",
+               bank="leap_fixed_state_bank.npz", prefix="leap_",
+               sha="0053b0f361e45b9227d15b982ff667a5fc665469dd54e673c70c0682bcb158b2",
+               pw_run="/leap_PW_s%d", wml_run="/leap_WML_s%d",
+               pwn_run="/leap_PW_noent_s%d", wmle_run="/leap_WML_ent_s%d",
+               ef="/hpcwork/qzi10910/reppo_runs/outputs/leap_entropy_factorial"),
 }[TASK]
 FIGD  = os.path.join(ART, _T["figd"])
 BANK  = os.path.join(ART, _T["bank"])
@@ -44,14 +50,15 @@ BANK_SHA = _T["sha"]
 SEEDS = list(range(301, 309))
 BOOT_N, RNG_SEED = 10000, 20260902
 FR = "/rwthfs/rz/cluster/hpcwork/qzi10910/reppo_runs/outputs/faithful_repair"
+LC = "/rwthfs/rz/cluster/hpcwork/qzi10910/reppo_runs/outputs/leap_corrected"
 EF = "/hpcwork/qzi10910/reppo_runs/outputs/entropy_factorial"
 EF = _T["ef"]
 ENVN = _T["env"]
 CELLS = {
-    "PW_ent":    dict(tag="pathwise_fa",       run=FR + _T["pw_run"],   arm="PW",  ent=True),
+    "PW_ent":    dict(tag="pathwise_fa",       run=(LC if TASK == "leap" else FR) + _T["pw_run"],   arm="PW",  ent=True),
     "PW_noent":  dict(tag="pathwise_fa_noent", run=EF + _T["pwn_run"],  arm="PW",  ent=False),
     "WML_ent":   dict(tag="weighted_mle_ent",  run=EF + _T["wmle_run"], arm="WML", ent=True),
-    "WML_noent": dict(tag="weighted_mle",      run=FR + _T["wml_run"],  arm="WML", ent=False),
+    "WML_noent": dict(tag="weighted_mle",      run=(LC if TASK == "leap" else FR) + _T["wml_run"],  arm="WML", ent=False),
 }
 ORDER = ["PW_ent", "PW_noent", "WML_ent", "WML_noent"]
 T95, T99 = float(np.arctanh(0.95)), float(np.arctanh(0.99))
