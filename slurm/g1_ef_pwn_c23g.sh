@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#SBATCH --account=rwth2182
+#SBATCH --partition=c23g
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=96G
+#SBATCH --time=03:00:00
+#SBATCH --array=1-4
+#SBATCH --job-name=g1ef-pwn_c23g
+#SBATCH --output=slurm/logs/g1ef_pwn_c23g_%A_%a.out
+export EF_ARM=PW_noent
+export EF_SEEDS=301,303,305,307
+bash "$HOME/repos/reppo/slurm/g1_ef_launch.sh"

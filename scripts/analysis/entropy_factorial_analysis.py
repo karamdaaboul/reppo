@@ -23,18 +23,35 @@ sys.path.insert(0, os.getcwd())
 from scripts.load_ckpt import load
 
 ART   = "reports/artifacts"
-FIGD  = os.path.join(ART, "figs_entropy_factorial")
-BANK  = os.path.join(ART, "walker_fixed_state_bank.npz")
-BANK_SHA = "8adfeb0bf70bddcdbd64a84b972b4dbd62617c64e1c948589a7adc30cf64aa21"
+TASK  = os.environ.get("EF_TASK", "walker")
+_T = {
+    "walker": dict(env="WalkerRun", d=6, figd="figs_entropy_factorial",
+                   bank="walker_fixed_state_bank.npz",
+                   sha="8adfeb0bf70bddcdbd64a84b972b4dbd62617c64e1c948589a7adc30cf64aa21",
+                   pw_run="/walker_PW1_s%d", wml_run="/walker_WML32_s%d",
+                   pwn_run="/walker_PW-H_s%d", wmle_run="/walker_WML+H_s%d",
+                   ef="/hpcwork/qzi10910/reppo_runs/outputs/entropy_factorial"),
+    "g1": dict(env="G1JoystickFlatTerrain", d=29, figd="figs_g1_entropy_factorial",
+               bank="g1_fixed_state_bank.npz",
+               sha="cf6f7880b3a5b59433727f7a245b5ce97749096981f03233fd434ab3371935e9",
+               pw_run="/g1_PW1_s%d", wml_run="/g1_WML32_s%d",
+               pwn_run="/g1_PW_noent_s%d", wmle_run="/g1_WML_ent_s%d",
+               ef="/hpcwork/qzi10910/reppo_runs/outputs/g1_entropy_factorial"),
+}[TASK]
+FIGD  = os.path.join(ART, _T["figd"])
+BANK  = os.path.join(ART, _T["bank"])
+BANK_SHA = _T["sha"]
 SEEDS = list(range(301, 309))
 BOOT_N, RNG_SEED = 10000, 20260902
 FR = "/rwthfs/rz/cluster/hpcwork/qzi10910/reppo_runs/outputs/faithful_repair"
 EF = "/hpcwork/qzi10910/reppo_runs/outputs/entropy_factorial"
+EF = _T["ef"]
+ENVN = _T["env"]
 CELLS = {
-    "PW_ent":    dict(tag="pathwise_fa",          run=FR + "/walker_PW1_s%d",   arm="PW",  ent=True),
-    "PW_noent":  dict(tag="pathwise_fa_noent",    run=EF + "/walker_PW-H_s%d",  arm="PW",  ent=False),
-    "WML_ent":   dict(tag="weighted_mle_ent",     run=EF + "/walker_WML+H_s%d", arm="WML", ent=True),
-    "WML_noent": dict(tag="weighted_mle",         run=FR + "/walker_WML32_s%d", arm="WML", ent=False),
+    "PW_ent":    dict(tag="pathwise_fa",       run=FR + _T["pw_run"],   arm="PW",  ent=True),
+    "PW_noent":  dict(tag="pathwise_fa_noent", run=EF + _T["pwn_run"],  arm="PW",  ent=False),
+    "WML_ent":   dict(tag="weighted_mle_ent",  run=EF + _T["wmle_run"], arm="WML", ent=True),
+    "WML_noent": dict(tag="weighted_mle",      run=FR + _T["wml_run"],  arm="WML", ent=False),
 }
 ORDER = ["PW_ent", "PW_noent", "WML_ent", "WML_noent"]
 T95, T99 = float(np.arctanh(0.95)), float(np.arctanh(0.99))
@@ -75,7 +92,7 @@ def main():
     print("bank sha256 %s  %s" % (h, "VERIFIED" if h == BANK_SHA else "MISMATCH"))
     assert h == BANK_SHA, "bank hash mismatch, refusing to proceed"
     z = np.load(BANK)
-    bank = jnp.asarray(z["states" if "states" in z.files else z.files[0]])
+    bank = jnp.asarray(z["obs" if "obs" in z.files else ("states" if "states" in z.files else z.files[0])])
     half = bank.shape[0] // 2
     SUBSETS = {"full": slice(None), "pw_half": slice(0, half), "wml_half": slice(half, None)}
     print("bank %d states; halves %d PW-derived / %d WML-derived\n" % (bank.shape[0], half, half))
@@ -86,7 +103,7 @@ def main():
         c = CELLS[cell]
         ret[cell], width[cell], diag[cell] = {}, {}, {}
         for sd in SEEDS:
-            d = "exports/WalkerRun_%s_s%d_final" % (c["tag"], sd)
+            d = "exports/" + ENVN + "_%s_s%d_final" % (c["tag"], sd)
             ck = load(d)
             meta = ck.meta
             curve = np.asarray(meta["eval_return_curve"], float)
@@ -207,7 +224,7 @@ def main():
     nb = 0; okb = 0
     for cell in ("PW_ent", "WML_noent"):
         for sd in SEEDS:
-            d = "exports/WalkerRun_%s_s%d_final" % (CELLS[cell]["tag"], sd)
+            d = "exports/" + ENVN + "_%s_s%d_final" % (CELLS[cell]["tag"], sd)
             if d in man:
                 nb += 1
                 okb += int(sha(os.path.join(d, "actor.npz")) == man[d]["sha256_actor"])
@@ -215,7 +232,7 @@ def main():
     nn = 0
     for cell in ("PW_noent", "WML_ent"):
         for sd in SEEDS:
-            d = "exports/WalkerRun_%s_s%d_final" % (CELLS[cell]["tag"], sd)
+            d = "exports/" + ENVN + "_%s_s%d_final" % (CELLS[cell]["tag"], sd)
             nn += int(all(os.path.exists(os.path.join(d, f)) for f in
                           ("actor.npz", "critic.npz", "meta.json", "normalizer.npz")))
     print("  NEW_EXPORTS_COMPLETE      = %s  (%d/16)" % ("PASS" if nn == 16 else "FAIL", nn))
@@ -224,14 +241,14 @@ def main():
           % ("PASS" if len(tags) == 4 else "FAIL", len(tags)))
 
     # ---------------- CSVs
-    with open(os.path.join(ART, "entropy_factorial_percoord.csv"), "w", newline="") as f:
+    with open(os.path.join(ART, "%s_entropy_factorial_percoord.csv" % TASK), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows_coord[0])); w.writeheader(); w.writerows(rows_coord)
-    with open(os.path.join(ART, "entropy_factorial_cells.csv"), "w", newline="") as f:
+    with open(os.path.join(ART, "%s_entropy_factorial_cells.csv" % TASK), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows_cell[0])); w.writeheader(); w.writerows(rows_cell)
     out.update(returns=ret, width={c: {s: width[c][s] for s in SEEDS} for c in ORDER},
                diag=diag, d_ent=d_ent, d_noent=d_noent,
                I_return=dict(point=np.median(d_ent) - np.median(d_noent), lo=lo, hi=hi))
-    with open(os.path.join(ART, "entropy_factorial.json"), "w") as f:
+    with open(os.path.join(ART, "%s_entropy_factorial.json" % TASK), "w") as f:
         json.dump(out, f, indent=1, default=float)
 
     # ---------------- figures
@@ -242,7 +259,7 @@ def main():
         ax.plot(x, [ret[c][s] for s in SEEDS], "o", color=cols[c], label=c, ms=7)
     ax.set_xticks(x); ax.set_xticklabels(SEEDS, fontsize=8)
     ax.set_xlabel("seed"); ax.set_ylabel("score_window3\n(mean of final 3 of 21 evals)", fontsize=9)
-    ax.set_title("Walker entropy factorial: return, paired seeds", fontsize=10)
+    ax.set_title("%s entropy factorial: return, paired seeds" % ENVN, fontsize=10)
     ax.legend(fontsize=8); ax.grid(alpha=.3)
     fig.tight_layout()
     for e in ("pdf", "png"): fig.savefig(os.path.join(FIGD, "fig_ef_return." + e), dpi=180, bbox_inches="tight")
@@ -253,7 +270,7 @@ def main():
         ax.plot(x, [width[c][s]["full"]["median"] for s in SEEDS], "o", color=cols[c], label=c, ms=7)
     ax.set_yscale("log"); ax.set_xticks(x); ax.set_xticklabels(SEEDS, fontsize=8)
     ax.set_xlabel("seed"); ax.set_ylabel("median pre-tanh sigma\n(frozen neutral bank, full)", fontsize=9)
-    ax.set_title("Walker entropy factorial: policy width, paired seeds", fontsize=10)
+    ax.set_title("%s entropy factorial: policy width, paired seeds" % ENVN, fontsize=10)
     ax.legend(fontsize=8); ax.grid(alpha=.3, which="both")
     fig.tight_layout()
     for e in ("pdf", "png"): fig.savefig(os.path.join(FIGD, "fig_ef_width." + e), dpi=180, bbox_inches="tight")
@@ -267,7 +284,7 @@ def main():
         ax_.set_ylim(0, 1); ax_.set_xlabel("seed"); ax_.set_ylabel(lab, fontsize=9)
         ax_.grid(alpha=.3)
     axes[0].legend(fontsize=8)
-    fig.suptitle("Walker entropy factorial: action saturation, per coordinate, frozen bank", fontsize=10)
+    fig.suptitle("%s entropy factorial: action saturation, per coordinate, frozen bank" % ENVN, fontsize=10)
     fig.tight_layout()
     for e in ("pdf", "png"): fig.savefig(os.path.join(FIGD, "fig_ef_saturation." + e), dpi=180, bbox_inches="tight")
     plt.close(fig)
