@@ -1,0 +1,65 @@
+{
+ "script_sha256": "54e0ce4125be0cf696a54bca8e7cb62ce71a5d7001f9ab1556f9b13a3632d1d3",
+ "banks": {
+  "walker": {
+   "path": "reports/artifacts/walker_onpolicy_bank_newarms.npz",
+   "sha256": "a029051a0ac73392d96126c5a583b969090b776dd7b4325f05e6cd327fa9f8a3",
+   "n_states": 3072,
+   "per_arm": {
+    "PW_noent": 1536,
+    "WML_ent": 1536
+   },
+   "depths": [
+    50,
+    150,
+    300,
+    500,
+    700,
+    900
+   ],
+   "n_env": 32,
+   "root": 20260907,
+   "keying": "sha256-deterministic"
+  },
+  "g1": {
+   "path": "reports/artifacts/g1_onpolicy_bank_newarms.npz",
+   "sha256": "c554781628ca00991d375a3f73d8c92c3183979f44ae9ec6018dee80a5b0002c",
+   "n_states": 3072,
+   "per_arm": {
+    "PW_noent": 1536,
+    "WML_ent": 1536
+   },
+   "depths": [
+    50,
+    150,
+    300,
+    500,
+    700,
+    900
+   ],
+   "n_env": 32,
+   "root": 20260907,
+   "keying": "sha256-deterministic"
+  },
+  "leap": {
+   "path": "reports/artifacts/leap_onpolicy_bank_newarms.npz",
+   "sha256": "0677b737bc4ef8e2a5d203525afe76253e1bb3f03b91b333b5305625c1a84bdd",
+   "n_states": 3072,
+   "per_arm": {
+    "PW_noent": 1536,
+    "WML_ent": 1536
+   },
+   "depths": [
+    50,
+    100,
+    200,
+    300,
+    400,
+    480
+   ],
+   "n_env": 32,
+   "root": 20260907,
+   "keying": "sha256-deterministic"
+  }
+ }
+}
