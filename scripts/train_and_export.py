@@ -242,6 +242,15 @@ def main(cfg: DictConfig) -> None:
         variant += "_noent"
     if cfg.hyperparameters.get("wml_add_actor_entropy", False):
         variant += "_ent"
+    # Same hazard class again, and the one that has already cost checkpoints: eps_e is
+    # not otherwise encoded, so a weighted_mle arm at a non-default eps_e would write the
+    # eps_e = 0.5 baseline's own path. Appended ONLY when eps_e differs from the shipped
+    # default of 0.5, so every tag already on disk stays byte-stable and no published
+    # export is orphaned. The decimal point is dropped so the tag has no "." in it:
+    # 0.1 -> "_eps01", matching docs/prereg_estep_concentration.md.
+    _eps_e = float(cfg.hyperparameters.eps_e)
+    if _eps_e != 0.5:
+        variant += "_eps" + ("%g" % _eps_e).replace(".", "")
     tag = f"{cfg.env.name}_{mode}{variant}_s{cfg.seed}"
     duals = summarize(state)
 
