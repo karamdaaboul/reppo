@@ -1,0 +1,332 @@
+{
+  "rows": [
+    {
+      "name": "G3 published full-rank d = 2 crossover",
+      "status": "PASS",
+      "detail": "c* = 1.5218 against 1.522, rel 0.0001 (bound 0.02); this study's own tie 1.4711 (ok) against the path study's single-state 1.5387, rel 0.0440 (descriptive)",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "c* = 1.5218 against 1.522, rel 0.0001 (bound 0.02); this study's own tie 1.4711 (ok) against the path study's single-state 1.5387, rel 0.0440 (descriptive)",
+      "blocking": true
+    },
+    {
+      "name": "G1 unbiased at mu_0 [d=2]",
+      "status": "PASS",
+      "detail": "bound 4 SE; eps=0: |z| PW 0.06 ZO 1.62; x=1.47: |z| PW 0.45 ZO 2.00; x=2.18: |z| PW 0.63 ZO 2.22",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "bound 4 SE; eps=0: |z| PW 0.06 ZO 1.62; x=1.47: |z| PW 0.45 ZO 2.00; x=2.18: |z| PW 0.63 ZO 2.22",
+      "blocking": true
+    },
+    {
+      "name": "G1 unbiased at mu_0 [d=4]",
+      "status": "PASS",
+      "detail": "bound 4 SE; eps=0: |z| PW 1.92 ZO 1.13; x=2.02: |z| PW 1.96 ZO 1.87; x=2.93: |z| PW 1.55 ZO 2.12",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "bound 4 SE; eps=0: |z| PW 1.92 ZO 1.13; x=2.02: |z| PW 1.96 ZO 1.87; x=2.93: |z| PW 1.55 ZO 2.12",
+      "blocking": true
+    },
+    {
+      "name": "G1 unbiased at mu_0 [d=8]",
+      "status": "PASS",
+      "detail": "bound 4 SE; eps=0: |z| PW 2.34 ZO 1.26; x=2.84: |z| PW 1.77 ZO 2.22; x=4.06: |z| PW 1.66 ZO 1.47",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "bound 4 SE; eps=0: |z| PW 2.34 ZO 1.26; x=2.84: |z| PW 1.77 ZO 2.22; x=4.06: |z| PW 1.66 ZO 1.47",
+      "blocking": true
+    },
+    {
+      "name": "G1 unbiased at mu_0 [d=16]",
+      "status": "PASS",
+      "detail": "bound 4 SE; eps=0: |z| PW 1.65 ZO 2.18; x=4.04: |z| PW 2.91 ZO 1.84; x=5.61: |z| PW 3.15 ZO 1.18",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "bound 4 SE; eps=0: |z| PW 1.65 ZO 2.18; x=4.04: |z| PW 2.91 ZO 1.84; x=5.61: |z| PW 3.15 ZO 1.18",
+      "blocking": true
+    },
+    {
+      "name": "G1 unbiased at mu_0 [d=32]",
+      "status": "PASS",
+      "detail": "bound 4 SE; eps=0: |z| PW 1.74 ZO 1.94; x=5.67: |z| PW 2.28 ZO 2.30; x=7.97: |z| PW 2.45 ZO 2.46",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "bound 4 SE; eps=0: |z| PW 1.74 ZO 1.94; x=5.67: |z| PW 2.28 ZO 2.30; x=7.97: |z| PW 2.45 ZO 2.46",
+      "blocking": true
+    },
+    {
+      "name": "G1 unbiased at mu_0 [d=64]",
+      "status": "PASS",
+      "detail": "bound 4 SE; eps=0: |z| PW 1.96 ZO 3.32; x=8.07: |z| PW 3.79 ZO 2.39; x=11.1: |z| PW 2.33 ZO 2.55",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "bound 4 SE; eps=0: |z| PW 1.96 ZO 3.32; x=8.07: |z| PW 3.79 ZO 2.39; x=11.1: |z| PW 2.33 ZO 2.55",
+      "blocking": true
+    },
+    {
+      "name": "G2 reference paths settled [B d=2]",
+      "status": "PASS",
+      "detail": "tail radius in sigma at N: 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.11@80 0.52@80 0.48@80 0.47@80 (bound 1.0)",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "tail radius in sigma at N: 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.11@80 0.52@80 0.48@80 0.47@80 (bound 1.0)",
+      "blocking": true
+    },
+    {
+      "name": "G2 reference paths settled [B d=4]",
+      "status": "PASS",
+      "detail": "tail radius in sigma at N: 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.12@80 0.12@80 (bound 1.0)",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "tail radius in sigma at N: 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.12@80 0.12@80 (bound 1.0)",
+      "blocking": true
+    },
+    {
+      "name": "G2 reference paths settled [B d=8]",
+      "status": "PASS",
+      "detail": "tail radius in sigma at N: 0.10@80 0.10@80 0.10@80 0.14@80 0.11@80 0.14@80 0.14@80 0.14@80 0.14@80 (bound 1.0)",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "tail radius in sigma at N: 0.10@80 0.10@80 0.10@80 0.14@80 0.11@80 0.14@80 0.14@80 0.14@80 0.14@80 (bound 1.0)",
+      "blocking": true
+    },
+    {
+      "name": "G2 reference paths settled [B d=16]",
+      "status": "PASS",
+      "detail": "tail radius in sigma at N: 0.11@80 0.10@80 0.39@80 0.11@80 0.12@80 0.12@80 0.12@80 0.12@80 0.12@80 (bound 1.0)",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "tail radius in sigma at N: 0.11@80 0.10@80 0.39@80 0.11@80 0.12@80 0.12@80 0.12@80 0.12@80 0.12@80 (bound 1.0)",
+      "blocking": true
+    },
+    {
+      "name": "G2 reference paths settled [B d=32]",
+      "status": "PASS",
+      "detail": "tail radius in sigma at N: 0.10@160 0.10@80 0.11@80 0.11@80 0.11@80 0.11@80 0.11@80 0.11@80 0.11@80 (bound 1.0)",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "tail radius in sigma at N: 0.10@160 0.10@80 0.11@80 0.11@80 0.11@80 0.11@80 0.11@80 0.11@80 0.11@80 (bound 1.0)",
+      "blocking": true
+    },
+    {
+      "name": "G2 reference paths settled [B d=64]",
+      "status": "PASS",
+      "detail": "tail radius in sigma at N: 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 (bound 1.0)",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "tail radius in sigma at N: 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 0.10@80 (bound 1.0)",
+      "blocking": true
+    },
+    {
+      "name": "G2 reference paths settled [C d=2 m=3]",
+      "status": "PASS",
+      "detail": "tail radius in sigma at N: 0.50@80 0.48@80 0.47@80 0.49@80 0.49@80 0.49@80 0.49@80 0.49@80 0.49@80 (bound 1.0)",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "tail radius in sigma at N: 0.50@80 0.48@80 0.47@80 0.49@80 0.49@80 0.49@80 0.49@80 0.49@80 0.49@80 (bound 1.0)",
+      "blocking": true
+    }
+  ],
+  "predicted_swap_m": {
+    "1.0": {
+      "swap": 49.30211927972189,
+      "status": "ok"
+    },
+    "3.0": {
+      "swap": 16.365946460355094,
+      "status": "ok"
+    },
+    "10.0": {
+      "swap": 5.090288577430167,
+      "status": "ok"
+    },
+    "30.0": {
+      "swap": 2.1762238967522314,
+      "status": "ok"
+    },
+    "100.0": {
+      "swap": 1.546689478553533,
+      "status": "ok"
+    },
+    "300.0": {
+      "swap": 1.4792768928991897,
+      "status": "ok"
+    }
+  },
+  "predicted_swap_C": {
+    "swap": 16.365946460355094,
+    "status": "ok",
+    "m": 3.0
+  },
+  "tie": {
+    "2": 1.4710595919724607,
+    "4": 2.0226969431476127,
+    "8": 2.844617231191778,
+    "16": 4.0415438578629015,
+    "32": 5.668721472402066,
+    "64": 8.074461479484109
+  },
+  "predicted_swap30": {
+    "2": 2.1762238967522314,
+    "4": 2.9282485034458654,
+    "8": 4.055710481197686,
+    "16": 5.60596750005102,
+    "32": 7.973137294855024,
+    "64": 11.07100985662373
+  },
+  "grid_B": {
+    "2": [
+      0.5440559741880578,
+      0.769411337386858,
+      1.0881119483761157,
+      1.538822674773716,
+      2.1762238967522314,
+      3.077645349547432,
+      4.352447793504463,
+      6.155290699094864,
+      8.704895587008926
+    ],
+    "4": [
+      0.7320621258614664,
+      1.0352921868929654,
+      1.4641242517229327,
+      2.070584373785931,
+      2.9282485034458654,
+      4.141168747571862,
+      5.856497006891731,
+      8.282337495143723,
+      11.712994013783462
+    ],
+    "8": [
+      1.0139276202994214,
+      1.4339101918921198,
+      2.027855240598843,
+      2.8678203837842395,
+      4.055710481197686,
+      5.735640767568479,
+      8.111420962395371,
+      11.471281535136958,
+      16.222841924790742
+    ],
+    "16": [
+      1.401491875012755,
+      1.982008817198737,
+      2.80298375002551,
+      3.964017634397474,
+      5.60596750005102,
+      7.928035268794948,
+      11.21193500010204,
+      15.856070537589895,
+      22.42387000020408
+    ],
+    "32": [
+      1.993284323713756,
+      2.8189297242616767,
+      3.986568647427512,
+      5.637859448523353,
+      7.973137294855024,
+      11.275718897046707,
+      15.946274589710049,
+      22.551437794093413,
+      31.892549179420097
+    ],
+    "64": [
+      2.7677524641559326,
+      3.9141930721008737,
+      5.535504928311865,
+      7.8283861442017475,
+      11.07100985662373,
+      15.656772288403495,
+      22.14201971324746,
+      31.31354457680699,
+      44.28403942649492
+    ]
+  },
+  "grid_C": [
+    4.091486615088773,
+    5.7862358613265314,
+    8.182973230177547,
+    11.572471722653063,
+    16.365946460355094,
+    23.144943445306126,
+    32.73189292071019,
+    46.28988689061225,
+    65.46378584142037
+  ],
+  "n_steps_B": {
+    "2": [
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80
+    ],
+    "4": [
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80
+    ],
+    "8": [
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80
+    ],
+    "16": [
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80
+    ],
+    "32": [
+      160,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80
+    ],
+    "64": [
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80,
+      80
+    ]
+  },
+  "n_steps_C": [
+    80,
+    80,
+    80,
+    80,
+    80,
+    80,
+    80,
+    80,
+    80
+  ],
+  "ratios": [
+    0.25,
+    0.3535533905932738,
+    0.5,
+    0.7071067811865476,
+    1.0,
+    1.4142135623730951,
+    2.0,
+    2.8284271247461903,
+    4.0
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "rows": [
+    {
+      "name": "G0a arms reproduce the harness [d=2]",
+      "status": "PASS",
+      "detail": "bound 1e-13 on max|x-y|/max|y| (A0); pw: scaled 2.08e-15, per vector 1.95e-15, per component 2.23e-15, min component/vector 4.8e-01; zo: scaled 1.51e-15, per vector 1.84e-15, per component 2.00e-15, min component/vector 7.1e-02",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "scored per component: pw 2.23e-15; zo 2.00e-15",
+      "blocking": true
+    },
+    {
+      "name": "G0b moving-mean closure gradient [d=2]",
+      "status": "PASS",
+      "detail": "bound 1e-13 on max|x-y|/max|y| (A0); grad: scaled 1.42e-15, per vector 1.90e-13, per component 1.01e-11, min component/vector 1.5e-03",
+      "status_as_registered": "FAIL",
+      "detail_as_registered": "scored per component: grad 1.01e-11",
+      "blocking": true
+    },
+    {
+      "name": "G0a arms reproduce the harness [d=4]",
+      "status": "PASS",
+      "detail": "bound 1e-13 on max|x-y|/max|y| (A0); pw: scaled 1.55e-15, per vector 1.63e-15, per component 1.57e-14, min component/vector 4.0e-02; zo: scaled 1.62e-15, per vector 2.98e-15, per component 2.59e-13, min component/vector 3.4e-03",
+      "status_as_registered": "FAIL",
+      "detail_as_registered": "scored per component: pw 1.57e-14; zo 2.59e-13",
+      "blocking": true
+    },
+    {
+      "name": "G0b moving-mean closure gradient [d=4]",
+      "status": "PASS",
+      "detail": "bound 1e-13 on max|x-y|/max|y| (A0); grad: scaled 1.57e-15, per vector 1.25e-14, per component 1.23e-10, min component/vector 2.4e-05",
+      "status_as_registered": "FAIL",
+      "detail_as_registered": "scored per component: grad 1.23e-10",
+      "blocking": true
+    },
+    {
+      "name": "G0a arms reproduce the harness [d=8]",
+      "status": "PASS",
+      "detail": "bound 1e-13 on max|x-y|/max|y| (A0); pw: scaled 2.37e-15, per vector 1.33e-15, per component 8.51e-15, min component/vector 6.3e-02; zo: scaled 1.68e-15, per vector 2.17e-15, per component 7.67e-13, min component/vector 3.6e-04",
+      "status_as_registered": "FAIL",
+      "detail_as_registered": "scored per component: pw 8.51e-15; zo 7.67e-13",
+      "blocking": true
+    },
+    {
+      "name": "G0b moving-mean closure gradient [d=8]",
+      "status": "PASS",
+      "detail": "bound 1e-13 on max|x-y|/max|y| (A0); grad: scaled 2.14e-15, per vector 1.10e-14, per component 8.25e-12, min component/vector 9.4e-05",
+      "status_as_registered": "FAIL",
+      "detail_as_registered": "scored per component: grad 8.25e-12",
+      "blocking": true
+    },
+    {
+      "name": "G0a arms reproduce the harness [d=16]",
+      "status": "PASS",
+      "detail": "bound 1e-13 on max|x-y|/max|y| (A0); pw: scaled 1.72e-15, per vector 1.10e-15, per component 1.70e-11, min component/vector 4.8e-06; zo: scaled 1.35e-15, per vector 1.71e-15, per component 2.22e-12, min component/vector 1.0e-04",
+      "status_as_registered": "FAIL",
+      "detail_as_registered": "scored per component: pw 1.70e-11; zo 2.22e-12",
+      "blocking": true
+    },
+    {
+      "name": "G0b moving-mean closure gradient [d=16]",
+      "status": "PASS",
+      "detail": "bound 1e-13 on max|x-y|/max|y| (A0); grad: scaled 1.89e-15, per vector 7.07e-15, per component 6.34e-12, min component/vector 5.7e-05",
+      "status_as_registered": "FAIL",
+      "detail_as_registered": "scored per component: grad 6.34e-12",
+      "blocking": true
+    },
+    {
+      "name": "G0a arms reproduce the harness [d=32]",
+      "status": "PASS",
+      "detail": "bound 1e-13 on max|x-y|/max|y| (A0); pw: scaled 5.68e-15, per vector 1.97e-15, per component 4.47e-12, min component/vector 2.8e-05; zo: scaled 2.70e-15, per vector 2.66e-15, per component 2.15e-12, min component/vector 1.8e-04",
+      "status_as_registered": "FAIL",
+      "detail_as_registered": "scored per component: pw 4.47e-12; zo 2.15e-12",
+      "blocking": true
+    },
+    {
+      "name": "G0b moving-mean closure gradient [d=32]",
+      "status": "PASS",
+      "detail": "bound 1e-13 on max|x-y|/max|y| (A0); grad: scaled 5.94e-15, per vector 4.60e-15, per component 2.67e-10, min component/vector 3.8e-06",
+      "status_as_registered": "FAIL",
+      "detail_as_registered": "scored per component: grad 2.67e-10",
+      "blocking": true
+    },
+    {
+      "name": "G0a arms reproduce the harness [d=64]",
+      "status": "PASS",
+      "detail": "bound 1e-13 on max|x-y|/max|y| (A0); pw: scaled 6.40e-15, per vector 2.58e-15, per component 4.01e-11, min component/vector 7.1e-06; zo: scaled 5.32e-15, per vector 3.31e-15, per component 4.25e-11, min component/vector 4.5e-06",
+      "status_as_registered": "FAIL",
+      "detail_as_registered": "scored per component: pw 4.01e-11; zo 4.25e-11",
+      "blocking": true
+    },
+    {
+      "name": "G0b moving-mean closure gradient [d=64]",
+      "status": "PASS",
+      "detail": "bound 1e-13 on max|x-y|/max|y| (A0); grad: scaled 5.68e-15, per vector 3.98e-15, per component 1.31e-09, min component/vector 1.5e-07",
+      "status_as_registered": "FAIL",
+      "detail_as_registered": "scored per component: grad 1.31e-09",
+      "blocking": true
+    },
+    {
+      "name": "G0c dimension refactor is a no-op at d = 2",
+      "status": "PASS",
+      "detail": "sigma and mu_0 match the artifacts: True; committed path arrays study_slow: bitwise True, max abs 0.0e+00; big_slow: bitwise True, max abs 0.0e+00; study_fast: bitwise True, max abs 0.0e+00; big_fast: bitwise True, max abs 0.0e+00",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "sigma and mu_0 match the artifacts: True; committed path arrays study_slow: bitwise True, max abs 0.0e+00; big_slow: bitwise True, max abs 0.0e+00; study_fast: bitwise True, max abs 0.0e+00; big_fast: bitwise True, max abs 0.0e+00",
+      "blocking": true
+    }
+  ],
+  "setups": {
+    "2": {
+      "state_index": 0,
+      "sigma": 0.13945420870161135,
+      "eps_study": 0.012041882384375365,
+      "target_dist": 1.3945420870161136
+    },
+    "4": {
+      "state_index": 0,
+      "sigma": 0.10773541739271472,
+      "eps_study": 0.002936550267550627,
+      "target_dist": 1.0773541739271473
+    },
+    "8": {
+      "state_index": 0,
+      "sigma": 0.05585919866788643,
+      "eps_study": 0.0015852882478336189,
+      "target_dist": 0.5585919866788643
+    },
+    "16": {
+      "state_index": 0,
+      "sigma": 0.1049621195850079,
+      "eps_study": 0.006896624847091349,
+      "target_dist": 1.049621195850079
+    },
+    "32": {
+      "state_index": 0,
+      "sigma": 0.09950334503834843,
+      "eps_study": 0.004914157163946112,
+      "target_dist": 0.9950334503834842
+    },
+    "64": {
+      "state_index": 0,
+      "sigma": 0.12484923430904324,
+      "eps_study": 0.006445088007106624,
+      "target_dist": 1.2484923430904324
+    }
+  }
+}

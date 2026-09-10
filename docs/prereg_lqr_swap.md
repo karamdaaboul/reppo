@@ -429,9 +429,87 @@ This is the second study in a row in which one met a near-zero denominator.
 
 ---
 
-### A1. The blind commit (to be appended after the gates and components stages)
+### A1. The blind commit (2026-09-10)
 
-To be filled, before any total-error sweep and before any path run, with: the predicted
-`swap(m)` at all six values of `m`; the error-only tie; the nine point grid for Graph C;
-the nine point grid at each of the six dimensions for Graph B; the setup values at every
-`d`; and the gate table.
+**Appended after the gates and components stages, and before any total-error sweep and
+any path run.** Nothing in this section is a measurement of the quantities the three
+graphs are about. Every number below comes from the component pass at `eps_study`, from
+which the cross term was excluded by construction.
+
+Run on the FZI workstation, CPU, float64. Gates 42 s, components 7 min 15 s.
+
+**Setups, one state per dimension.** State index 0 was accepted at the first index at
+every `d`.
+
+| `d` | state index | `\|\|a* - mu_0\|\|` | `sigma` | `eps_study` |
+|---|---|---|---|---|
+| 2 | 0 | 1.39454 | 0.139454 | 0.0120419 |
+| 4 | 0 | 1.07735 | 0.107735 | 0.00293655 |
+| 8 | 0 | 0.558592 | 0.0558592 | 0.00158529 |
+| 16 | 0 | 1.04962 | 0.104962 | 0.00689662 |
+| 32 | 0 | 0.995033 | 0.0995033 | 0.00491416 |
+| 64 | 0 | 1.24849 | 0.124849 | 0.00644509 |
+
+**Error-only tie, and the component-model swap at `m = 30`.** The tie is where
+`V_ZO^e = V_PW^e`. Both are extracted by the crossing rule of Section 4 and both were
+found interior to the grid at every `d`.
+
+| `d` | 2 | 4 | 8 | 16 | 32 | 64 |
+|---|---|---|---|---|---|---|
+| tie | 1.4711 | 2.0227 | 2.8446 | 4.0415 | 5.6687 | 8.0745 |
+| predicted swap at `m = 30` | 2.1762 | 2.9282 | 4.0557 | 5.6060 | 7.9731 | 11.0710 |
+| `sqrt(d M/(M-1))` | 1.4368 | 2.0320 | 2.8737 | 4.0640 | 5.7474 | 8.1280 |
+
+**Predicted swap against error size, at `d = 2`.** These are the six numbers Graph A is
+measured against.
+
+| `m` | 1 | 3 | 10 | 30 | 100 | 300 |
+|---|---|---|---|---|---|---|
+| predicted swap | 49.3021 | 16.3659 | 5.0903 | 2.1762 | 1.5467 | 1.4793 |
+
+**Graph B grids.** Nine points at each `d`, the ratios
+`0.25, 0.3536, 0.5, 0.7071, 1, 1.4142, 2, 2.8284, 4` times the predicted swap at `m = 30`
+for that `d`. `N` is 80 at every point except the lowest at `d = 32`, which took the
+registered single doubling to 160.
+
+| `d` | grid |
+|---|---|
+| 2 | 0.5441, 0.7694, 1.0881, 1.5388, 2.1762, 3.0776, 4.3524, 6.1553, 8.7049 |
+| 4 | 0.7321, 1.0353, 1.4641, 2.0706, 2.9282, 4.1412, 5.8565, 8.2823, 11.7130 |
+| 8 | 1.0139, 1.4339, 2.0279, 2.8678, 4.0557, 5.7356, 8.1114, 11.4713, 16.2228 |
+| 16 | 1.4015, 1.9820, 2.8030, 3.9640, 5.6060, 7.9280, 11.2119, 15.8561, 22.4239 |
+| 32 | 1.9933, 2.8189, 3.9866, 5.6379, 7.9731, 11.2757, 15.9463, 22.5514, 31.8925 |
+| 64 | 2.7678, 3.9142, 5.5355, 7.8284, 11.0710, 15.6568, 22.1420, 31.3135, 44.2840 |
+
+**Graph C grid.** The predicted swap at `d = 2` and `m = 3` is **16.3659**. The nine
+points are 4.0915, 5.7862, 8.1830, 11.5725, 16.3659, 23.1449, 32.7319, 46.2899, 65.4638.
+`N = 80` at every point. P3b is adjudicated at 8.1830, which is half the prediction, and
+at 32.7319, which is twice it.
+
+**Gate table.** All gates pass. G0a and G0b are scored under amendment A0.
+
+| gate | outcome |
+|---|---|
+| G0a, every `d` | PASS, 1.5e-15 to 6.4e-15 scored; 2.2e-15 to 4.2e-11 per component, which is the reading that failed as registered |
+| G0b, every `d` | PASS, 1.4e-15 to 5.9e-15 scored; 1.0e-11 to 1.3e-9 per component |
+| G0c | PASS, all four committed `d = 2` path panels reproduce bitwise, maximum absolute difference 0.0 |
+| G1, every `d`, three settings each | PASS, maximum absolute z 3.79 against the bound of 4 |
+| G2, all 63 grid points | PASS, tail radius 0.10 to 0.52 `sigma` against the bound of 1 |
+| G3 | PASS, `c* = 1.5218` against the published 1.522, relative deviation 1.1e-4 |
+
+**Two facts recorded now, before the measurement, because they are known now.**
+
+First, this study's error-only tie at `d = 2` is 1.4711. The path study's single-state
+value is 1.5387 and the crossover study's 32 state full-rank value is 1.522. The three
+estimate the same quantity by different routes: this one roots the ratio of two variances
+measured on a 41 point frequency grid at one fixed width, the path study rooted the
+harness kernel's error-only statistic collapsed over 53 level sets of `sigma*omega`, and
+the crossover study averaged 32 states. The spread is 4.4 per cent. It is descriptive
+and it gates nothing, and it is written down here rather than after the fact.
+
+Second, the predicted swaps sit above the path study's angular crossings by a nearly
+constant factor: 49.30 against 39.985 at `m = 1`, 5.09 against 4.1721 at `m = 10`, and
+2.18 against 1.9345 at `m = 30`, a ratio of 1.23, 1.22 and 1.13. The two are different
+metrics, a mean squared error against a mean angular error, so they need not agree. The
+bridge of Section 4 measures the angular crossing on this study's own draws so the
+comparison is like for like.
