@@ -465,10 +465,165 @@ Registered so the guards cannot be quietly dropped.
 experiment. Everything below is appended after the run it reports, and never edits
 anything above.**
 
-### A1 (to be appended after the calibration stage, before any path run)
+### A1. Calibration outcome (2026-09-10, before any path run)
 
-To be filled with: the chosen state index and its `||a* - mu_0||`; `sigma` and whether it
-is above 0.1; `eps_study`; the calibrated `r_tot(eps)` with its bootstrap interval for
-every `eps` tried; the resulting `eps_big`; the four panel values of `sigma*omega`, the
-four values of `omega`, and `omega_RMS/omega` at each; the error-only tie of gate G3 and
-its two parts; and the gate table.
+Run on the FZI workstation, `scripts/lqr_paths.py` sha256 `9334cfca...`, prereg
+`4606164`, CPU, float64. Stage wall times: gates 78 s, calibrate 12 s.
+
+**Setup as executed.** State index 0 of the 32 drawn, accepted on the first try.
+`||a* - mu_0|| = 1.394540`. `sigma = 0.1394540`, which is above the effective
+`min_std` of 0.1, so the panels sit inside the band the real policy can reach.
+`eps_study = 0.01204190`. System guards as published: `rho_closed = 0.5347`,
+`cond_H = 16.19`, zero rejections.
+
+**Calibrated total-error crossover.** Grid `sigma*omega` in
+`logspace(-1, 3, 41)`, `10^4` shared replicates, percentile bootstrap over replicates
+with 1000 resamples.
+
+| eps | value | `r_tot` | 95 % interval | `r_tot / 1.4368` |
+|---|---|---|---|---|
+| `eps_study` | 0.0120419 | 39.985 | [39.216, 40.564] | 27.8 |
+| 10 x | 0.120419 | 4.1721 | [4.1117, 4.2306] | 2.90 |
+| 30 x | 0.361256 | 1.9345 | [1.9133, 1.9570] | 1.35 |
+| 100 x | 1.20419 | 1.5509 | [1.5335, 1.5695] | 1.08 |
+
+`r_tot` falls as `1/eps` across the first three rows to within 4 per cent, which is the
+scaling the crossover study measured (`reports/lqr_crossover_corrected.md` Sec. 4). It
+saturates at 100 x, where the error already dominates and the crossover approaches the
+error-only tie from above.
+
+**`eps_big` by the registered rule.** The threshold is `1.5 x 1.4368 = 2.1553`. The 10 x
+candidate gives 4.1721 and does not qualify. The 30 x candidate gives 1.9345 and does.
+**`eps_big = 30 x eps_study = 0.361256`.**
+
+**Panels.**
+
+| panel | `eps` | `sigma*omega` | `omega` | `omega_RMS/omega` | `exp(-c^2/2)` | `N` |
+|---|---|---|---|---|---|---|
+| study_slow | 0.0120419 | 0.35921 | 2.5758 | 2.2776 | 9.375e-01 | 80 |
+| study_fast | 0.0120419 | 159.941 | 1146.909 | 1.0000 | 0 (underflow) | 80 |
+| big_slow | 0.361256 | 0.35921 | 2.5758 | 2.2776 | 9.375e-01 | 160 |
+| big_fast | 0.361256 | 7.73810 | 55.4886 | 1.0000 | 9.943e-14 | 80 |
+
+`N = 160` at big_slow is the registered single doubling of gate G2, which the panel
+needed and passed.
+
+**Two facts about these panels, recorded because they were assumed and are not true in
+general.** First, `omega_RMS` equals `omega` to four digits at both fast panels and is
+2.2776 times `omega` at the slow ones. The root-mean-square frequency approaches the
+nominal one only as `sigma*omega` grows, so at the slow panels the two conventions
+differ by a factor of 2.3. The dial remains the nominal `omega`, as registered. Second,
+at both fast panels the Gaussian blur factor `exp(-c^2/2)` is `1e-13` or smaller, and at
+study_fast it underflows to exactly zero. The blurred error gradient is therefore
+negligible or exactly absent from the estimand `g*` at the fast panels: the error field
+is invisible to the target and visible only to the estimators. That is the mechanism the
+figure is about, and it is stated here rather than discovered later.
+
+**Gate G3.** G3a, this state and these phases, error-only tie `c* = 1.5387` against the
+asymptote 1.4368, `|log ratio| = 0.0685` against the registered bound 0.4055: PASS.
+G3b, the study's full-rank `d = 2` arm rerun through `sweep.run_d` with tag
+`_paths_g3b`, `c* = 1.5218` against the published 1.522, relative deviation `1.1e-4`
+against the bound 0.02: PASS. The environment reproduces the study.
+
+---
+
+### A2. Three registered comparators that measure floating point, not the code
+
+**All four estimator-facing gates pass. Three comparator tolerances do not, and the
+reason in every case is cancellation inside the comparison rather than an error in the
+quantity under test.** The registered verdicts stand in the record and are reported as
+failures. The replacement criteria below are appended here, before any path run, with
+the measurement that motivates each. Nothing above the amendment line is altered.
+
+| gate | as registered | verdict as registered |
+|---|---|---|
+| G0a PW | max rel 2.370e-15, bound 1e-14 | PASS |
+| G0a ZO | max rel 2.017e-15, bound 1e-14 | PASS |
+| G0a ESTEP | max rel 1.166e-12, bound 1e-14 | **FAIL** |
+| G0b | max rel 1.415e-09 as registered, 5.481e-09 at `eps = 0`, bound 1e-12 | **FAIL** |
+| G0c smooth | max rel 7.025e-08, bound 1e-07 | PASS |
+| G0c error part, slow panels | rel 3.48e-15 and 4.24e-15, bound 1e-07 | PASS |
+| G0c error part, study_fast | blur underflows, closed form exactly zero | PASS |
+| G0c error part, big_fast | rel 1.53, bound 1e-07 | **FAIL** |
+| G1, all four panels and `eps = 0` | max abs z 1.73, bound 4 | PASS |
+| G2, all four panels | tail radius 0.100 to 0.936 sigma, bound 1 | PASS |
+
+**A2.1 G0a, the E-step arm.** The two routes feed the same closures the same draws and
+their critic values differ by at most `1.33e-15` in absolute value, which is float64
+rounding of two operation orders. That difference is amplified into the direction by the
+E-step and by nothing else. Measured amplification of a relative perturbation of the
+critic values into the returned direction, over 60 draws: pathwise **0.000**, which is
+exact because the pathwise operator never reads a critic value, only its gradient;
+zeroth order **1.41**; E-step **48.2**. At this state `eta = 0.1955` and
+`sd(q)/eta = 1.164`, so the softmax exponent multiplies any perturbation by about five
+before the weights are formed. The registered `1e-14` is below the conditioning of the
+operator and cannot be met by any implementation of it.
+
+Replacement, per arm: **`1e-14` for PW and ZO, `1e-11` for ESTEP.** The E-step bound is
+one order above the measured worst case of `1.166e-12` over 100 draws, which is itself
+consistent with 48 times a few times `1e-15`. Consequence, for scale: a relative
+direction error of `1.166e-12` moves a step of `0.2 sigma = 2.789e-02` by `3.3e-14` in
+action units.
+
+**A2.2 G0b, the moving-mean closure.** `lqr.q_pi` returns the full action value
+including the additive constant `gamma v/(1 - gamma)`, which is 2096.6 here out of a
+typical `|q_pi|` of 3573. The gate differences two such numbers, so it loses about eight
+digits before the comparison starts. The signature is decisive: the ABSOLUTE deviation
+is flat while the differenced quantity varies over four orders of magnitude, and it
+tracks the machine floor, while the RELATIVE deviation falls as `1/|delta|`.
+
+| draw scale | max abs deviation | max rel deviation | min `\|delta\|` | max `\|q_pi\|` | floor `eps_mach x alpha_Q x \|q_pi\|` |
+|---|---|---|---|---|---|
+| 0.01 | 3.698e-14 | 1.271e-08 | 4.279e-07 | 3575 | 3.034e-14 |
+| 0.1 | 4.735e-14 | 6.882e-10 | 2.931e-05 | 3576 | 3.036e-14 |
+| 1 | 3.823e-14 | 2.869e-11 | 4.130e-04 | 3593 | 3.050e-14 |
+| 10 | 4.441e-14 | 5.170e-11 | 3.283e-04 | 4514 | 3.831e-14 |
+| 100 | 9.095e-13 | 4.116e-13 | 3.790e-02 | 6.046e+04 | 5.132e-13 |
+
+An error in the closure's algebra would scale with `|delta|` and leave the relative
+deviation flat. The opposite is observed at every scale.
+
+Replacement: **the absolute deviation must sit at the cancellation floor of the
+comparison, `|delta_closure - delta_exact| <= 10 x eps_mach x alpha_Q x max|q_pi|`.**
+As executed over the gate's own draws: maximum absolute deviation `4.241e-14`, criterion
+`3.070e-13` with `max|q_pi| = 3617.35`, so the deviation is 1.38 times the bare floor
+`eps_mach x alpha_Q x max|q_pi| = 3.070e-14` and well inside the criterion. The table
+above is the separate diagnostic that varies the draw scale; its worst case is selected
+differently and its floor is quoted without the factor of ten.
+
+**A2.3 G0c, the blurred error gradient at high frequency.** The closed form carries the
+factor `exp(-c^2/2)`, so at the fast panels the quantity being checked is `1e-13` of the
+integrand it is computed from. A Gauss-Hermite estimate in float64 cannot resolve that.
+
+| panel | `c` | `exp(-c^2/2)` | `\|closed\|` | `\|quad_400\|` | `\|quad_400 - closed\|` | quadrature's own resolution |
+|---|---|---|---|---|---|---|
+| study_slow | 0.359 | 9.375e-01 | 1.494e-02 | 1.494e-02 | 5.20e-17 | 5.03e-17 |
+| big_slow | 0.359 | 9.375e-01 | 4.482e-01 | 4.482e-01 | 1.33e-15 | 1.67e-15 |
+| big_fast | 7.738 | 9.943e-14 | 1.364e-12 | 1.475e-12 | 1.11e-13 | 1.01e-13 |
+| study_fast | 159.9 | 0 | 0 | 8.302e+00 | 8.302e+00 | 8.302e+00 |
+
+The last column is the change in the quadrature between 200 and 400 nodes per axis, that
+is, the comparator's own uncertainty. At big_fast the closed form sits inside it. At
+study_fast the comparator returns 8.302 for a quantity whose true value is zero, so it
+carries no information at all.
+
+The phrase "relative deviation" admits two readings and the gate records both. Per
+component, which is the stricter and is what the registered verdict is adjudicated on:
+`3.48e-15` at study_slow, `4.24e-15` at big_slow, `1.53` at big_fast. Against the vector
+magnitude: `3.48e-15`, `2.97e-15`, `8.10e-02`. Both readings fail at big_fast and both
+pass at the slow panels, so the verdict does not turn on the choice.
+
+Replacement: **the closed form must agree with the quadrature to the quadrature's own
+demonstrated resolution**, that is
+`|quad_400 - closed| <= max(1e-7 x |closed|, 2 x |quad_400 - quad_200|)`, and where the
+blur factor underflows to zero the comparator is retired and the closed form is required
+to be exactly zero. This is the same move the crossover study made: its gate G5a checks
+this closed form relatively up to `c = 3` and switches to an absolute bound at `c = 6`
+(`docs/prereg_lqr_crossover.md` Sec. 8). The closed form's only dependence on `c` is the
+scalar `exp(-c^2/2)`, and it is verified here to `3.5e-15` and `4.2e-15` relative at the
+two slow panels.
+
+**What is not amended.** G1 and G2 are the gates that test the estimators and the
+reference path rather than a comparator. They pass at every panel as registered, and no
+tolerance of theirs is touched. The three replacements above change no panel, no seed,
+no metric and no prediction.
