@@ -177,6 +177,7 @@ def record_env(out_dir: str, stage: str, seconds: float, extra: dict | None = No
 @dataclasses.dataclass(frozen=True)
 class Setup:
     sys_: object
+    d: int                   # action dimension of this setup
     idx: int                 # state index actually used
     s: np.ndarray            # (n,) the state, unnormalised
     ss: np.ndarray           # (n,) alpha_s * s, the normalised state
@@ -193,17 +194,22 @@ class Setup:
     target_dist: float
 
 
-def setup() -> Setup:
+def setup(d: int = D) -> Setup:
     """The system, the state, the start point and the width, exactly as registered.
+
+    `d` defaults to this module's `D = 2`, so every call the path study made returns
+    what it returned before. The parameter exists for docs/prereg_lqr_swap.md, whose
+    Graph B walks the same construction up the dimension ladder. Gate G0c there is the
+    bitwise regression check on that claim.
 
     ONE random stream, consumed in the study's order: states first, then the phases.
     That is what makes the state and the phases here the first state and phases of the
     study's published full-rank d = 2 arm rather than a fresh draw.
     """
-    sys_ = lqr.build_system(D, seed=SEED_ROOT + D)
-    rng = np.random.default_rng(SEED_ROOT + 2000 + D)
+    sys_ = lqr.build_system(d, seed=SEED_ROOT + d)
+    rng = np.random.default_rng(SEED_ROOT + 2000 + d)
     states = lqr.sample_states(sys_, rng, N_STATES)
-    pe_all = EF.draw_error(rng, N_STATES, D, kind="full", omega=1.0)
+    pe_all = EF.draw_error(rng, N_STATES, d, kind="full", omega=1.0)
 
     Hn, g_all, mu_all = lqr.q_coeffs(sys_, states)
     idx, step_vec = None, None
@@ -231,7 +237,8 @@ def setup() -> Setup:
     pe = EF.PlantedError(kind=pe_all.kind, rank=int(pe_all.rank), omega=1.0,
                          V=pe_all.V[idx:idx + 1].copy(),
                          phi=pe_all.phi[idx:idx + 1].copy())
-    return Setup(sys_=sys_, idx=idx, s=s, ss=ss, mu0=mu0, a_star=a_star, sigma=sigma,
+    return Setup(sys_=sys_, d=d, idx=idx, s=s, ss=ss, mu0=mu0, a_star=a_star,
+                 sigma=sigma,
                  eps_study=eps_study, Hn=Hn, g_mu=g_all[idx], bvec=bvec,
                  alpha_Q=aQ, alpha_s=aS, pe=pe, target_dist=dist)
 
@@ -292,7 +299,7 @@ def make_runner(su: Setup, arm: str, omega: float, eps: float, n_steps: int):
 
     Returns a function of the seed indices giving (mus, ghats) with the seed axis first.
     """
-    base = jax.random.PRNGKey(SEED_ROOT + 8000 + D)
+    base = jax.random.PRNGKey(SEED_ROOT + 8000 + su.d)
     mu0_j = jnp.asarray(su.mu0)
     sg = su.sigma
 
@@ -300,7 +307,7 @@ def make_runner(su: Setup, arm: str, omega: float, eps: float, n_steps: int):
         key0 = jax.random.fold_in(base, seed)
 
         def body(m, t):
-            u = jax.random.normal(jax.random.fold_in(key0, t), (M, D))
+            u = jax.random.normal(jax.random.fold_in(key0, t), (M, su.d))
             q_of_u = make_q_of_u(su, m, omega, eps)
             gh = _unit(arm_direction(arm, q_of_u, u, sg, axis=0))
             m_next = m + STEP_FRAC * sg * gh
@@ -327,7 +334,7 @@ def g_star_np(su: Setup, m: np.ndarray, omega: float, eps: float) -> np.ndarray:
 def reference_path(su: Setup, omega: float, eps: float, n_steps: int) -> np.ndarray:
     """The noise-free path. numpy, one per panel, never inside a jit."""
     m = np.array(su.mu0, dtype=float)
-    out = np.empty((n_steps, D))
+    out = np.empty((n_steps, su.d))
     for t in range(n_steps):
         g = g_star_np(su, m, omega, eps)
         m = m + STEP_FRAC * su.sigma * g / max(float(np.linalg.norm(g)), 1e-300)
@@ -342,8 +349,8 @@ def cal_block(su: Setup) -> jax.Array:
     Sharing it is what makes the calibration paired across arms, across grid points and
     across eps, so a difference between two curves is not replicate noise.
     """
-    return jax.random.normal(jax.random.PRNGKey(SEED_ROOT + 7000 + D),
-                             (CAL_REPS, M, D))
+    return jax.random.normal(jax.random.PRNGKey(SEED_ROOT + 7000 + su.d),
+                             (CAL_REPS, M, su.d))
 
 
 def one_step_cos(su: Setup, u, omega: float, eps: float) -> dict:

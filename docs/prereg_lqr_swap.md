@@ -374,6 +374,61 @@ repository `.venv`.
 experiment. Everything below is appended after the stage it reports, and never edits
 anything above.**
 
+### A0. The equivalence gates name their denominator (2026-09-10)
+
+**Decided by Karam before any outcome data of this experiment existed.** The gates stage
+had run. The components stage had not, so no prediction, no sweep and no path existed
+when this was written.
+
+**What failed, as registered.** `G0a` passed at `d = 2` and failed at every larger `d`.
+`G0b` failed at every `d`. The registered sentence asks the arms to reproduce the harness
+"to a maximum relative deviation of `1e-13`" and does not say relative to what. Scored
+against each component, the worst values were:
+
+| gate | d = 2 | 4 | 8 | 16 | 32 | 64 |
+|---|---|---|---|---|---|---|
+| G0a | 2.2e-15 | 2.6e-13 | 7.7e-13 | 1.7e-11 | 4.5e-12 | 4.2e-11 |
+| G0b | 1.0e-11 | 1.2e-10 | 8.3e-12 | 6.3e-12 | 2.7e-10 | 1.3e-9 |
+
+**What the measurement shows.** The deviation itself is flat in `d` and sits at float64
+rounding. What grows is the denominator's collapse toward zero.
+
+| quantity | G0a `d = 2` ZO | G0a `d = 64` PW | G0b `d = 2` | G0b `d = 64` |
+|---|---|---|---|---|
+| max absolute deviation | 4.4e-15 | 2.2e-15 | 4.4e-16 | 3.9e-16 |
+| divided by the vector norm | 1.8e-15 | 2.6e-15 | 1.9e-13 | 4.0e-15 |
+| divided by the component | 2.0e-15 | 4.0e-11 | 1.0e-11 | 1.3e-9 |
+| smallest component over vector | 7.1e-2 | 7.1e-6 | 1.5e-3 | 1.5e-7 |
+
+The componentwise ratio tracks one over the smallest component. At `d = 64` one
+coordinate of the harness's own output is `7e-6` of the vector, so a `2e-15` rounding
+difference reads as `4e-11`. The vector-norm denominator fails as well, at `d = 2`, where
+one draw produces a near-zero gradient vector. Both denominators measure how close
+something is to zero. Neither measures whether the code reproduces the harness.
+
+**The decision.** The tolerance stays at `1e-13`. Each equivalence gate is scored as
+`max|x - y| / max|y|`, both maxima taken over that gate's own test set, so no single
+near-zero item can inflate it. All three denominators are printed and stored for every
+gate. The registered failure stays visible in the gate table and in the opening lines of
+`reports/lqr_swap.md`. Under the scored reading the measured values are `1.4e-15` to
+`6.4e-15` at every `d` for both gates, which is 15 to 75 times inside the bound.
+
+**Two gate-code crash fixes, listed here because they are changes to this experiment's
+code and not to any criterion.** First, `lqr_paths.make_runner` returns a pair, and `G0c`
+compared the pair rather than its first element, which produced a spurious deviation of
+12 in action units. Second, `G0c` compared `sigma` against a literal transcribed to seven
+digits at a tolerance of `1e-6`, which the true value `0.13945420870161135` fails by
+`1.5e-6`. The gate now compares bitwise against the values stored in the committed path
+artifacts, which is the correct reference. With both fixed, `G0c` passes: all four
+committed `d = 2` panels reproduce bitwise, maximum absolute difference `0.0`.
+
+**A convention for every future preregistration in this project.** An equivalence gate
+must name its denominator, and that denominator must be scaled to the largest value in
+the gate's test set. A relative tolerance with an unnamed denominator is not a criterion.
+This is the second study in a row in which one met a near-zero denominator.
+
+---
+
 ### A1. The blind commit (to be appended after the gates and components stages)
 
 To be filled, before any total-error sweep and before any path run, with: the predicted
