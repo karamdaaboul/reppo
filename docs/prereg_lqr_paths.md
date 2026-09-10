@@ -627,3 +627,14 @@ two slow panels.
 reference path rather than a comparator. They pass at every panel as registered, and no
 tolerance of theirs is touched. The three replacements above change no panel, no seed,
 no metric and no prediction.
+
+---
+
+### A3. One correction of fact (2026-09-10)
+
+Section 9 states that committing the figures needs `git add -f` because the pattern
+`figures/` at `.gitignore:207` matches `reports/figures/`. That is wrong.
+`.gitignore:226` and `:227` carry `!reports/figures/` and `!reports/figures/**`, which
+re-include the directory and its contents, added precisely because published figures had
+been force-added one at a time and two were silently lost. The four figures are ordinary
+untracked files and are committed normally. Nothing else in Section 9 is affected.

@@ -1,0 +1,149 @@
+{
+  "rows": [
+    {
+      "name": "G0a arms reproduce the harness composition",
+      "status": "PASS",
+      "detail": "per arm pw 2.37e-15, zo 2.02e-15, estep 1.17e-12; bounds PW/ZO 1e-14, ESTEP 1e-11 (A2.1); bitwise identical 0/300 outputs",
+      "status_as_registered": "FAIL",
+      "detail_as_registered": "max rel 1.166e-12 against one bound 1e-14",
+      "blocking": true
+    },
+    {
+      "name": "G0b moving-mean closure vs lqr.q_pi",
+      "status": "PASS",
+      "detail": "max abs dev 4.241e-14 against the cancellation floor 3.070e-13 (10 eps_mach alpha_Q max|q_pi|, max|q_pi| = 3617.35) (A2.2)",
+      "status_as_registered": "FAIL",
+      "detail_as_registered": "max rel 1.415e-09 with e_value on both sides, 5.481e-09 at eps = 0; bound 1e-12",
+      "blocking": true
+    },
+    {
+      "name": "G0c smooth target vs central differences of lqr.q_pi",
+      "status": "PASS",
+      "detail": "max rel 7.025e-08 (bound 1e-07) over 10 means",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "max rel 7.025e-08 (bound 1e-07) over 10 means",
+      "blocking": true
+    },
+    {
+      "name": "G0c blurred error gradient vs quadrature",
+      "status": "PASS",
+      "detail": "study_slow: c=0.359, abs dev 5.20e-17 against quadrature resolution 5.03e-17; study_fast: c=160, blur underflows, closed form exactly zero: True; big_slow: c=0.359, abs dev 1.33e-15 against quadrature resolution 1.67e-15; big_fast: c=7.74, abs dev 1.10e-13 against quadrature resolution 1.01e-13 (A2.3, bound max(1e-07 rel, 2 x resolution))",
+      "status_as_registered": "FAIL",
+      "detail_as_registered": "study_slow: c=0.359, rel 3.48e-15 componentwise / 3.48e-15 on the vector, self-convergence 3.37e-15; study_fast: c=160, blur underflows, closed form exactly zero: True; big_slow: c=0.359, rel 4.24e-15 componentwise / 2.97e-15 on the vector, self-convergence 7.96e-15; big_fast: c=7.74, rel 1.53e+00 componentwise / 8.10e-02 on the vector, self-convergence 2.71e+00 (bound 1e-07)",
+      "blocking": true
+    },
+    {
+      "name": "G1 estimator means at mu_0",
+      "status": "PASS",
+      "detail": "bound 4 SE over 10000 replicates; eps=0: max|z| PW 1.40 ZO 0.93; study_slow: max|z| PW 1.40 ZO 0.94; study_fast: max|z| PW 1.59 ZO 0.92; big_slow: max|z| PW 1.33 ZO 1.02; big_fast: max|z| PW 0.97 ZO 1.73",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "bound 4 SE over 10000 replicates; eps=0: max|z| PW 1.40 ZO 0.93; study_slow: max|z| PW 1.40 ZO 0.94; study_fast: max|z| PW 1.59 ZO 0.92; big_slow: max|z| PW 1.33 ZO 1.02; big_fast: max|z| PW 0.97 ZO 1.73",
+      "blocking": true
+    },
+    {
+      "name": "G2 reference path settled [study_slow]",
+      "status": "PASS",
+      "detail": "tail radius 0.936 sigma at N = 80 (bound 1.0)",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "tail radius 0.936 sigma at N = 80 (bound 1.0)",
+      "blocking": true
+    },
+    {
+      "name": "G2 reference path settled [study_fast]",
+      "status": "PASS",
+      "detail": "tail radius 0.495 sigma at N = 80 (bound 1.0)",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "tail radius 0.495 sigma at N = 80 (bound 1.0)",
+      "blocking": true
+    },
+    {
+      "name": "G2 reference path settled [big_slow]",
+      "status": "PASS",
+      "detail": "tail radius 0.100 sigma at N = 160 (bound 1.0)",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "tail radius 0.100 sigma at N = 160 (bound 1.0)",
+      "blocking": true
+    },
+    {
+      "name": "G2 reference path settled [big_fast]",
+      "status": "PASS",
+      "detail": "tail radius 0.454 sigma at N = 80 (bound 1.0)",
+      "status_as_registered": "PASS",
+      "detail_as_registered": "tail radius 0.454 sigma at N = 80 (bound 1.0)",
+      "blocking": true
+    }
+  ],
+  "tie_asymptote": 1.4368424162141993,
+  "panels": [
+    {
+      "name": "study_slow",
+      "eps_key": "study",
+      "label": "study",
+      "regime": "slow",
+      "eps": 0.012041882384375365,
+      "c": 0.3592106040535498,
+      "omega": 2.5758319336359996,
+      "omega_rms_over_omega": 2.2775823943036837,
+      "omega_inf_conventions": {
+        "2/inf": 1.8213882274708721,
+        "inf/inf": 1.2879159668179996,
+        "2/rms": 12.638575408360143,
+        "inf/rms": 8.936822375788994
+      },
+      "n_steps": 80
+    },
+    {
+      "name": "study_fast",
+      "eps_key": "study",
+      "label": "study",
+      "regime": "fast",
+      "eps": 0.012041882384375365,
+      "c": 159.9413415508972,
+      "omega": 1146.9093908318102,
+      "omega_rms_over_omega": 1.0,
+      "omega_inf_conventions": {
+        "2/inf": 810.9874076637053,
+        "inf/inf": 573.454695415905,
+        "2/rms": 1621.9748153274106,
+        "inf/rms": 1146.90939083181
+      },
+      "n_steps": 80
+    },
+    {
+      "name": "big_slow",
+      "eps_key": "x30",
+      "label": "big",
+      "regime": "slow",
+      "eps": 0.36125647153126095,
+      "c": 0.3592106040535498,
+      "omega": 2.5758319336359996,
+      "omega_rms_over_omega": 2.2775823943036837,
+      "omega_inf_conventions": {
+        "2/inf": 1.8213882274708721,
+        "inf/inf": 1.2879159668179996,
+        "2/rms": 12.638575408360143,
+        "inf/rms": 8.936822375788994
+      },
+      "n_steps": 160
+    },
+    {
+      "name": "big_fast",
+      "eps_key": "x30",
+      "label": "big",
+      "regime": "fast",
+      "eps": 0.36125647153126095,
+      "c": 7.738123490432311,
+      "omega": 55.48863359864233,
+      "omega_rms_over_omega": 1.0,
+      "omega_inf_conventions": {
+        "2/inf": 39.23638909637569,
+        "inf/inf": 27.74431679932116,
+        "2/rms": 78.47277819275138,
+        "inf/rms": 55.48863359864232
+      },
+      "n_steps": 80
+    }
+  ],
+  "c_state": null,
+  "c_published": null
+}

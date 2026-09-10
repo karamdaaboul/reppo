@@ -1,0 +1,56 @@
+{
+  "rows": [
+    {
+      "name": "G0a arms reproduce the harness composition",
+      "status": "FAIL",
+      "detail": "max rel 1.166e-12 (bound 1e-14); per arm pw 2.37e-15, zo 2.02e-15, estep 1.17e-12; bitwise identical 0/300 outputs",
+      "blocking": true
+    },
+    {
+      "name": "G0b moving-mean closure vs lqr.q_pi",
+      "status": "FAIL",
+      "detail": "max rel 1.415e-09 as registered (with e_value on both sides), 5.481e-09 with eps = 0 (smooth part alone); bound 1e-12",
+      "blocking": true
+    },
+    {
+      "name": "G0c smooth target vs central differences of lqr.q_pi",
+      "status": "PASS",
+      "detail": "max rel 7.025e-08 (bound 1e-07) over 10 means",
+      "blocking": true
+    },
+    {
+      "name": "G0c blurred error gradient vs quadrature",
+      "status": "DEFER",
+      "detail": "needs the calibrated panels",
+      "blocking": true
+    },
+    {
+      "name": "G1 estimator means at mu_0 (panel frequencies)",
+      "status": "DEFER",
+      "detail": "needs the calibrated panels",
+      "blocking": true
+    },
+    {
+      "name": "G1 estimator means at mu_0 (eps = 0)",
+      "status": "PASS",
+      "detail": "bound 4 SE over 10000 replicates; eps=0: max|z| PW 1.40 ZO 0.93",
+      "blocking": true
+    },
+    {
+      "name": "G3a error-only tie at this state",
+      "status": "PASS",
+      "detail": "c* = 1.5387 against the asymptote 1.4368; |log ratio| 0.0685 (bound 0.4055)",
+      "blocking": true
+    },
+    {
+      "name": "G3b reproduces the published full-rank d = 2 c*",
+      "status": "PASS",
+      "detail": "c* = 1.5218 against the published 1.522; rel 0.0001 (bound 0.02)",
+      "blocking": true
+    }
+  ],
+  "tie_asymptote": 1.4368424162141993,
+  "panels": null,
+  "c_state": 1.538687862124236,
+  "c_published": 1.5218456996963126
+}
