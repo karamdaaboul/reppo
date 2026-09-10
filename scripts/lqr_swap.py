@@ -695,6 +695,132 @@ def _analyse(out_dir: str):
                 C=dict(xs=JC["xs"].tolist(), rho=rhoC.tolist(), ci=ciC))
 
 
+def stage_diag(out_dir: str):
+    """Two diagnostics asked for after the blind commit. Neither changes a criterion.
+
+    First, the structure of G1's z-scores by dimension and arm. The gate is a maximum
+    over many coordinates, so a value near its bound of four is what a maximum of that
+    many standard normals does on its own. The mean of z^2 is the calibration statistic
+    that a maximum cannot give: it is 1 when the arm is unbiased and the standard error
+    is right, whatever the number of coordinates.
+
+    Second, an attribution of the 4.4 per cent gap between this study's error-only tie
+    at d = 2 and the path study's. The registered tie stays 1.4711; nothing here
+    replaces it.
+    """
+    out = {"g1": [], "tie": {}}
+    print("G1 z-scores by dimension and arm. mean z^2 is 1 under the null.")
+    print(f"{'d':>3} {'reps':>6} {'arm':>4} {'max|z|':>7} {'at':>22} {'mean z^2':>9} "
+          f"{'n':>5}")
+    for d in DS:
+        su = setup_d(d)
+        key, _ = block(su, 10000)
+        tie = json.load(open(os.path.join(out_dir, "components.json")))["tie"][str(d)]
+        sw = json.load(open(os.path.join(out_dir, "components.json"))
+                       )["predicted_swap30"][str(d)]
+        cfgs = [("eps=0", None, 0.0), (f"tie={tie:.3f}", tie, M_B * su.eps_study),
+                (f"swap30={sw:.3f}", sw, M_B * su.eps_study)]
+        for reps, tag in ((4000, "4000"), (REPS, "10000")):
+            for a in ARMS:
+                zs, where = [], None
+                best = -1.0
+                for nm, x, eps in cfgs:
+                    om = 1.0 if x is None else float(x) / su.sigma
+                    tgt = LP.g_lin_np(su, su.mu0)
+                    if x is not None:
+                        tgt = tgt + EF.blurred_e_grad(
+                            LP.at_omega(su, om), eps, su.mu0[None, :], su.sigma)[0]
+                    acc = []
+                    for i0, n in _chunks(reps, CHUNK):
+                        u = jax.random.normal(
+                            jax.random.fold_in(key, 900000 + i0), (n, M, su.d))
+                        o = E.both_from_shared_u(
+                            LP.make_q_of_u(su, jnp.asarray(su.mu0), om, eps), u,
+                            su.sigma, axis=1)
+                        acc.append(np.asarray(o["g_pw" if a == "pw" else "g_zo"]))
+                    g = np.concatenate(acc)
+                    sem = g.std(0, ddof=1) / np.sqrt(len(g))
+                    z = (g.mean(0) - tgt) / np.maximum(sem, 1e-300)
+                    zs.append(z)
+                    if np.abs(z).max() > best:
+                        best = float(np.abs(z).max())
+                        where = f"{nm} coord {int(np.argmax(np.abs(z)))}"
+                z = np.concatenate(zs)
+                row = dict(d=d, reps=reps, arm=a, max_abs_z=float(np.abs(z).max()),
+                           at=where, mean_z2=float((z ** 2).mean()), n=int(z.size))
+                out["g1"].append(row)
+                print(f"{d:>3} {tag:>6} {a:>4} {row['max_abs_z']:7.2f} {where:>22} "
+                      f"{row['mean_z2']:9.3f} {row['n']:5d}", flush=True)
+
+    # ---- the tie at d = 2, by four routes plus a Monte Carlo interval
+    su = setup_d(2)
+    comp = json.load(open(os.path.join(out_dir, "components_full.json")))["2"]
+    Ve = np.asarray(comp["V_e"])
+    r1 = swap_from(np.asarray(comp["grid"]), Ve[:, 1] - Ve[:, 0])[0]
+
+    fine = np.logspace(-1.0, 3.0, 161)
+    key, _ = block(su, 10000)
+    acc = np.zeros((len(fine), 2))
+    per = np.zeros((REPS, len(fine)))
+    tgt_e = np.stack([EF.blurred_e_grad(LP.at_omega(su, float(x) / su.sigma),
+                                        su.eps_study, su.mu0[None, :], su.sigma)[0]
+                      for x in fine])
+    for i0, n in _chunks(REPS, CHUNK):
+        u = jax.random.normal(jax.random.fold_in(key, i0), (n, M, su.d))
+        o0 = E.both_from_shared_u(
+            LP.make_q_of_u(su, jnp.asarray(su.mu0), 1.0, 0.0), u, su.sigma, axis=1)
+        for k, x in enumerate(fine):
+            o1 = E.both_from_shared_u(
+                LP.make_q_of_u(su, jnp.asarray(su.mu0), float(x) / su.sigma,
+                               su.eps_study), u, su.sigma, axis=1)
+            dd = []
+            for j, a in enumerate(ARMS):
+                ge = (np.asarray(o1["g_pw" if a == "pw" else "g_zo"])
+                      - np.asarray(o0["g_pw" if a == "pw" else "g_zo"]))
+                De = ge - tgt_e[k][None, :]
+                se = (De ** 2).sum(-1)
+                acc[k, j] += float(se.sum())
+                dd.append(se)
+            per[i0:i0 + n, k] = dd[1] - dd[0]
+    acc /= REPS
+    r2 = swap_from(fine, acc[:, 1] - acc[:, 0])[0]
+    rng = np.random.default_rng(BOOT_SEED)
+    bs = []
+    for _ in range(1000):
+        i = rng.integers(0, REPS, REPS)
+        bs.append(swap_from(fine, per[i].mean(0))[0])
+    bs = np.array(bs)
+    bs = bs[np.isfinite(bs)]
+
+    # the path study's route: the harness kernel at this state, collapsed onto c
+    kernel = jax.jit(SW.make_kernel(2, M, su.pe.rank), static_argnames=("R", "n_batch"))
+    vtmu = np.einsum("srd,sd->sr", su.pe.V, su.mu0[None, :])
+    ko = kernel(jax.random.fold_in(jax.random.PRNGKey(SEED_ROOT + 3000 + 2), su.idx),
+                jnp.asarray(su.Hn), jnp.asarray(su.g_mu), jnp.asarray(su.pe.V[0]),
+                jnp.asarray(vtmu[0]), jnp.asarray(su.pe.phi[0]),
+                jnp.asarray(SW.SIGMAS), jnp.asarray(SW.OMEGAS), R=250, n_batch=40)
+    z = {"sigmas": SW.SIGMAS, "omegas": SW.OMEGAS,
+         "s3_pw": np.asarray(ko["s3_pw"])[None], "s3_zo": np.asarray(ko["s3_zo"])[None]}
+    r3 = A.crossover_by_c(z)[0]
+    # the same kernel data, one sigma column, rooted in omega
+    col = int(np.argmin(np.abs(np.log(SW.SIGMAS / su.sigma))))
+    r4 = float(SW.SIGMAS[col]) * A.solve_crossover(
+        np.log(SW.OMEGAS),
+        (np.log(z["s3_zo"].mean(1)) - np.log(z["s3_pw"].mean(1)))[0, col])[0]
+    out["tie"] = dict(
+        registered_41=float(r1), fine_161=float(r2),
+        boot_ci=[float(np.percentile(bs, 2.5)), float(np.percentile(bs, 97.5))],
+        kernel_collapsed=float(r3), kernel_one_column=float(r4),
+        kernel_column_sigma=float(SW.SIGMAS[col]), sigma=su.sigma,
+        path_study_g3a=PATH_STUDY_TIE_D2)
+    print("\nError-only tie at d = 2, by route:")
+    for k, v in out["tie"].items():
+        print(f"  {k:>20}: {v}")
+    with open(os.path.join(out_dir, "diag.json"), "w") as f:
+        json.dump(out, f, indent=2, default=float)
+    return out
+
+
 def stage_report(out_dir: str):
     with open(os.path.join(out_dir, "components.json")) as f:
         comp = json.load(f)
@@ -779,7 +905,8 @@ def stage_figures(out_dir: str):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage", required=True,
-                    choices=("gates", "components", "measure", "figures", "report"))
+                    choices=("gates", "components", "measure", "diag", "figures",
+                             "report"))
     ap.add_argument("--out", default=os.path.join(REPO_ROOT, "results", "lqr_swap"))
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
@@ -791,6 +918,8 @@ def main():
         ok = stage_components(a.out)
     elif a.stage == "measure":
         stage_measure(a.out)
+    elif a.stage == "diag":
+        stage_diag(a.out)
     elif a.stage == "figures":
         stage_figures(a.out)
     elif a.stage == "report":
