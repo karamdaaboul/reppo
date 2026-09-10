@@ -1,0 +1,56 @@
+{
+ "script_sha256": "c6ac4d3214d5036206773df312f690810e68d270b8602f238432037b326d2ce2",
+ "banks": {
+  "walker": {
+   "path": "reports/artifacts/walker_onpolicy_bank_eps01.npz",
+   "sha256": "1a75ded98279fc3e8e0e12aa953697e05c51733b00650583635a35337a9f0f32",
+   "n_states": 1536,
+   "arm": "WML_eps01",
+   "depths": [
+    50,
+    150,
+    300,
+    500,
+    700,
+    900
+   ],
+   "n_env": 32,
+   "root": 20260909,
+   "keying": "sha256-deterministic"
+  },
+  "g1": {
+   "path": "reports/artifacts/g1_onpolicy_bank_eps01.npz",
+   "sha256": "cc9bf47507230c43be983c7b1d7fa1b70b459ed561ecd5766bf5fda78cff2d5d",
+   "n_states": 1536,
+   "arm": "WML_eps01",
+   "depths": [
+    50,
+    150,
+    300,
+    500,
+    700,
+    900
+   ],
+   "n_env": 32,
+   "root": 20260909,
+   "keying": "sha256-deterministic"
+  },
+  "leap": {
+   "path": "reports/artifacts/leap_onpolicy_bank_eps01.npz",
+   "sha256": "6cbabb6b2b44314b9ca42baec84db3f30ddf333e3d8a9eed627a1cad5a1bb9b6",
+   "n_states": 1536,
+   "arm": "WML_eps01",
+   "depths": [
+    50,
+    100,
+    200,
+    300,
+    400,
+    480
+   ],
+   "n_env": 32,
+   "root": 20260909,
+   "keying": "sha256-deterministic"
+  }
+ }
+}
