@@ -1,0 +1,97 @@
+{
+ "rng_seed": 20260910,
+ "nboot": 100000,
+ "level": 95.0,
+ "N_hi": 128,
+ "N_lo": 64,
+ "seeds": [
+  301,
+  302,
+  303,
+  304,
+  305,
+  306,
+  307,
+  308
+ ],
+ "tasks": [
+  "walker",
+  "g1",
+  "leap"
+ ],
+ "arms": {
+  "PW": "pathwise_fa_noent",
+  "WML05": "weighted_mle",
+  "WML01": "weighted_mle_eps01"
+ },
+ "pairs": [
+  [
+   "WML05",
+   "PW"
+  ],
+  [
+   "WML01",
+   "WML05"
+  ],
+  [
+   "WML01",
+   "PW"
+  ]
+ ],
+ "banks": [
+  {
+   "task": "walker",
+   "bank": "neutral",
+   "n_states": 3072,
+   "sha256": "36943266fbce9abac2b8a5affc714749e8951d5194bf263caecf8cf28dea1742"
+  },
+  {
+   "task": "walker",
+   "bank": "pw_rollout",
+   "n_states": 1536,
+   "sha256": "24bc94540d294f4990224264003a1773f9c83ab25fbba224cf604cc47017aa28"
+  },
+  {
+   "task": "walker",
+   "bank": "wml_rollout",
+   "n_states": 1536,
+   "sha256": "ea3ac8a5befe354007ee74c8bc941fd090d33dfbbd12f50faecd6f5e44a86d66"
+  },
+  {
+   "task": "g1",
+   "bank": "neutral",
+   "n_states": 3072,
+   "sha256": "3181aa60213860f5869bed13d7d110cab1f0981f54f63d565401ee56ba357189"
+  },
+  {
+   "task": "g1",
+   "bank": "pw_rollout",
+   "n_states": 1536,
+   "sha256": "511016c34a8052c2caf87cfbb2fee97d41e028424f07820b9958946fc4684f6a"
+  },
+  {
+   "task": "g1",
+   "bank": "wml_rollout",
+   "n_states": 1536,
+   "sha256": "cd5dabeed51e904006d6d6ead26998c7512088597a2c89af15dcc10f8d29e44d"
+  },
+  {
+   "task": "leap",
+   "bank": "neutral",
+   "n_states": 3072,
+   "sha256": "642b72ff66486e323e402dc8e62329c94b1842a94474c09965f69c84cd6360bd"
+  },
+  {
+   "task": "leap",
+   "bank": "pw_rollout",
+   "n_states": 1536,
+   "sha256": "f7b548a0a699d7279bed40dad3049e4a779f99cc28973bf96e48eb4bcd2ae000"
+  },
+  {
+   "task": "leap",
+   "bank": "wml_rollout",
+   "n_states": 1536,
+   "sha256": "e07fdf1ead65e23ffb1c06de4946a31d0c8d3317f35995b0536edada1dbd2b67"
+  }
+ ]
+}

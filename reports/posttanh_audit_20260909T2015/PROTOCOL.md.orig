@@ -1,0 +1,143 @@
+# Post-tanh policy-geometry audit — FROZEN PROTOCOL
+
+Frozen 2026-09-09T20:15 CEST, before any post-tanh value was computed.
+Offline checkpoint analysis only. No training, no new rollouts, no training-code change,
+no return inspection.
+
+## 0. Scope and prohibited framings
+
+Question: do the established PRE-tanh scale differences correspond to differences in the
+bounded action distribution after `a = tanh(z)`?
+
+Results will NOT be described as uncertainty, calibration, exploration, or a cause of return.
+Three tasks are reported separately; no population of environments is inferred from them.
+
+## 1. Run selection
+
+Arms, keyed by export tag and verified against the resolved config of each run:
+
+| arm | export tag | required effective config |
+|---|---|---|
+| PW | `pathwise_fa_noent` | `actor_update_mode=pathwise`, `pw_drop_actor_entropy=True`, `update_entropy_lagrangian=False` |
+| WML05 | `weighted_mle` | `actor_update_mode=weighted_mle`, `eps_e=0.5`, `mstep_decoupled=False`, `update_entropy_lagrangian=False` |
+| WML01 | `weighted_mle_eps01` | `actor_update_mode=weighted_mle`, `eps_e=0.1`, `mstep_decoupled=False`, `update_entropy_lagrangian=False` |
+
+Tasks: `WalkerRun`, `G1JoystickFlatTerrain`, `LeapCubeRotateZAxis`. Seeds: 301-308.
+Only `*_final` checkpoints. A cell is admitted only if `actor.npz`, `critic.npz`,
+`normalizer.npz` and `meta.json` are all present and `meta.json` parses.
+Fields absent from a stored config are resolved to the dataclass default in
+`src/jaxrl/reppo.py` and the EFFECTIVE value is reported, never silently substituted.
+Runs are never substituted across campaigns.
+
+## 2. Populations
+
+**PRIMARY** — the existing common neutral bank used for the matched-state pre-tanh analysis:
+`reports/artifacts/{walker,g1,leap}_fixed_state_bank.npz`, sha256 verified in-run against
+`8adfeb0b...aa21`, `cf6f7880...35e9`, `0053b0f3...b158`. All states pooled.
+**Bank halves are NOT treated as independent replications** and are not bootstrapped.
+
+**SECONDARY**, reported separately, already existing, no new rollouts:
+* PW rollout bank — the `PW_noent` half of `*_onpolicy_bank_newarms.npz`;
+* canonical WML rollout bank — the `WML` half of the neutral bank.
+
+No 50/50 mixture bank is constructed.
+
+## 3. Contrasts
+
+PRIMARY: `log( V_WML05 / V_PW )` on the neutral bank.
+SECONDARY: `log( V_WML01 / V_WML05 )` and `log( V_WML01 / V_PW )`.
+Reported separately per task.
+
+## 4. Metrics
+
+Deployed pre-squash parameters come from the repository's own inference path,
+`scripts/load_ckpt.py::load(...).policy_dist(s)`, which takes RAW observations and applies
+each checkpoint's own stored normalizer internally (`load_ckpt.py:129`), with
+`sigma = exp(log_std) + actor.min_std` (`load_ckpt.py:156`). Each policy therefore uses its
+NATIVE normalizer in the primary analysis, which is what defines the deployed policy.
+No independent reconstruction of the policy distribution.
+
+Per state `s` and action dimension `j`, in float64 deterministic Gauss-Hermite quadrature:
+
+    m1 = E[tanh(z_j)],  m2 = E[tanh^2(z_j)],  v_j(s) = m2 - m1^2
+
+Reported result uses **64-point** quadrature; **32-point** is the sensitivity check.
+Negative variances from floating-point error are clamped to 0; their COUNT and MAGNITUDE are
+recorded. Computed in normalized tanh action space, before any environment-specific affine
+action rescaling.
+
+Per policy `p`, bank `b`, seed `k`:  `V_{p,b,k} = mean_{s,j} v_j(s)`.
+
+SECONDARY SATURATION, analytic via the Gaussian CDF:
+
+    P(|a_j| > 0.95) = Phi((-c - mu)/sigma) + 1 - Phi((c - mu)/sigma),  c = atanh(0.95)
+
+averaged over states and dimensions within each seed. No entropy, no other thresholds, no
+further metrics added after results are seen.
+
+## 5. Mean/scale decomposition
+
+For each pairwise comparison (A, B) on exactly the same raw states, all four combinations
+`F(mu_A,sigma_A)`, `F(mu_A,sigma_B)`, `F(mu_B,sigma_A)`, `F(mu_B,sigma_B)` are evaluated,
+for post-tanh variance and, separately, for saturation. Symmetric two-factor decomposition:
+
+    C_sigma = 0.5*[ F(muA,sgA) - F(muA,sgB) + F(muB,sgA) - F(muB,sgB) ]
+    C_mu    = 0.5*[ F(muA,sgB) - F(muB,sgB) + F(muA,sgA) - F(muB,sgA) ]
+
+with the identity `F(muA,sgA) - F(muB,sgB) = C_sigma + C_mu` verified numerically per cell.
+This is an OUTPUT-LEVEL decomposition on common states, NOT a causal training decomposition.
+
+## 6. Aggregation order
+
+Within a seed: (1) aggregate action dimensions, (2) aggregate states, (3) form the arm
+contrast. The independent inferential unit is the TRAINING SEED. States, action dimensions,
+bank halves and checkpoints are never bootstrapped as independent observations.
+
+## 7. Bootstrap
+
+Paired seed-level bootstrap, `numpy.random.default_rng(20260910)`, **100000** resamples,
+**95% percentile** interval on the **mean** log ratio, estimate and interval exponentiated
+for presentation.
+
+Documented deviation: the repository's frozen convention elsewhere is the MEDIAN of per-seed
+log ratios with 10000 resamples. This audit follows the mean/100000 specification given in
+its own instruction, and ALSO reports the repository's median convention alongside, so the
+two are comparable. Confidence level (95%, percentile) matches the repository's frozen level.
+
+## 8. Quadrature accuracy check
+
+Every seed-level aggregate is computed at 32 and 64 points. A cell is FLAGGED when the
+relative difference exceeds 1e-3 AND the absolute difference exceeds 1e-8. Flagged cells are
+investigated, not silently accepted. A higher-accuracy reference (128-point) is used in
+validation on a representative (mu, sigma) grid.
+
+## 9. Missing-data policy
+
+The manifest covers all 3 x 3 x 8 = 72 expected cells. Analysis proceeds only on the
+explicitly reported matched seed intersection per task. If fewer than eight seeds are
+available for any arm in a task, the reported n is the intersection size and the claim of
+eight seeds is never made.
+
+## 10. Interpretation gates
+
+Exactly one conclusion per task, from:
+
+1. "The pre-tanh difference survives as a post-tanh action-distribution difference."
+2. "No post-tanh difference was detected; the interval remains too uncertain to establish equivalence."
+3. "The post-tanh effect is practically negligible under the frozen criterion."
+4. "The analysis is invalid or incomplete because: ..."
+
+**No equivalence margin is frozen in this protocol.** Conclusion 3 is therefore UNAVAILABLE
+by construction, and a confidence interval containing 1 will be reported as
+"no detected difference", never as evidence of equivalence.
+
+Conclusion 1 requires the exponentiated 95% interval on the primary contrast to exclude 1.
+
+## 11. Validation gates (all must pass before results are accepted)
+
+sigma -> 0 gives v -> 0; mu = 0 gives squashed mean ~ 0; 64-point agrees with a 128-point
+reference on a representative grid; 32- and 64-point seed summaries agree under 8;
+analytic saturation agrees with a high-accuracy numerical reference; actor outputs match the
+existing pre-tanh sigma extraction on several checkpoints; every policy in a comparison
+receives byte-identical raw state arrays; every decomposition reconstructs its total within
+tolerance.

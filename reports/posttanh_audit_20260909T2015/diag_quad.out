@@ -1,0 +1,34 @@
+/rwthfs/rz/cluster/hpcwork/qzi10910/estep_wt/.venv/lib/python3.12/site-packages/numpy/polynomial/hermite.py:1704: RuntimeWarning: divide by zero encountered in divide
+  w = 1 / (fm * fm)
+/rwthfs/rz/cluster/hpcwork/qzi10910/estep_wt/.venv/lib/python3.12/site-packages/numpy/polynomial/hermite.py:1704: RuntimeWarning: overflow encountered in divide
+  w = 1 / (fm * fm)
+/rwthfs/rz/cluster/hpcwork/qzi10910/estep_wt/.venv/lib/python3.12/site-packages/numpy/polynomial/hermite.py:1707: RuntimeWarning: overflow encountered in add
+  w = (w + w[::-1]) / 2
+/rwthfs/rz/cluster/hpcwork/qzi10910/estep_wt/.venv/lib/python3.12/site-packages/numpy/polynomial/hermite.py:1711: RuntimeWarning: invalid value encountered in multiply
+  w *= np.sqrt(np.pi) / w.sum()
+=== D1: is hermgauss(n) itself breaking at large n? ===
+  n=64   finite weights: True   sum(w)=1.7724538509055157  (exact sqrt(pi)=1.772454)
+  n=128  finite weights: True   sum(w)=1.7724538509055159  (exact sqrt(pi)=1.772454)
+  n=200  finite weights: True   sum(w)=1.7724538509055159  (exact sqrt(pi)=1.772454)
+  n=400  finite weights: False  sum(w)=nan  (exact sqrt(pi)=1.772454)
+
+=== D2: GH convergence for E[tanh^2] at large sigma (mu=-4) ===
+  GH n=32    m1=-0.391026321  m2=0.939959402  v=0.787057819
+  GH n=64    m1=-0.307280322  m2=0.978114299  v=0.883693103
+  GH n=96    m1=-0.288312353  m2=0.931996269  v=0.848872256
+  GH n=128   m1=-0.303941148  m2=0.897719769  v=0.805339548
+
+=== D3: 2-panel Gauss-Legendre split at the tanh transition ===
+  mu=-4.00  sg=10.00  v(N=64)=0.830720579205  N=128=0.830720629489  N=256=0.830720629489  N=512=0.830720629489
+      |N128-N256|=7.550e-15   |N256-N512|=1.310e-14
+  mu=0.00   sg=7.00   v(N=64)=0.886956674256  N=128=0.886956672849  N=256=0.886956672849  N=512=0.886956672849
+      |N128-N256|=7.105e-15   |N256-N512|=1.088e-14
+  mu=2.00   sg=0.50   v(N=64)=0.004066519332  N=128=0.004066519332  N=256=0.004066519332  N=512=0.004066519332
+      |N128-N256|=5.551e-15   |N256-N512|=3.109e-15
+  mu=-8.00  sg=0.10   v(N=64)=0.000000000000  N=128=0.000000000000  N=256=0.000000000000  N=512=0.000000000000
+      |N128-N256|=7.550e-15   |N256-N512|=3.886e-15
+  mu=0.25   sg=3.00   v(N=64)=0.741929121927  N=128=0.741929121927  N=256=0.741929121927  N=512=0.741929121927
+      |N128-N256|=1.776e-15   |N256-N512|=2.442e-15
+
+=== D4: analytic saturation vs a VALID numerical reference (GL, not hermgauss-400) ===
+  max |analytic - GL2000| = 1.619e-02   (finite: True)

@@ -1,0 +1,44 @@
+=== V1  sigma -> 0 gives post-tanh variance -> 0 ===
+  sigma=1e-03 -> max v                                           PASS  max v = 1.000e-06
+  sigma=1e-04 -> max v                                           PASS  max v = 1.000e-08
+  sigma=1e-05 -> max v                                           PASS  max v = 1.000e-10
+
+=== V2  mu = 0 gives squashed mean ~ 0 ===
+  mu=0, sigma=0.1 -> |E[tanh z]|                                 PASS  0.000e+00
+  mu=0, sigma=0.5 -> |E[tanh z]|                                 PASS  0.000e+00
+  mu=0, sigma=1.0 -> |E[tanh z]|                                 PASS  5.551e-17
+  mu=0, sigma=3.0 -> |E[tanh z]|                                 PASS  0.000e+00
+  mu=0, sigma=7.0 -> |E[tanh z]|                                 PASS  0.000e+00
+
+=== V3  N=128/panel vs N=512/panel reference (AMENDMENT 1) ===
+  max |N128 - N512|                                              FAIL  1.213e-04
+  cells flagged under the frozen conjunctive criterion           PASS  0 flagged; max rel 7.174e-01 occurs at abs 3.664e-15 (v ~ 1e-15, physically zero)
+     (N=64 vs N=128 per panel on same grid: max abs 6.753e-04, max rel 6.076e-01)
+
+=== V4  analytic saturation vs an independent Gaussian CDF (AMENDMENT 1) ===
+  max |sat_prob - scipy.stats.norm|                              PASS  2.220e-16
+
+=== V5  decomposition reconstructs the total exactly ===
+  variance: resid (vacuous by algebra, kept as a smoke test)     PASS  0.000e+00
+  variance: C_sigma == direct one-factor-at-a-time               PASS  0.000e+00
+  variance: F_AA equals independently computed metric            PASS  0.000e+00
+  saturation: resid (vacuous by algebra, kept as a smoke test)   PASS  0.000e+00
+  saturation: C_sigma == direct one-factor-at-a-time             PASS  0.000e+00
+  saturation: F_AA equals independently computed metric          PASS  0.000e+00
+
+=== V6  actor outputs match the existing pre-tanh scale extraction ===
+  walker weighted_mle median pre-tanh sigma == published         PASS  got 7.3096 vs published 7.3096
+  walker weighted_mle_eps01 median pre-tanh sigma == published   PASS  got 0.9062 vs published 0.9062
+  walker pathwise_fa_noent median pre-tanh sigma == published    PASS  got 0.3375 vs published 0.3375
+
+=== V7  every policy in a comparison receives byte-identical raw states ===
+  all three arms evaluated on a byte-identical raw-state array   PASS  36943266fbce9aba
+  the three arms are genuinely different policies (outputs differ) PASS  3 distinct sigma hashes
+
+=== V8  no NaN / non-finite in a real cell, both quadratures ===
+     n=64: shape (3072, 6) finite=True clamped=20 max_clamp=2.554e-15
+     n=128: shape (3072, 6) finite=True clamped=0 max_clamp=0.000e+00
+  all finite, shape (states, dims)                               PASS  (3072, 6)
+
+==========================================================================
+VALIDATION = FAIL: max |N128 - N512|

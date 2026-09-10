@@ -1,0 +1,29 @@
+  walker  neutral      n=3072
+  walker  pw_rollout   n=1536
+  walker  wml_rollout  n=1536
+    walker  PW     done  (6s)
+    walker  WML05  done  (9s)
+    walker  WML01  done  (13s)
+    walker  decomposition done (20s)
+  g1      neutral      n=3072
+  g1      pw_rollout   n=1536
+  g1      wml_rollout  n=1536
+    g1      PW     done  (34s)
+    g1      WML05  done  (46s)
+    g1      WML01  done  (57s)
+    g1      decomposition done (96s)
+  leap    neutral      n=3072
+  leap    pw_rollout   n=1536
+  leap    wml_rollout  n=1536
+    leap    PW     done  (103s)
+    leap    WML05  done  (109s)
+    leap    WML01  done  (115s)
+    leap    decomposition done (136s)
+  wrote /hpcwork/qzi10910/estep_wt/reports/posttanh_audit_20260909T2015/per_seed_results.csv (216 rows)
+  wrote /hpcwork/qzi10910/estep_wt/reports/posttanh_audit_20260909T2015/task_summary.csv (54 rows)
+  wrote /hpcwork/qzi10910/estep_wt/reports/posttanh_audit_20260909T2015/quadrature_convergence.csv (216 rows)
+  wrote /hpcwork/qzi10910/estep_wt/reports/posttanh_audit_20260909T2015/decomposition.csv (144 rows)
+  total clamped: 0  max clamp magnitude: 0.000e+00
+  flagged quadrature cells: 0/216
+  max |decomp resid|: 1.110e-16
+  elapsed 137s
